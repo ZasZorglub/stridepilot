@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AppUser {
+  id           String        @id @default(cuid())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  email        String        @unique
+  passwordHash String
+  profile      RunnerProfile?
+}
+
+model RunnerProfile {
+  id                String             @id @default(cuid())
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  heightCm          Int
+  weightKg          Int
+  age               Int
+  activityLevel     String
+  runningExperience String
+  userId            String?            @unique
+  user              AppUser?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  goals             Goal[]
+  plans             TrainingPlan[]
+  pushSubscriptions PushSubscription[]
+  feedbackEntries   WorkoutFeedback[]
+}
+
+model Goal {
+  id           String         @id @default(cuid())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  distance     String
+  weeks        Int
+  startDate    DateTime
+  endDate      DateTime?
+  reminderHour Int            @default(7)
+  reminderMin  Int            @default(0)
+
+  profileId String
+  profile   RunnerProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  plans     TrainingPlan[]
+
+  @@index([profileId])
+}
+
+model TrainingPlan {
+  id              String           @id @default(cuid())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  summary         String
+  weeks           Int
+  sessionsPerWeek Int
+  source          String
+
+  profileId String
+  profile   RunnerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  goalId String?
+  goal   Goal? @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  sessions WorkoutSession[]
+
+  @@index([profileId])
+  @@index([goalId])
+}
+
+model WorkoutSession {
+  loadScore        Int      @default(5)
+  id        String     @id @default(cuid())
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  title     String
+  week      Int
+  dayOfWeek String
+  notes     String?
+  order     Int
+
+  planId String
+  plan   TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  steps      WorkoutStep[]
+  deliveries PushDelivery[]
+  feedback   WorkoutFeedback[]
+
+  @@index([planId])
+}
+
+model WorkoutStep {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  type        String
+  label       String
+  durationSec Int
+  cue         String
+  order       Int
+
+  sessionId String
+  session   WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+
+  profileId String
+  profile   RunnerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  deliveries PushDelivery[]
+
+  @@index([profileId])
+}
+
+model PushDelivery {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  scheduledFor     DateTime
+  status           String   @default("sent")
+  pushSubId        String
+  workoutSessionId String
+
+  pushSubscription PushSubscription @relation(fields: [pushSubId], references: [id], onDelete: Cascade)
+  workoutSession   WorkoutSession   @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([pushSubId, workoutSessionId])
+  @@index([scheduledFor])
+}
+
+model WorkoutFeedback {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  profileId        String
+  workoutSessionId String
+  effort           Int
+  completionPct    Int
+  energy           Int
+  painLevel        Int
+  notes            String?
+  adaptationFactor Float
+
+  profile       RunnerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  workoutSession WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([workoutSessionId])
+}
