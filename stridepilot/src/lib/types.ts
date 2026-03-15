@@ -8,6 +8,7 @@ export type CurrentRunningAbility =
   | "mere_end_tredive_min";
 
 export interface RunnerProfile {
+  firstName?: string;
   heightCm: number;
   weightKg: number;
   age: number;
@@ -16,6 +17,34 @@ export interface RunnerProfile {
   currentRunningAbility: CurrentRunningAbility;
   gender?: "kvinde" | "mand" | "andet" | "vil_ikke_oplyse";
   userTrainingContext?: string;
+}
+
+export interface RunnerProfileInsights {
+  runnerProfile: {
+    experience: "beginner" | "intermediate" | "advanced";
+    confidence: "low" | "medium" | "high";
+    injuryCaution: boolean;
+    motivationRisk: "low" | "medium" | "high";
+  };
+  progressionStrategy: {
+    style: "conservative" | "balanced" | "aggressive";
+    preferEarlyWins: boolean;
+    avoidRapidLoadIncrease: boolean;
+  };
+  trainingRecommendations: {
+    targetSessionsPerWeek: number;
+    preferShortIntervalsInitially: boolean;
+  };
+  coachTone: {
+    style: "encouraging" | "calm" | "analytical";
+  };
+}
+
+export interface FeedbackInsights {
+  adjustment: "reduce_load" | "increase_load" | "hold_progression" | "insert_recovery";
+  severity: "mild" | "moderate" | "strong";
+  progressionPauseWeeks: number;
+  coachTone: "supportive" | "motivating" | "calm";
 }
 
 export interface Goal {
@@ -55,6 +84,7 @@ export interface TrainingPlan {
 }
 
 export interface WorkoutFeedbackInput {
+  quickFeedback?: "very_easy" | "good" | "hard" | "too_hard";
   effort: number;
   completionPct: number;
   energy: number;

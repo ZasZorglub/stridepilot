@@ -1,4 +1,4 @@
-import { Goal, RunnerProfile, TrainingPlan, WorkoutSession, WorkoutStep } from "./types";
+import { Goal, RunnerProfile, RunnerProfileInsights, TrainingPlan, WorkoutSession, WorkoutStep } from "./types";
 import { normalizeStepDuration } from "./duration";
 
 export const DAYS: WorkoutSession["dayOfWeek"][] = ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lordag", "Sondag"];
@@ -8,6 +8,10 @@ export interface WeeklyLoadPoint {
   load: number;
   longestContinuousRunSec: number;
   totalRunSec: number;
+}
+
+interface PlanGenerationSignals {
+  profileInsights?: RunnerProfileInsights | null;
 }
 
 function clampWeeks(weeks: number): number {
@@ -93,19 +97,28 @@ function resolveTrainingDays(goal: Goal, sessionsPerWeek: number): WorkoutSessio
   return Array.from({ length: sessionsPerWeek }).map((_, index) => source[index % source.length]);
 }
 
+function progressionStyleFactor(style: RunnerProfileInsights["progressionStrategy"]["style"] = "balanced"): number {
+  if (style === "conservative") return 0.9;
+  if (style === "aggressive") return 1.08;
+  return 1;
+}
+
 function buildIntervalSession(params: {
   week: number;
   dayIndex: number;
   weeks: number;
   goal: Goal;
   recoveryWeek: boolean;
+  profileInsights?: RunnerProfileInsights | null;
 }): WorkoutSession {
-  const { week, dayIndex, weeks, goal, recoveryWeek } = params;
+  const { week, dayIndex, weeks, goal, recoveryWeek, profileInsights } = params;
   const factor = distanceFactor(goal.distance);
   const progression = week / weeks;
+  const styleFactor = progressionStyleFactor(profileInsights?.progressionStrategy.style);
   const repeatsBase = 3 + Math.floor(progression * 4);
   const repeats = recoveryWeek ? Math.max(3, repeatsBase - 1) : repeatsBase;
-  const runSecBase = normalizeStepDuration((60 + progression * 120) * factor);
+  const earlyWeeksBias = profileInsights?.trainingRecommendations.preferShortIntervalsInitially && progression < 0.35 ? 0.82 : 1;
+  const runSecBase = normalizeStepDuration((60 + progression * 120 * styleFactor) * factor * earlyWeeksBias);
   const walkSec = normalizeStepDuration(Math.max(30, 120 - progression * 60));
   const runSec = recoveryWeek ? normalizeStepDuration(runSecBase * 0.9) : runSecBase;
 
@@ -134,11 +147,19 @@ function buildIntervalSession(params: {
   };
 }
 
-function buildSteadySession(params: { week: number; dayIndex: number; weeks: number; goal: Goal; recoveryWeek: boolean }): WorkoutSession {
-  const { week, dayIndex, weeks, goal, recoveryWeek } = params;
+function buildSteadySession(params: {
+  week: number;
+  dayIndex: number;
+  weeks: number;
+  goal: Goal;
+  recoveryWeek: boolean;
+  profileInsights?: RunnerProfileInsights | null;
+}): WorkoutSession {
+  const { week, dayIndex, weeks, goal, recoveryWeek, profileInsights } = params;
   const factor = distanceFactor(goal.distance);
   const progression = week / weeks;
-  const steadyRun = normalizeStepDuration((10 * 60 + progression * 12 * 60) * factor);
+  const styleFactor = progressionStyleFactor(profileInsights?.progressionStrategy.style);
+  const steadyRun = normalizeStepDuration((10 * 60 + progression * 12 * 60 * styleFactor) * factor);
   const runSec = recoveryWeek ? normalizeStepDuration(steadyRun * 0.8) : steadyRun;
 
   const steps: WorkoutStep[] = [
@@ -164,8 +185,9 @@ function buildLongOrGoalSession(params: {
   weeks: number;
   goal: Goal;
   recoveryWeek: boolean;
+  profileInsights?: RunnerProfileInsights | null;
 }): WorkoutSession {
-  const { week, dayIndex, weeks, goal, recoveryWeek } = params;
+  const { week, dayIndex, weeks, goal, recoveryWeek, profileInsights } = params;
   const progression = week / weeks;
   const isFinalWeek = week === weeks;
   const baseGoalSec = parseTargetTimeSec(goal.targetTime) ?? defaultGoalTimeSec(goal.distance);
@@ -189,7 +211,8 @@ function buildLongOrGoalSession(params: {
     };
   }
 
-  const longRunSecBase = normalizeStepDuration((20 * 60 + progression * 22 * 60) * distanceFactor(goal.distance));
+  const styleFactor = progressionStyleFactor(profileInsights?.progressionStrategy.style);
+  const longRunSecBase = normalizeStepDuration((20 * 60 + progression * 22 * 60 * styleFactor) * distanceFactor(goal.distance));
   const longRunSec = recoveryWeek ? normalizeStepDuration(longRunSecBase * 0.8) : longRunSecBase;
   const steps: WorkoutStep[] = [
     { type: "warmup", label: "Rask gang", durationSec: 5 * 60, cue: "Varm op i roligt tempo." },
@@ -208,35 +231,44 @@ function buildLongOrGoalSession(params: {
   };
 }
 
-function buildSession(params: { week: number; dayIndex: number; weeks: number; goal: Goal; sessionsPerWeek: number }): WorkoutSession {
-  const { week, dayIndex, weeks, goal, sessionsPerWeek } = params;
+function buildSession(params: {
+  week: number;
+  dayIndex: number;
+  weeks: number;
+  goal: Goal;
+  sessionsPerWeek: number;
+  profileInsights?: RunnerProfileInsights | null;
+}): WorkoutSession {
+  const { week, dayIndex, weeks, goal, sessionsPerWeek, profileInsights } = params;
   const recoveryWeek = week % 4 === 0 && week !== weeks;
   const isLastSessionOfWeek = dayIndex === sessionsPerWeek - 1;
 
   if (isLastSessionOfWeek) {
-    return buildLongOrGoalSession({ week, dayIndex, weeks, goal, recoveryWeek });
+    return buildLongOrGoalSession({ week, dayIndex, weeks, goal, recoveryWeek, profileInsights });
   }
   if (dayIndex === 0) {
-    return buildIntervalSession({ week, dayIndex, weeks, goal, recoveryWeek });
+    return buildIntervalSession({ week, dayIndex, weeks, goal, recoveryWeek, profileInsights });
   }
-  return buildSteadySession({ week, dayIndex, weeks, goal, recoveryWeek });
+  return buildSteadySession({ week, dayIndex, weeks, goal, recoveryWeek, profileInsights });
 }
 
-export function generateFallbackPlan(profile: RunnerProfile, goal: Goal): TrainingPlan {
+export function generateFallbackPlan(profile: RunnerProfile, goal: Goal, signals?: PlanGenerationSignals): TrainingPlan {
   const weeks = clampWeeks(goal.weeks);
   const abilityFactor = runningAbilityFactor(profile.currentRunningAbility);
+  const profileInsights = signals?.profileInsights ?? null;
   const suggestedSessionsPerWeek =
-    profile.currentRunningAbility === "helt_ny"
+    profileInsights?.trainingRecommendations.targetSessionsPerWeek ??
+    (profile.currentRunningAbility === "helt_ny"
       ? 2
       : profile.activityLevel === "meget_lav"
-      ? 2
-      : profile.activityLevel === "lav"
-        ? 3
-        : profile.activityLevel === "moderat"
-      ? 3
-      : profile.activityLevel === "høj"
-        ? 4
-        : 5;
+        ? 2
+        : profile.activityLevel === "lav"
+          ? 3
+          : profile.activityLevel === "moderat"
+            ? 3
+            : profile.activityLevel === "høj"
+              ? 4
+              : 5);
   const sessionsPerWeek = goal.availableTrainingDays?.length
     ? Math.max(1, Math.min(suggestedSessionsPerWeek, goal.availableTrainingDays.length))
     : suggestedSessionsPerWeek;
@@ -245,7 +277,7 @@ export function generateFallbackPlan(profile: RunnerProfile, goal: Goal): Traini
 
   for (let week = 1; week <= weeks; week += 1) {
     for (let dayIndex = 0; dayIndex < sessionsPerWeek; dayIndex += 1) {
-      const session = buildSession({ week, dayIndex, weeks, goal, sessionsPerWeek });
+      const session = buildSession({ week, dayIndex, weeks, goal, sessionsPerWeek, profileInsights });
       session.dayOfWeek = trainingDays[dayIndex];
       const adjustedSteps = session.steps.map((step, index) => {
           if (step.type !== "run") return step;

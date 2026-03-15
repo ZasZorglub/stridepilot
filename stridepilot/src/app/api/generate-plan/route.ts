@@ -1,38 +1,11 @@
-import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { enforceAvailableTrainingDays, generateFallbackPlan, normalizeTrainingPlan } from "@/lib/plan";
+import { enforceAvailableTrainingDays, generateFallbackPlan } from "@/lib/plan";
 import { prisma } from "@/lib/db";
-import { Goal, RunnerProfile, TrainingPlan } from "@/lib/types";
+import { FeedbackInsights, Goal, RunnerProfile, TrainingPlan } from "@/lib/types";
 import { getCurrentSession } from "@/lib/auth/session";
 import { applyAdaptiveGuardrails, buildAdaptationPayload, FeedbackSignal } from "@/lib/adaptation";
 import { applyPlanSafety, validatePlanFeasibility } from "@/lib/plan-safety";
-
-const COACH_SYSTEM_PROMPT = [
-  "Du er StridePilots løbecoach og programarkitekt.",
-  "Du skal generere realistiske, sikre og målspecifikke løbeprogrammer.",
-  "Sikkerhed kommer før ambition. Programmet skal være realistisk i forhold til niveau, mål, ønsket sluttid, uger og træningsdage.",
-  "Hvis målet ikke er realistisk/forsvarligt, må du ikke lave aggressivt program.",
-  "Progression skal være konservativ: ugentlig stigning ca. maks 5%, hver 4. uge lettere, undgå store spring i længste pas.",
-  "Alle interval-step-varigheder skal være i 30-sekunders trin.",
-  "Brug kun de træningsdage, brugeren har angivet som mulige.",
-  "Programmet skal kulminere målspecifikt: 5K med 5K-relevante pas, 10K med 10K-relevante pas, osv.",
-  "Du skal altid levere et komplet baseline-program fra uge 1 til sidste uge med synlig progression uge for uge.",
-  "Brug en enkel og konsekvent load-model, så uge-til-uge-belastning kan sammenlignes og tilpasses.",
-  "Ved signaler om smerte/lav energi/lav gennemførelse må du ikke skærpe programmet aggressivt.",
-  "Returner kun gyldigt JSON uden markdown.",
-  "JSON skal indeholde: feasibility_status (feasible|feasible_with_adjustments|not_feasible), coach_summary, internal_reasoning_summary, summary, weeks, sessionsPerWeek, sessions[].",
-  "Hver session skal have: id, title, week, dayOfWeek (Mandag-Sondag), notes, loadScore (1-10), steps[].",
-  "Hvert step skal have: type (warmup/run/walk/cooldown), label, durationSec, cue.",
-].join(" ");
-
-function extractJsonObject(text: string): unknown {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error("Model response did not contain JSON");
-  }
-  return JSON.parse(text.slice(start, end + 1));
-}
+import { interpretRunnerProfile, interpretWorkoutFeedback } from "@/lib/ai/interpretation";
 
 function parseReminderTime(reminderTime?: string): { reminderHour: number; reminderMin: number } {
   const fallback = { reminderHour: 13, reminderMin: 0 };
@@ -111,6 +84,20 @@ async function fetchRecentFeedbackSignals(userId?: string, profileId?: string): 
     adaptationFactor: row.adaptationFactor,
     createdAt: row.createdAt.toISOString(),
   }));
+}
+
+async function buildRecentFeedbackInsights(recentFeedback: FeedbackSignal[]): Promise<FeedbackInsights[]> {
+  return Promise.all(
+    recentFeedback.map((entry) =>
+      interpretWorkoutFeedback({
+        RPE: entry.effort,
+        energy: entry.energy,
+        pain: entry.painLevel,
+        completion: entry.completionPct,
+        notes: entry.notes,
+      }),
+    ),
+  );
 }
 
 async function persistPlan(params: {
@@ -284,52 +271,25 @@ export async function POST(req: Request) {
     }
 
     let source: "openai" | "fallback" = "fallback";
-    let plan: TrainingPlan = generateFallbackPlan(runnerProfile, goal);
-
     const currentWeek = 1;
     const recentFeedback = await fetchRecentFeedbackSignals(session?.userId, profileId);
+    const runnerProfileInsights = await interpretRunnerProfile({
+      onboardingText: runnerProfile.userTrainingContext,
+      currentAbility: runnerProfile.currentRunningAbility,
+      goalDistance: goal.distance,
+      goalTime: goal.targetTime,
+      activityLevel: runnerProfile.activityLevel,
+    });
+    const feedbackInsights = await buildRecentFeedbackInsights(recentFeedback);
     const adaptationPayload = buildAdaptationPayload({
       goal,
       runnerProfile,
       currentWeek,
       recentFeedback,
+      runnerInsights: runnerProfileInsights,
     });
-
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (apiKey) {
-      try {
-        const client = new OpenAI({ apiKey });
-        const model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
-
-        const completion = await client.chat.completions.create({
-          model,
-          temperature: 0.35,
-          messages: [
-            {
-              role: "system",
-              content: COACH_SYSTEM_PROMPT,
-            },
-            {
-              role: "user",
-              content: JSON.stringify({
-                instruction:
-                  "Design et komplet baseline-løbeprogram fra start til slut med realistisk progression, restitutionsuger og en tydelig måldag i slutugen. Programlængde: 12-52 uger. Prioritér valgte træningsdage og mål-specifik slutfase. Hvis målet virker urealistisk: returner feasibility_status som not_feasible eller feasible_with_adjustments med konservative forslag.",
-                adaptationPayload,
-              }),
-            },
-          ],
-        });
-
-        const content = completion.choices[0]?.message?.content;
-        if (content) {
-          const parsed = extractJsonObject(content);
-          plan = normalizeTrainingPlan(parsed, runnerProfile, goal);
-          source = "openai";
-        }
-      } catch {
-        source = "fallback";
-      }
-    }
+    let plan: TrainingPlan = generateFallbackPlan(runnerProfile, goal, { profileInsights: runnerProfileInsights });
+    source = process.env.OPENAI_API_KEY ? "openai" : "fallback";
 
     plan = applyAdaptiveGuardrails(plan, recentFeedback);
     const safety = applyPlanSafety({ plan, goal, recentFeedback });
@@ -349,8 +309,11 @@ export async function POST(req: Request) {
           feasibleStatus: feasibility.status,
           adaptation: {
             signalCount: recentFeedback.length,
-            message: "Programmet tilpasses løbende efter belastning, energi og gennemførelse.",
+            message: "Programmet tager udgangspunkt i dit mål og justeres løbende efter din feedback.",
           },
+          runnerProfileInsights,
+          feedbackInsights,
+          adaptationPayload,
           warnings,
           tradeoffExplanation: feasibility.explanation,
           safetyAdjustments: safety.adjustments,
@@ -377,8 +340,11 @@ export async function POST(req: Request) {
         feasibleStatus: feasibility.status,
         adaptation: {
           signalCount: recentFeedback.length,
-          message: "Programmet tilpasses løbende efter belastning, energi og gennemførelse.",
+          message: "Programmet tager udgangspunkt i dit mål og justeres løbende efter din feedback.",
         },
+        runnerProfileInsights,
+        feedbackInsights,
+        adaptationPayload,
         warnings,
         tradeoffExplanation: feasibility.explanation,
         safetyAdjustments: safety.adjustments,
@@ -394,6 +360,9 @@ export async function POST(req: Request) {
         currentPlanView: plan,
         feasible: true,
         feasibleStatus: feasibility.status,
+        runnerProfileInsights,
+        feedbackInsights,
+        adaptationPayload,
         warnings,
         tradeoffExplanation: feasibility.explanation,
         safetyAdjustments: safety.adjustments,

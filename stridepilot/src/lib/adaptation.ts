@@ -1,4 +1,4 @@
-import { Goal, RunnerProfile, TrainingPlan } from "./types";
+import { FeedbackInsights, Goal, RunnerProfile, RunnerProfileInsights, TrainingPlan } from "./types";
 import { normalizeStepDuration } from "./duration";
 
 export interface FeedbackSignal {
@@ -23,12 +23,14 @@ export interface AdaptationPayload {
     experience: RunnerProfile["runningExperience"];
     activityLevel: RunnerProfile["activityLevel"];
     currentRunningAbility: RunnerProfile["currentRunningAbility"];
+    firstName?: RunnerProfile["firstName"];
     gender?: RunnerProfile["gender"];
     userTrainingContext?: RunnerProfile["userTrainingContext"];
     age: number;
     weightKg: number;
     heightCm: number;
   };
+  runnerInsights?: RunnerProfileInsights;
   progressionState: {
     currentWeek: number;
     programWeeks: number;
@@ -49,8 +51,9 @@ export function buildAdaptationPayload(params: {
   runnerProfile: RunnerProfile;
   currentWeek: number;
   recentFeedback: FeedbackSignal[];
+  runnerInsights?: RunnerProfileInsights;
 }): AdaptationPayload {
-  const { goal, runnerProfile, currentWeek, recentFeedback } = params;
+  const { goal, runnerProfile, currentWeek, recentFeedback, runnerInsights } = params;
 
   return {
     goal: {
@@ -64,12 +67,14 @@ export function buildAdaptationPayload(params: {
       experience: runnerProfile.runningExperience,
       activityLevel: runnerProfile.activityLevel,
       currentRunningAbility: runnerProfile.currentRunningAbility,
+      firstName: runnerProfile.firstName,
       gender: runnerProfile.gender,
       userTrainingContext: runnerProfile.userTrainingContext,
       age: runnerProfile.age,
       weightKg: runnerProfile.weightKg,
       heightCm: runnerProfile.heightCm,
     },
+    runnerInsights,
     progressionState: {
       currentWeek,
       programWeeks: goal.weeks,
@@ -79,6 +84,13 @@ export function buildAdaptationPayload(params: {
     },
     recentWorkoutHistory: recentFeedback,
   };
+}
+
+export function factorFromFeedbackInsights(insights: FeedbackInsights): number {
+  if (insights.adjustment === "insert_recovery") return insights.severity === "strong" ? 0.82 : 0.88;
+  if (insights.adjustment === "reduce_load") return insights.severity === "strong" ? 0.86 : insights.severity === "moderate" ? 0.92 : 0.96;
+  if (insights.adjustment === "increase_load") return insights.severity === "mild" ? 1.04 : 1.06;
+  return 1;
 }
 
 export function applyAdaptiveGuardrails(plan: TrainingPlan, recentFeedback: FeedbackSignal[]): TrainingPlan {

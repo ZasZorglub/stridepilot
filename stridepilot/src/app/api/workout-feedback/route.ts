@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentSession } from "@/lib/auth/session";
 import { normalizeStepDuration } from "@/lib/duration";
+import { interpretWorkoutFeedback } from "@/lib/ai/interpretation";
+import { factorFromFeedbackInsights } from "@/lib/adaptation";
 
 interface FeedbackBody {
   profileId?: string;
   workoutSessionId?: string;
+  quickFeedback?: "very_easy" | "good" | "hard" | "too_hard";
   effort?: number;
   completionPct?: number;
   energy?: number;
@@ -18,17 +21,14 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.round(value)));
 }
 
-function adaptationFactor(input: { effort: number; completionPct: number; energy: number; painLevel: number }): number {
-  if (input.painLevel >= 7 || input.completionPct < 70 || input.effort >= 9) {
-    return 0.9;
-  }
-  if (input.painLevel <= 3 && input.completionPct >= 95 && input.effort <= 6 && input.energy >= 4) {
-    return 1.05;
-  }
-  return 1;
-}
-
-function buildAdjustmentSummary(input: { effort: number; completionPct: number; energy: number; painLevel: number; factor: number }): string[] {
+function buildAdjustmentSummary(input: {
+  effort: number;
+  completionPct: number;
+  energy: number;
+  painLevel: number;
+  factor: number;
+  progressionPauseWeeks: number;
+}): string[] {
   const summary: string[] = [];
 
   if (input.painLevel >= 6) {
@@ -43,6 +43,13 @@ function buildAdjustmentSummary(input: { effort: number; completionPct: number; 
   if (input.energy <= 2) {
     summary.push("Jeg prioriterer restitution, fordi energien var lav.");
   }
+  if (input.progressionPauseWeeks > 0) {
+    summary.push(
+      input.progressionPauseWeeks === 1
+        ? "Jeg holder progressionen lidt tilbage i den kommende uge."
+        : `Jeg holder progressionen tilbage i ${input.progressionPauseWeeks} uger for at give kroppen mere ro.`,
+    );
+  }
   if (summary.length === 0) {
     if (input.factor > 1) {
       summary.push("Jeg justerer næste pas en anelse op, fordi belastningen ser bæredygtig ud.");
@@ -56,32 +63,57 @@ function buildAdjustmentSummary(input: { effort: number; completionPct: number; 
   return summary;
 }
 
-function describeFeedbackInterpretation(input: { effort: number; completionPct: number; energy: number; painLevel: number }): string {
+function describeFeedbackInterpretation(input: {
+  quickFeedback?: FeedbackBody["quickFeedback"];
+  effort: number;
+  completionPct: number;
+  energy: number;
+  painLevel: number;
+}): string {
+  if (input.quickFeedback === "very_easy") {
+    return "Jeg vurderer, at passet føltes let, med godt overskud og lav belastning.";
+  }
+  if (input.quickFeedback === "good") {
+    return "Jeg vurderer, at passet ramte et godt niveau, med fint overskud og stabil belastning.";
+  }
+  if (input.quickFeedback === "hard") {
+    return "Jeg vurderer, at passet var lidt hårdere end planlagt, men stadig under kontrol.";
+  }
+  if (input.quickFeedback === "too_hard") {
+    return "Jeg vurderer, at passet var krævende, og at belastningen var højere end ønsket.";
+  }
+
   const effortText = input.effort >= 8 ? "hårdt" : input.effort <= 4 ? "let" : "moderat";
   const energyText = input.energy <= 2 ? "lav energi" : input.energy >= 4 ? "god energi" : "moderat energi";
-  const completionText =
-    input.completionPct < 70 ? "lav gennemførelse" : input.completionPct >= 95 ? "høj gennemførelse" : "delvis gennemførelse";
-  const painText = input.painLevel >= 6 ? "forhøjet smerte" : input.painLevel <= 3 ? "lav smerte" : "moderat smerte";
-  return `Jeg vurderer, at passet føltes ${effortText}, med ${energyText}, ${completionText} og ${painText}.`;
+  const painText = input.painLevel >= 6 ? "forhøjet belastning" : input.painLevel <= 3 ? "lav belastning" : "moderat belastning";
+  return `Jeg vurderer, at passet føltes ${effortText}, med ${energyText} og ${painText}.`;
 }
 
-function describeAdjustment(input: { factor: number; painLevel: number; completionPct: number; effort: number; energy: number }): string {
-  if (input.painLevel >= 6) {
-    return "Jeg justerer derfor næste pas ned og prioriterer restitution.";
+function describeAdjustment(input: {
+  quickFeedback?: FeedbackBody["quickFeedback"];
+  factor: number;
+  progressionPauseWeeks: number;
+}): string {
+  if (input.quickFeedback === "very_easy") {
+    return "Derfor kan planen fortsætte som planlagt, så du kan bygge videre med rolig progression.";
   }
-  if (input.completionPct < 70) {
-    return "Jeg lader derfor næste pas blive i samme spor, så progressionen forbliver stabil.";
+  if (input.quickFeedback === "good") {
+    return "Derfor holder jeg progressionen stabil, så du kan bygge videre uden at forcere noget.";
   }
-  if (input.effort >= 9 || input.energy <= 2) {
-    return "Jeg gør derfor næste pas lidt lettere og dæmper progressionen i den kommende uge.";
+  if (input.quickFeedback === "hard") {
+    return "Derfor holder jeg næste pas en smule roligere, så du kan bevare en stabil rytme i træningen.";
+  }
+  if (input.quickFeedback === "too_hard") {
+    return "Derfor justerer jeg planen lidt ned, så progressionen bliver mere stabil og bæredygtig.";
+  }
+
+  if (input.progressionPauseWeeks > 0 || input.factor < 1) {
+    return "Derfor holder jeg den næste del af planen lidt roligere, så kroppen bedre kan følge med.";
   }
   if (input.factor > 1) {
-    return "Jeg skruer derfor en anelse op i næste pas, fordi belastningen ser bæredygtig ud.";
+    return "Derfor kan planen fortsætte som planlagt med en rolig og stabil progression.";
   }
-  if (input.factor < 1) {
-    return "Jeg gør derfor næste pas kortere og mere kontrolleret.";
-  }
-  return "Jeg vurderer, at planen godt kan fortsætte som planlagt.";
+  return "Derfor holder jeg progressionen stabil, så du kan bygge videre uden at forcere noget.";
 }
 
 export async function POST(req: Request) {
@@ -101,19 +133,37 @@ export async function POST(req: Request) {
     const energy = clampNumber(Number(body.energy ?? 0), 1, 5);
     const painLevel = clampNumber(Number(body.painLevel ?? 1), 1, 10);
     const notes = body.notes?.trim() || null;
-    const factor = adaptationFactor({ effort, completionPct, energy, painLevel });
-    const summary = buildAdjustmentSummary({ effort, completionPct, energy, painLevel, factor });
-    const interpretation = describeFeedbackInterpretation({ effort, completionPct, energy, painLevel });
-    const adjustmentExplanation = describeAdjustment({ factor, painLevel, completionPct, effort, energy });
+    const feedbackInsights = await interpretWorkoutFeedback({
+      RPE: effort,
+      energy,
+      pain: painLevel,
+      completion: completionPct,
+      notes,
+    });
+    const factor = factorFromFeedbackInsights(feedbackInsights);
+    const summary = buildAdjustmentSummary({
+      effort,
+      completionPct,
+      energy,
+      painLevel,
+      factor,
+      progressionPauseWeeks: feedbackInsights.progressionPauseWeeks,
+    });
+    const interpretation = describeFeedbackInterpretation({ quickFeedback: body.quickFeedback, effort, completionPct, energy, painLevel });
+    const adjustmentExplanation = describeAdjustment({
+      quickFeedback: body.quickFeedback,
+      factor,
+      progressionPauseWeeks: feedbackInsights.progressionPauseWeeks,
+    });
 
     if (demoMode) {
       return NextResponse.json({
         saved: true,
         demoMode: true,
         adaptationFactor: factor,
+        feedbackInsights,
         confirmation: {
-          title: "Tak — din feedback er modtaget",
-          message: "Jeg har opdateret dit demo-program ud fra din feedback.",
+          title: "Tak for din feedback.",
         },
         interpretation,
         adjustmentExplanation,
@@ -139,6 +189,7 @@ export async function POST(req: Request) {
     const workoutSession = await prisma.workoutSession.findUnique({
       where: { id: body.workoutSessionId },
       include: {
+        steps: { orderBy: { order: "asc" } },
         plan: {
           include: {
             sessions: {
@@ -166,16 +217,29 @@ export async function POST(req: Request) {
       },
     });
 
-    if (factor !== 1) {
-      const futureSessions = workoutSession.plan.sessions.filter((s) => s.order > workoutSession.order);
+    if (factor !== 1 || feedbackInsights.progressionPauseWeeks > 0) {
+      const futureSessions = workoutSession.plan.sessions.filter((s) => {
+        if (s.order <= workoutSession.order) return false;
+        if (feedbackInsights.progressionPauseWeeks <= 0) return s.order === workoutSession.order + 1;
+        return s.week <= workoutSession.week + feedbackInsights.progressionPauseWeeks;
+      });
       const updates: ReturnType<typeof prisma.workoutStep.update>[] = [];
       const sessionLoadUpdates: ReturnType<typeof prisma.workoutSession.update>[] = [];
+      const currentLongestRun = Math.max(
+        ...workoutSession.steps.filter((step) => step.type === "run").map((step) => step.durationSec),
+        30,
+      );
 
       for (const future of futureSessions) {
         for (const step of future.steps) {
           if (step.type !== "run") continue;
 
-          const nextDuration = normalizeStepDuration(clampNumber(step.durationSec * factor, 30, 20 * 60));
+          const scaledDuration = step.durationSec * factor;
+          const heldDuration =
+            feedbackInsights.adjustment === "hold_progression"
+              ? Math.min(step.durationSec, currentLongestRun)
+              : scaledDuration;
+          const nextDuration = normalizeStepDuration(clampNumber(heldDuration, 30, 20 * 60));
           updates.push(
             prisma.workoutStep.update({
               where: { id: step.id },
@@ -187,7 +251,12 @@ export async function POST(req: Request) {
         sessionLoadUpdates.push(
           prisma.workoutSession.update({
             where: { id: future.id },
-            data: { loadScore: clampNumber(future.loadScore * factor, 1, 10) },
+            data: {
+              loadScore:
+                feedbackInsights.adjustment === "hold_progression"
+                  ? Math.min(future.loadScore, workoutSession.loadScore)
+                  : clampNumber(future.loadScore * factor, 1, 10),
+            },
           }),
         );
       }
@@ -200,9 +269,9 @@ export async function POST(req: Request) {
     return NextResponse.json({
       saved: true,
       adaptationFactor: factor,
+      feedbackInsights,
       confirmation: {
-        title: "Tak — din feedback er modtaget",
-        message: "Jeg har opdateret dit program ud fra din feedback.",
+        title: "Tak for din feedback.",
       },
       interpretation,
       adjustmentExplanation,
