@@ -1,7 +1,14 @@
 import { Goal, RunnerProfile, TrainingPlan, WorkoutSession, WorkoutStep } from "./types";
 import { normalizeStepDuration } from "./duration";
 
-const DAYS: WorkoutSession["dayOfWeek"][] = ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lordag", "Sondag"];
+export const DAYS: WorkoutSession["dayOfWeek"][] = ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lordag", "Sondag"];
+
+export interface WeeklyLoadPoint {
+  week: number;
+  load: number;
+  longestContinuousRunSec: number;
+  totalRunSec: number;
+}
 
 function clampWeeks(weeks: number): number {
   return Math.min(52, Math.max(12, Number.isFinite(weeks) ? Math.round(weeks) : 12));
@@ -11,6 +18,10 @@ function clampLoad(value: number): number {
   return Math.max(1, Math.min(10, Math.round(value)));
 }
 
+function roundLoad(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
 function distanceFactor(distance: Goal["distance"]): number {
   if (distance === "Marathon") return 1.7;
   if (distance === "Halvmaraton") return 1.4;
@@ -18,10 +29,45 @@ function distanceFactor(distance: Goal["distance"]): number {
   return 1;
 }
 
+function runningAbilityFactor(ability: RunnerProfile["currentRunningAbility"]): number {
+  if (ability === "helt_ny") return 0.6;
+  if (ability === "fem_min") return 0.75;
+  if (ability === "ti_femten_min") return 0.88;
+  if (ability === "tyve_tredive_min") return 1;
+  return 1.1;
+}
+
+export function sessionContinuousRunSec(session: Pick<WorkoutSession, "steps">): number {
+  let current = 0;
+  let longest = 0;
+
+  for (const step of session.steps) {
+    if (step.type === "run") {
+      current += step.durationSec;
+      longest = Math.max(longest, current);
+    } else {
+      current = 0;
+    }
+  }
+
+  return longest;
+}
+
+export function sessionTrainingLoad(session: Pick<WorkoutSession, "steps">): number {
+  const runSec = session.steps.filter((s) => s.type === "run").reduce((sum, step) => sum + step.durationSec, 0);
+  const walkSec = session.steps.filter((s) => s.type === "walk").reduce((sum, step) => sum + step.durationSec, 0);
+  const warmCoolSec = session.steps.filter((s) => s.type === "warmup" || s.type === "cooldown").reduce((sum, step) => sum + step.durationSec, 0);
+  const continuousRunSec = sessionContinuousRunSec(session);
+  const intervalCount = session.steps.filter((s) => s.type === "run").length;
+  const intensityMultiplier = intervalCount >= 4 ? 1.18 : continuousRunSec >= 20 * 60 ? 1.08 : 1;
+  const structureBonus = intervalCount >= 4 ? intervalCount * 0.18 : 0;
+
+  const rawLoad = (runSec / 60) * intensityMultiplier + walkSec / 180 + warmCoolSec / 240 + structureBonus;
+  return roundLoad(rawLoad);
+}
+
 function deriveLoadScore(steps: WorkoutStep[], week: number): number {
-  const totalSec = steps.reduce((sum, step) => sum + step.durationSec, 0);
-  const runSec = steps.filter((s) => s.type === "run").reduce((sum, step) => sum + step.durationSec, 0);
-  const raw = runSec / 240 + totalSec / 900 + week / 7;
+  const raw = sessionTrainingLoad({ steps }) / 4.5 + week / 10;
   return clampLoad(raw);
 }
 
@@ -178,16 +224,22 @@ function buildSession(params: { week: number; dayIndex: number; weeks: number; g
 
 export function generateFallbackPlan(profile: RunnerProfile, goal: Goal): TrainingPlan {
   const weeks = clampWeeks(goal.weeks);
-  const sessionsPerWeek =
-    profile.activityLevel === "meget_lav"
+  const abilityFactor = runningAbilityFactor(profile.currentRunningAbility);
+  const suggestedSessionsPerWeek =
+    profile.currentRunningAbility === "helt_ny"
+      ? 2
+      : profile.activityLevel === "meget_lav"
       ? 2
       : profile.activityLevel === "lav"
         ? 3
         : profile.activityLevel === "moderat"
-          ? 3
-          : profile.activityLevel === "høj"
-            ? 4
-            : 5;
+      ? 3
+      : profile.activityLevel === "høj"
+        ? 4
+        : 5;
+  const sessionsPerWeek = goal.availableTrainingDays?.length
+    ? Math.max(1, Math.min(suggestedSessionsPerWeek, goal.availableTrainingDays.length))
+    : suggestedSessionsPerWeek;
   const sessions: WorkoutSession[] = [];
   const trainingDays = resolveTrainingDays(goal, sessionsPerWeek);
 
@@ -195,7 +247,21 @@ export function generateFallbackPlan(profile: RunnerProfile, goal: Goal): Traini
     for (let dayIndex = 0; dayIndex < sessionsPerWeek; dayIndex += 1) {
       const session = buildSession({ week, dayIndex, weeks, goal, sessionsPerWeek });
       session.dayOfWeek = trainingDays[dayIndex];
-      sessions.push(session);
+      const adjustedSteps = session.steps.map((step, index) => {
+          if (step.type !== "run") return step;
+          const isGoalDay = week === weeks && dayIndex === sessionsPerWeek - 1;
+          if (isGoalDay) return step;
+          const scaledDuration = index === 1 ? step.durationSec * abilityFactor : step.durationSec * abilityFactor;
+          return {
+            ...step,
+            durationSec: normalizeStepDuration(scaledDuration),
+          };
+        });
+      sessions.push({
+        ...session,
+        steps: adjustedSteps,
+        loadScore: deriveLoadScore(adjustedSteps, week),
+      });
     }
   }
 
@@ -204,6 +270,81 @@ export function generateFallbackPlan(profile: RunnerProfile, goal: Goal): Traini
     weeks,
     sessionsPerWeek,
     sessions,
+  };
+}
+
+export function buildWeeklyLoad(plan: TrainingPlan): WeeklyLoadPoint[] {
+  const weeks = Array.from({ length: plan.weeks }, (_, index) => index + 1);
+
+  return weeks.map((week) => {
+    const sessions = plan.sessions.filter((session) => session.week === week);
+    const totalRunSec = sessions.reduce(
+      (sum, session) => sum + session.steps.filter((step) => step.type === "run").reduce((stepSum, step) => stepSum + step.durationSec, 0),
+      0,
+    );
+    const longestContinuousRunSec = sessions.reduce((longest, session) => Math.max(longest, sessionContinuousRunSec(session)), 0);
+    const load = roundLoad(sessions.reduce((sum, session) => sum + sessionTrainingLoad(session), 0));
+
+    return {
+      week,
+      load,
+      longestContinuousRunSec,
+      totalRunSec,
+    };
+  });
+}
+
+export function enforceAvailableTrainingDays(
+  plan: TrainingPlan,
+  preferredDays?: WorkoutSession["dayOfWeek"][],
+): { plan: TrainingPlan; warnings: string[] } {
+  if (!preferredDays || preferredDays.length === 0) {
+    return { plan, warnings: [] };
+  }
+
+  const normalizedPreferred = DAYS.filter((day) => preferredDays.includes(day));
+  if (normalizedPreferred.length === 0) {
+    return { plan, warnings: [] };
+  }
+
+  const sessionsByWeek = new Map<number, TrainingPlan["sessions"]>();
+  for (const session of plan.sessions) {
+    const bucket = sessionsByWeek.get(session.week) ?? [];
+    bucket.push(session);
+    sessionsByWeek.set(session.week, bucket);
+  }
+
+  let trimmedSessions = false;
+  const alignedSessions: TrainingPlan["sessions"] = [];
+
+  for (const [week, weekSessions] of [...sessionsByWeek.entries()].sort((a, b) => a[0] - b[0])) {
+    const limitedSessions = weekSessions.slice(0, normalizedPreferred.length);
+    if (weekSessions.length > normalizedPreferred.length) {
+      trimmedSessions = true;
+    }
+
+    limitedSessions.forEach((session, index) => {
+      alignedSessions.push({
+        ...session,
+        week,
+        dayOfWeek: normalizedPreferred[index],
+      });
+    });
+  }
+
+  const warnings = trimmedSessions
+    ? [
+        "Planen er tilpasset dine valgte træningsdage. For at holde dig på disse dage er nogle uger gjort mere kompakte, og et længere forløb eller flere træningsdage kan give en stærkere progression.",
+      ]
+    : [];
+
+  return {
+    plan: {
+      ...plan,
+      sessionsPerWeek: Math.min(plan.sessionsPerWeek, normalizedPreferred.length),
+      sessions: alignedSessions,
+    },
+    warnings,
   };
 }
 

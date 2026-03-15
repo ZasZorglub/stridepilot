@@ -6,6 +6,74 @@
   padding: 5.2rem 1rem 2rem;
 }
 
+.pageDark {
+  background: #0b0f14;
+  color: #f2f5f7;
+}
+
+.pageLight {
+  background: #eef3f7;
+  color: #11202c;
+}
+
+.pageLight .heroSub,
+.pageLight .subtle,
+.pageLight .subtleInline,
+.pageLight .ttsStatus,
+.pageLight .fieldHint,
+.pageLight .barCol span,
+.pageLight .menuLabel {
+  color: #536372;
+}
+
+.pageLight .card,
+.pageLight .centerCard,
+.pageLight .menuDropdown,
+.pageLight .audioSettings,
+.pageLight .sectionBlock,
+.pageLight .nextCard,
+.pageLight .chartCard,
+.pageLight .tradeoffCard,
+.pageLight .insightCard,
+.pageLight .safetyCard,
+.pageLight .valueCard,
+.pageLight .dayCard,
+.pageLight .dayCardToday,
+.pageLight .dayCardGoal,
+.pageLight .stepOverview li,
+.pageLight .completedWorkoutStats span {
+  background: #ffffff;
+  color: #11202c;
+  border-color: #d6e0e8;
+}
+
+.pageLight .formGrid input,
+.pageLight .formGrid select,
+.pageLight .sectionBlock textarea,
+.pageLight .burgerBtn,
+.pageLight .audioModeBtn,
+.pageLight .menuBtn,
+.pageLight .menuBtnActive,
+.pageLight .secondaryBtn,
+.pageLight .dayChip,
+.pageLight .dayChipActive,
+.pageLight .abilityCard,
+.pageLight .abilityCardActive,
+.pageLight .stepJumpBtn {
+  background: #f7fbfe;
+  color: #11202c;
+  border-color: #d6e0e8;
+}
+
+.pageLight .barTrackMini,
+.pageLight .progressTrack {
+  background: #d9e4ec;
+}
+
+.pageLight .baselineDot {
+  background: #607585;
+}
+
 .hero {
   max-width: 760px;
   margin: 0 auto 1.4rem;
@@ -31,6 +99,18 @@
   color: #9aa6b2;
   font-size: 1rem;
   line-height: 1.5;
+}
+
+.demoBadge {
+  margin-top: 0.8rem;
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1px solid rgba(52, 165, 218, 0.4);
+  background: rgba(52, 165, 218, 0.1);
+  color: #9ccfe6;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .menuContainer {
@@ -292,6 +372,12 @@
   gap: 0.65rem;
 }
 
+.progressSummaryGrid {
+  margin-top: 0.9rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
 .valueCard {
   border: 1px solid #2a323d;
   border-radius: 14px;
@@ -313,6 +399,23 @@
   padding: 0.82rem;
 }
 
+.onboardingProgress {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.onboardingNav {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.onboardingNav button {
+  min-width: 8rem;
+}
+
 .sectionBlock h3 {
   margin-bottom: 0.55rem;
 }
@@ -330,8 +433,15 @@
   color: #d7e2ea;
 }
 
+.labelRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .formGrid input,
-.formGrid select {
+.formGrid select,
+.sectionBlock textarea {
   width: 100%;
   border-radius: 12px;
   border: 1px solid #2a323d;
@@ -343,14 +453,43 @@
 }
 
 .formGrid input:focus,
-.formGrid select:focus {
+.formGrid select:focus,
+.sectionBlock textarea:focus {
   border-color: #34a5da;
   box-shadow: 0 0 0 3px rgba(52, 165, 218, 0.25);
+}
+
+.sectionBlock textarea {
+  resize: vertical;
+  min-height: 110px;
+  font-family: inherit;
 }
 
 .fieldHint {
   font-size: 0.78rem;
   color: #9aa6b2;
+}
+
+.infoBtn {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  border: 1px solid #2a323d;
+  background: #151a21;
+  color: #9ccfe6;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.infoText {
+  color: #9ccfe6;
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 
 .warningText {
@@ -359,20 +498,57 @@
   margin-top: 0.4rem;
 }
 
+.recommendationText {
+  color: #dce6ed;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
 .trainingDays {
   margin-top: 0.75rem;
+  display: grid;
+  gap: 0.4rem;
 }
 
 .daysLabel {
   font-size: 0.86rem;
   color: #d7e2ea;
   margin-bottom: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .daysGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
+}
+
+.abilityGrid {
+  margin-top: 0.65rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.abilityCard,
+.abilityCardActive {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid #2a323d;
+  background: #151a21;
+  color: #f2f5f7;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  padding: 0.8rem 0.9rem;
+  text-align: left;
+  white-space: normal;
+}
+
+.abilityCardActive {
+  border-color: #34a5da;
+  background: rgba(52, 165, 218, 0.14);
+  box-shadow: 0 0 0 2px rgba(52, 165, 218, 0.18);
 }
 
 .dayChip,
@@ -448,6 +624,15 @@
   align-items: center;
 }
 
+.authDivider {
+  width: 100%;
+  margin: 0.1rem 0;
+  color: #9aa6b2;
+  font-size: 0.82rem;
+  text-align: center;
+  text-transform: lowercase;
+}
+
 .workoutPrimaryAction {
   margin-top: 0.75rem;
   margin-bottom: 0.5rem;
@@ -474,6 +659,133 @@
   padding: 0.9rem;
   display: grid;
   gap: 0.45rem;
+}
+
+.chartCard {
+  margin-top: 0.9rem;
+  border: 1px solid #2a323d;
+  border-radius: 14px;
+  background: #1c222b;
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(24px, 1fr));
+  gap: 0.35rem;
+  align-items: end;
+}
+
+.barCol {
+  display: grid;
+  gap: 0.3rem;
+  justify-items: center;
+}
+
+.barCol span {
+  font-size: 0.72rem;
+  color: #9aa6b2;
+}
+
+.barTrackMini {
+  width: 100%;
+  min-height: 72px;
+  border-radius: 10px;
+  background: #151a21;
+  display: flex;
+  align-items: end;
+  overflow: hidden;
+}
+
+.barFillMini {
+  width: 100%;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(52, 165, 218, 0.9), rgba(46, 149, 197, 0.65));
+}
+
+.lineChart {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.baselinePath,
+.currentPath {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.baselinePath {
+  stroke: rgba(154, 166, 178, 0.9);
+  stroke-dasharray: 5 5;
+}
+
+.currentPath {
+  stroke: #34a5da;
+}
+
+.chartLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  color: #d7e2ea;
+  font-size: 0.84rem;
+}
+
+.chartLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.baselineDot,
+.currentDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.baselineDot {
+  background: #9aa6b2;
+}
+
+.currentDot {
+  background: #34a5da;
+}
+
+.todayCard {
+  margin-top: 0.9rem;
+  border: 1px solid rgba(52, 165, 218, 0.45);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(52, 165, 218, 0.1), rgba(28, 34, 43, 0.94));
+  padding: 0.95rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.goalCard,
+.tradeoffCard {
+  margin-top: 0.9rem;
+  border-radius: 14px;
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.goalCard {
+  border: 1px solid rgba(52, 165, 218, 0.55);
+  background: rgba(52, 165, 218, 0.1);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+}
+
+.tradeoffCard {
+  border: 1px solid #2a323d;
+  background: #1c222b;
 }
 
 .insightCard {
@@ -542,7 +854,8 @@
 }
 
 .dayCard,
-.dayCardToday {
+.dayCardToday,
+.dayCardGoal {
   border-radius: 14px;
   border: 1px solid #2a323d;
   background: #1c222b;
@@ -560,14 +873,22 @@
   box-shadow: 0 0 0 3px rgba(52, 165, 218, 0.25);
 }
 
+.dayCardGoal {
+  border-color: rgba(52, 165, 218, 0.6);
+  background: linear-gradient(180deg, rgba(52, 165, 218, 0.12), rgba(28, 34, 43, 0.95));
+  box-shadow: 0 0 0 2px rgba(52, 165, 218, 0.16);
+}
+
 .dayCard span,
-.dayCardToday span {
+.dayCardToday span,
+.dayCardGoal span {
   color: #9aa6b2;
   font-size: 0.8rem;
 }
 
 .dayCard strong,
-.dayCardToday strong {
+.dayCardToday strong,
+.dayCardGoal strong {
   font-size: 0.88rem;
   color: #f2f5f7;
 }
@@ -659,6 +980,26 @@
   font-size: 0.86rem;
 }
 
+.completedWorkoutCard {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.completedWorkoutStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  color: #d7e2ea;
+  font-size: 0.88rem;
+}
+
+.completedWorkoutStats span {
+  border-radius: 999px;
+  border: 1px solid #2a323d;
+  background: #1c222b;
+  padding: 0.35rem 0.6rem;
+}
+
 .finalStepTag {
   display: inline-flex;
   align-items: center;
@@ -740,6 +1081,10 @@
   }
 
   .valueGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .progressSummaryGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 

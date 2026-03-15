@@ -22,6 +22,9 @@ export interface AdaptationPayload {
   runner: {
     experience: RunnerProfile["runningExperience"];
     activityLevel: RunnerProfile["activityLevel"];
+    currentRunningAbility: RunnerProfile["currentRunningAbility"];
+    gender?: RunnerProfile["gender"];
+    userTrainingContext?: RunnerProfile["userTrainingContext"];
     age: number;
     weightKg: number;
     heightCm: number;
@@ -60,6 +63,9 @@ export function buildAdaptationPayload(params: {
     runner: {
       experience: runnerProfile.runningExperience,
       activityLevel: runnerProfile.activityLevel,
+      currentRunningAbility: runnerProfile.currentRunningAbility,
+      gender: runnerProfile.gender,
+      userTrainingContext: runnerProfile.userTrainingContext,
       age: runnerProfile.age,
       weightKg: runnerProfile.weightKg,
       heightCm: runnerProfile.heightCm,

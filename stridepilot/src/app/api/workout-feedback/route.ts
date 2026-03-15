@@ -11,6 +11,7 @@ interface FeedbackBody {
   energy?: number;
   painLevel?: number;
   notes?: string;
+  demoMode?: boolean;
 }
 
 function clampNumber(value: number, min: number, max: number): number {
@@ -31,24 +32,24 @@ function buildAdjustmentSummary(input: { effort: number; completionPct: number; 
   const summary: string[] = [];
 
   if (input.painLevel >= 6) {
-    summary.push("Næste pas er gjort lettere på grund af rapporteret smerte.");
+    summary.push("Jeg gør næste pas lettere, fordi du rapporterede smerte.");
   }
   if (input.completionPct < 70) {
-    summary.push("Næste pas gentages i lignende form på grund af lav gennemførelse.");
+    summary.push("Jeg lader næste pas ligne det forrige, fordi gennemførelsen var lavere end planlagt.");
   }
   if (input.effort >= 9) {
-    summary.push("Intervalintensiteten er sænket efter høj oplevet belastning.");
+    summary.push("Jeg sænker intensiteten i næste pas, fordi belastningen var høj.");
   }
   if (input.energy <= 2) {
-    summary.push("Restitution er prioriteret på grund af lav energi.");
+    summary.push("Jeg prioriterer restitution, fordi energien var lav.");
   }
   if (summary.length === 0) {
     if (input.factor > 1) {
-      summary.push("Næste pas er justeret let op ud fra din indsats.");
+      summary.push("Jeg justerer næste pas en anelse op, fordi belastningen ser bæredygtig ud.");
     } else if (input.factor < 1) {
-      summary.push("Næste pas er justeret ned for bedre restitution.");
+      summary.push("Jeg gør næste pas lidt roligere for at give dig bedre restitution.");
     } else {
-      summary.push("Din feedback er modtaget. Der var ikke behov for at ændre næste pas.");
+      summary.push("Tak for din feedback. Jeg vurderer, at næste pas kan fortsætte som planlagt.");
     }
   }
 
@@ -61,32 +62,35 @@ function describeFeedbackInterpretation(input: { effort: number; completionPct: 
   const completionText =
     input.completionPct < 70 ? "lav gennemførelse" : input.completionPct >= 95 ? "høj gennemførelse" : "delvis gennemførelse";
   const painText = input.painLevel >= 6 ? "forhøjet smerte" : input.painLevel <= 3 ? "lav smerte" : "moderat smerte";
-  return `Du vurderede passet som ${effortText}, med ${energyText}, ${completionText} og ${painText}.`;
+  return `Jeg vurderer, at passet føltes ${effortText}, med ${energyText}, ${completionText} og ${painText}.`;
 }
 
 function describeAdjustment(input: { factor: number; painLevel: number; completionPct: number; effort: number; energy: number }): string {
   if (input.painLevel >= 6) {
-    return "Næste pas bliver derfor roligere, og programmet prioriterer restitution.";
+    return "Jeg justerer derfor næste pas ned og prioriterer restitution.";
   }
   if (input.completionPct < 70) {
-    return "Næste pas bliver derfor gentaget i lignende form for at skabe stabil progression.";
+    return "Jeg lader derfor næste pas blive i samme spor, så progressionen forbliver stabil.";
   }
   if (input.effort >= 9 || input.energy <= 2) {
-    return "Næste pas bliver derfor lidt lettere, og progressionen i den kommende uge dæmpes.";
+    return "Jeg gør derfor næste pas lidt lettere og dæmper progressionen i den kommende uge.";
   }
   if (input.factor > 1) {
-    return "Næste pas bliver derfor let skærpet, fordi belastningen ser bæredygtig ud.";
+    return "Jeg skruer derfor en anelse op i næste pas, fordi belastningen ser bæredygtig ud.";
   }
   if (input.factor < 1) {
-    return "Næste pas bliver derfor kortere og mere kontrolleret.";
+    return "Jeg gør derfor næste pas kortere og mere kontrolleret.";
   }
-  return "Programmet fortsætter som planlagt, da der ikke var behov for ændringer.";
+  return "Jeg vurderer, at planen godt kan fortsætte som planlagt.";
 }
 
 export async function POST(req: Request) {
   try {
     const session = await getCurrentSession();
+    const demoModeEnabled =
+      process.env.NODE_ENV !== "production" || process.env.ENABLE_DEMO_MODE === "true" || process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true";
     const body = (await req.json()) as FeedbackBody;
+    const demoMode = Boolean(body.demoMode && demoModeEnabled);
 
     if (!body.profileId || !body.workoutSessionId) {
       return NextResponse.json({ error: "Missing profileId or workoutSessionId" }, { status: 400 });
@@ -97,6 +101,31 @@ export async function POST(req: Request) {
     const energy = clampNumber(Number(body.energy ?? 0), 1, 5);
     const painLevel = clampNumber(Number(body.painLevel ?? 1), 1, 10);
     const notes = body.notes?.trim() || null;
+    const factor = adaptationFactor({ effort, completionPct, energy, painLevel });
+    const summary = buildAdjustmentSummary({ effort, completionPct, energy, painLevel, factor });
+    const interpretation = describeFeedbackInterpretation({ effort, completionPct, energy, painLevel });
+    const adjustmentExplanation = describeAdjustment({ factor, painLevel, completionPct, effort, energy });
+
+    if (demoMode) {
+      return NextResponse.json({
+        saved: true,
+        demoMode: true,
+        adaptationFactor: factor,
+        confirmation: {
+          title: "Tak — din feedback er modtaget",
+          message: "Jeg har opdateret dit demo-program ud fra din feedback.",
+        },
+        interpretation,
+        adjustmentExplanation,
+        adjustmentSummary: summary,
+        note:
+          factor < 1
+            ? "Næste pas er justeret ned for bedre restitution."
+            : factor > 1
+              ? "Næste pas er justeret let op ud fra din indsats."
+              : "Næste pas fastholdes på samme niveau.",
+      });
+    }
 
     const profile = await prisma.runnerProfile.findUnique({ where: { id: body.profileId } });
     if (!profile) {
@@ -124,9 +153,6 @@ export async function POST(req: Request) {
     if (!workoutSession || workoutSession.plan.profileId !== body.profileId) {
       return NextResponse.json({ error: "Workout session not found for profile" }, { status: 404 });
     }
-
-    const factor = adaptationFactor({ effort, completionPct, energy, painLevel });
-
     await prisma.workoutFeedback.create({
       data: {
         profileId: body.profileId,
@@ -171,16 +197,12 @@ export async function POST(req: Request) {
       }
     }
 
-    const summary = buildAdjustmentSummary({ effort, completionPct, energy, painLevel, factor });
-    const interpretation = describeFeedbackInterpretation({ effort, completionPct, energy, painLevel });
-    const adjustmentExplanation = describeAdjustment({ factor, painLevel, completionPct, effort, energy });
-
     return NextResponse.json({
       saved: true,
       adaptationFactor: factor,
       confirmation: {
         title: "Tak — din feedback er modtaget",
-        message: "StridePilot har opdateret dit program ud fra din feedback.",
+        message: "Jeg har opdateret dit program ud fra din feedback.",
       },
       interpretation,
       adjustmentExplanation,

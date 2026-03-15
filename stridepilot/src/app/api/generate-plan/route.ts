@@ -1,21 +1,11 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { generateFallbackPlan, normalizeTrainingPlan } from "@/lib/plan";
+import { enforceAvailableTrainingDays, generateFallbackPlan, normalizeTrainingPlan } from "@/lib/plan";
 import { prisma } from "@/lib/db";
 import { Goal, RunnerProfile, TrainingPlan } from "@/lib/types";
 import { getCurrentSession } from "@/lib/auth/session";
 import { applyAdaptiveGuardrails, buildAdaptationPayload, FeedbackSignal } from "@/lib/adaptation";
 import { applyPlanSafety, validatePlanFeasibility } from "@/lib/plan-safety";
-
-const WEEKDAY_ORDER: TrainingPlan["sessions"][number]["dayOfWeek"][] = [
-  "Mandag",
-  "Tirsdag",
-  "Onsdag",
-  "Torsdag",
-  "Fredag",
-  "Lordag",
-  "Sondag",
-];
 
 const COACH_SYSTEM_PROMPT = [
   "Du er StridePilots løbecoach og programarkitekt.",
@@ -27,6 +17,7 @@ const COACH_SYSTEM_PROMPT = [
   "Brug kun de træningsdage, brugeren har angivet som mulige.",
   "Programmet skal kulminere målspecifikt: 5K med 5K-relevante pas, 10K med 10K-relevante pas, osv.",
   "Du skal altid levere et komplet baseline-program fra uge 1 til sidste uge med synlig progression uge for uge.",
+  "Brug en enkel og konsekvent load-model, så uge-til-uge-belastning kan sammenlignes og tilpasses.",
   "Ved signaler om smerte/lav energi/lav gennemførelse må du ikke skærpe programmet aggressivt.",
   "Returner kun gyldigt JSON uden markdown.",
   "JSON skal indeholde: feasibility_status (feasible|feasible_with_adjustments|not_feasible), coach_summary, internal_reasoning_summary, summary, weeks, sessionsPerWeek, sessions[].",
@@ -41,35 +32,6 @@ function extractJsonObject(text: string): unknown {
     throw new Error("Model response did not contain JSON");
   }
   return JSON.parse(text.slice(start, end + 1));
-}
-
-function applyPreferredTrainingDays(plan: TrainingPlan, preferredDays?: TrainingPlan["sessions"][number]["dayOfWeek"][]): TrainingPlan {
-  if (!preferredDays || preferredDays.length === 0) return plan;
-  const normalizedPreferred = WEEKDAY_ORDER.filter((day) => preferredDays.includes(day));
-  if (normalizedPreferred.length === 0) return plan;
-
-  const sessionsByWeek = new Map<number, TrainingPlan["sessions"]>();
-  for (const session of plan.sessions) {
-    const bucket = sessionsByWeek.get(session.week) ?? [];
-    bucket.push(session);
-    sessionsByWeek.set(session.week, bucket);
-  }
-
-  const remappedSessions: TrainingPlan["sessions"] = [];
-  for (const [week, sessions] of [...sessionsByWeek.entries()].sort((a, b) => a[0] - b[0])) {
-    sessions.forEach((session, index) => {
-      remappedSessions.push({
-        ...session,
-        week,
-        dayOfWeek: normalizedPreferred[index % normalizedPreferred.length],
-      });
-    });
-  }
-
-  return {
-    ...plan,
-    sessions: remappedSessions,
-  };
 }
 
 function parseReminderTime(reminderTime?: string): { reminderHour: number; reminderMin: number } {
@@ -273,13 +235,17 @@ async function persistPlan(params: {
 export async function POST(req: Request) {
   try {
     const session = await getCurrentSession();
+    const demoModeEnabled =
+      process.env.NODE_ENV !== "production" || process.env.ENABLE_DEMO_MODE === "true" || process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true";
     const body = (await req.json()) as {
       runnerProfile: RunnerProfile;
       goal: Goal;
       profileId?: string;
       runsPerWeek?: number;
+      demoMode?: boolean;
     };
     const { runnerProfile, goal, profileId } = body;
+    const demoMode = Boolean(body.demoMode && demoModeEnabled);
     const requestedRunsPerWeek =
       typeof body.runsPerWeek === "number"
         ? body.runsPerWeek
@@ -308,9 +274,10 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           feasible: false,
+          feasibleStatus: feasibility.status,
           warnings: feasibility.warnings,
           minWeeksRequired: feasibility.minWeeksRequired,
-          message: feasibilityMessage,
+          message: feasibility.explanation ? `${feasibilityMessage} ${feasibility.explanation}` : feasibilityMessage,
         },
         { status: 422 },
       );
@@ -366,9 +333,32 @@ export async function POST(req: Request) {
 
     plan = applyAdaptiveGuardrails(plan, recentFeedback);
     const safety = applyPlanSafety({ plan, goal, recentFeedback });
-    plan = applyPreferredTrainingDays(safety.plan, goal.availableTrainingDays);
+    const dayAlignment = enforceAvailableTrainingDays(safety.plan, goal.availableTrainingDays);
+    plan = dayAlignment.plan;
+    const warnings = [...feasibility.warnings, ...dayAlignment.warnings];
 
     try {
+      if (demoMode) {
+        return NextResponse.json({
+          source,
+          plan,
+          validatedPlan: plan,
+          baselinePlan: plan,
+          currentPlanView: plan,
+          feasible: true,
+          feasibleStatus: feasibility.status,
+          adaptation: {
+            signalCount: recentFeedback.length,
+            message: "Programmet tilpasses løbende efter belastning, energi og gennemførelse.",
+          },
+          warnings,
+          tradeoffExplanation: feasibility.explanation,
+          safetyAdjustments: safety.adjustments,
+          adjustments: safety.adjustments,
+          persistence: { saved: false, demoMode: true },
+        });
+      }
+
       const persisted = await persistPlan({
         profileId,
         userId: session?.userId,
@@ -384,11 +374,13 @@ export async function POST(req: Request) {
         baselinePlan: persisted.plan,
         currentPlanView: persisted.plan,
         feasible: true,
+        feasibleStatus: feasibility.status,
         adaptation: {
           signalCount: recentFeedback.length,
           message: "Programmet tilpasses løbende efter belastning, energi og gennemførelse.",
         },
-        warnings: feasibility.warnings,
+        warnings,
+        tradeoffExplanation: feasibility.explanation,
         safetyAdjustments: safety.adjustments,
         adjustments: safety.adjustments,
         persistence: { saved: true, ...persisted },
@@ -401,7 +393,9 @@ export async function POST(req: Request) {
         baselinePlan: plan,
         currentPlanView: plan,
         feasible: true,
-        warnings: feasibility.warnings,
+        feasibleStatus: feasibility.status,
+        warnings,
+        tradeoffExplanation: feasibility.explanation,
         safetyAdjustments: safety.adjustments,
         adjustments: safety.adjustments,
         persistence: { saved: false },

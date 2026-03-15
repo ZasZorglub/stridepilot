@@ -1,11 +1,14 @@
 import { Goal, RunnerProfile, TrainingPlan, WorkoutSession, WorkoutStep } from "./types";
 import { FeedbackSignal } from "./adaptation";
 import { normalizeStepDuration } from "./duration";
+import { buildWeeklyLoad } from "./plan";
 
 export interface FeasibilityResult {
   feasible: boolean;
+  status: "feasible" | "feasible_with_adjustments" | "not_feasible";
   warnings: string[];
   minWeeksRequired: number;
+  explanation?: string;
 }
 
 export interface SafetyAdjustment {
@@ -36,6 +39,14 @@ const TARGET_TIME_FLOOR_SEC: Record<Goal["distance"], { beginner: number; experi
 
 function isBeginner(experience: RunnerProfile["runningExperience"]): boolean {
   return experience === "nybegynder";
+}
+
+function abilityPressure(ability: RunnerProfile["currentRunningAbility"]): number {
+  if (ability === "helt_ny") return 1.15;
+  if (ability === "fem_min") return 1.1;
+  if (ability === "ti_femten_min") return 1.05;
+  if (ability === "mere_end_tredive_min") return 0.95;
+  return 1;
 }
 
 function parseTargetTimeToSec(value?: string): number | null {
@@ -81,11 +92,15 @@ export function validatePlanFeasibility(params: {
   const minWeeksRequired = isBeginner(runnerProfile.runningExperience)
     ? MIN_WEEKS[goal.distance].beginner
     : MIN_WEEKS[goal.distance].experienced;
+  const abilityModifier = abilityPressure(runnerProfile.currentRunningAbility);
 
   const warnings: string[] = [];
+  let status: FeasibilityResult["status"] = "feasible";
+  let explanation: string | undefined;
   const minRuns = MIN_RUNS_PER_WEEK[goal.distance];
   if (runsPerWeek < minRuns) {
     warnings.push(`Minimum for ${goal.distance} er ${minRuns} pas om ugen.`);
+    status = "feasible_with_adjustments";
   }
 
   const selectedDays = goal.availableTrainingDays?.length ?? 0;
@@ -93,13 +108,18 @@ export function validatePlanFeasibility(params: {
     warnings.push(
       "Du har valgt færre træningsdage end programmet normalt kræver. Programmet kan blive mindre effektivt eller kræve en længere tidshorisont.",
     );
+    explanation =
+      "StridePilot holder sig til dine valgte træningsdage. For at gøre planen realistisk bliver progressionen derfor mere konservativ, og et længere forløb eller flere træningsdage kan være et bedre alternativ.";
+    status = "feasible_with_adjustments";
   }
 
-  if (goal.weeks < minWeeksRequired) {
+  if (goal.weeks < Math.ceil(minWeeksRequired * abilityModifier)) {
     return {
       feasible: false,
+      status: "not_feasible",
       warnings,
-      minWeeksRequired,
+      minWeeksRequired: Math.ceil(minWeeksRequired * abilityModifier),
+      explanation,
     };
   }
 
@@ -108,49 +128,44 @@ export function validatePlanFeasibility(params: {
     const floor = isBeginner(runnerProfile.runningExperience)
       ? TARGET_TIME_FLOOR_SEC[goal.distance].beginner
       : TARGET_TIME_FLOOR_SEC[goal.distance].experienced;
-    const pressureModifier = runsPerWeek < minRuns || goal.weeks <= minWeeksRequired + 1 ? 1.08 : 1;
+    const pressureModifier = runsPerWeek < minRuns || goal.weeks <= minWeeksRequired + 1 ? 1.08 * abilityModifier : abilityModifier;
     if (targetTimeSec < floor / pressureModifier) {
       return {
         feasible: false,
+        status: "not_feasible",
         warnings,
         minWeeksRequired,
+        explanation,
       };
     }
   }
 
   return {
     feasible: true,
+    status,
     warnings,
     minWeeksRequired,
+    explanation,
   };
 }
 
 function applyWeeklyProgressionCap(plan: TrainingPlan, adjustments: SafetyAdjustment[]): TrainingPlan {
-  const byWeek = new Map<number, WorkoutSession[]>();
-  for (const session of plan.sessions) {
-    const bucket = byWeek.get(session.week) ?? [];
-    bucket.push(session);
-    byWeek.set(session.week, bucket);
-  }
-
-  const weeks = [...byWeek.keys()].sort((a, b) => a - b);
+  const weeks = buildWeeklyLoad(plan);
   let sessions = [...plan.sessions];
 
   for (let i = 1; i < weeks.length; i += 1) {
     const prevWeek = weeks[i - 1];
     const currWeek = weeks[i];
-    const prevSessions = sessions.filter((s) => s.week === prevWeek);
-    const currSessions = sessions.filter((s) => s.week === currWeek);
-    const prevLoad = prevSessions.reduce((sum, s) => sum + sessionRunSec(s), 0);
-    const currLoad = currSessions.reduce((sum, s) => sum + sessionRunSec(s), 0);
+    const prevLoad = prevWeek.load;
+    const currLoad = currWeek.load;
 
-    const maxAllowed = Math.round(prevLoad * 1.05);
+    const maxAllowed = prevLoad * 1.05;
     if (prevLoad > 0 && currLoad > maxAllowed) {
       const factor = maxAllowed / currLoad;
-      sessions = sessions.map((session) => (session.week === currWeek ? scaleSessionRunSteps(session, factor) : session));
+      sessions = sessions.map((session) => (session.week === currWeek.week ? scaleSessionRunSteps(session, factor) : session));
       adjustments.push({
         type: "progression_cap",
-        detail: `Uge ${currWeek} blev justeret for at holde stigning inden for 5%.`,
+        detail: `Jeg dæmpede uge ${currWeek.week} en smule for at holde progressionen stabil.`,
       });
     }
   }
@@ -171,7 +186,7 @@ function applySessionSpikeProtection(plan: TrainingPlan, adjustments: SafetyAdju
       out.push(scaleSessionRunSteps(session, factor));
       adjustments.push({
         type: "session_spike_protection",
-        detail: `Session i uge ${session.week} blev dæmpet for at undgå stort spring.`,
+        detail: `Jeg justerede et pas i uge ${session.week}, så belastningen ikke sprang for hurtigt.`,
       });
     } else {
       out.push(session);
@@ -191,7 +206,7 @@ function applyRecoveryWeek(plan: TrainingPlan, adjustments: SafetyAdjustment[]):
     sessions = sessions.map((session) => (session.week === week ? scaleSessionRunSteps(session, 0.8) : session));
     adjustments.push({
       type: "recovery_week",
-      detail: `Uge ${week} blev sat til restitution (ca. 80% load).`,
+      detail: `Uge ${week} er gjort lettere, så du får en roligere restitutionsuge.`,
     });
   }
 
@@ -207,12 +222,12 @@ function applyFeedbackSafety(plan: TrainingPlan, recentFeedback: FeedbackSignal[
 
   if (latest.painLevel >= 6) {
     sessions[0] = scaleSessionRunSteps(first, 0.85);
-    adjustments.push({ type: "pain_guardrail", detail: "Næste pas blev skaleret ned pga. smerte >= 6." });
+    adjustments.push({ type: "pain_guardrail", detail: "Jeg gør næste pas roligere, fordi du rapporterede smerte." });
   }
 
   if (latest.effort >= 9) {
     sessions[0] = scaleSessionRunSteps(sessions[0], 0.9);
-    adjustments.push({ type: "rpe_guardrail", detail: "Næste pas blev dæmpet pga. RPE >= 9." });
+    adjustments.push({ type: "rpe_guardrail", detail: "Jeg dæmper intensiteten i næste pas, fordi det føltes hårdere end planlagt." });
   }
 
   if (latest.completionPct < 70 && sessions[1]) {
@@ -222,12 +237,12 @@ function applyFeedbackSafety(plan: TrainingPlan, recentFeedback: FeedbackSignal[
       loadScore: sessions[0].loadScore,
       notes: "Gentagelsespas efter lav gennemførelse.",
     };
-    adjustments.push({ type: "completion_repeat", detail: "Næste pas gentages pga. gennemførelse under 70%." });
+    adjustments.push({ type: "completion_repeat", detail: "Jeg lader næste pas ligne det forrige, så du får en mere stabil opbygning." });
   }
 
   if (latest.energy <= 2) {
     sessions[0] = scaleSessionRunSteps(sessions[0], 0.9);
-    adjustments.push({ type: "energy_guardrail", detail: "Næste pas blev justeret ned pga. lav energi." });
+    adjustments.push({ type: "energy_guardrail", detail: "Jeg prioriterer mere ro i næste pas, fordi energien var lav." });
   }
 
   return { ...plan, sessions };
@@ -256,7 +271,7 @@ function goalSpecificFinalSession(plan: TrainingPlan, goal: Goal, adjustments: S
 
   adjustments.push({
     type: "goal_specific_final_phase",
-    detail: "Afsluttende pas blev gjort målspecifikt.",
+    detail: "Jeg gør slutugen målspecifik, så du slutter med en tydelig måldag.",
   });
 
   return { ...plan, sessions };
