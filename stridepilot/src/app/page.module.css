@@ -193,6 +193,16 @@
     0 10px 20px rgba(18, 37, 48, 0.08);
 }
 
+.pageLight .coachClarifyBox textarea {
+  background: #f7fbfe;
+  color: #11202c;
+  border-color: #d6e0e8;
+}
+
+.pageLight .coachReplyResolution {
+  border-top-color: rgba(17, 32, 44, 0.08);
+}
+
 .pageLight .chartActiveWeek {
   color: #1f7faa;
   border-color: rgba(52, 165, 218, 0.34);
@@ -1620,6 +1630,51 @@
   flex-wrap: wrap;
   gap: 0.55rem;
   margin-top: 0.35rem;
+}
+
+.coachReplyBlock {
+  margin-top: 0.4rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.coachReplyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.coachClarifyBox {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.coachClarifyBox textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #2a323d;
+  background: #151a21;
+  color: #f2f5f7;
+  padding: 0.7rem 0.78rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  resize: vertical;
+  min-height: 84px;
+  font-family: inherit;
+}
+
+.coachClarifyBox textarea:focus {
+  border-color: #34a5da;
+  box-shadow: 0 0 0 3px rgba(52, 165, 218, 0.25);
+  outline: none;
+}
+
+.coachReplyResolution {
+  margin-top: 0.35rem;
+  display: grid;
+  gap: 0.3rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(52, 165, 218, 0.18);
 }
 
 .buttonSpinner {

@@ -22,6 +22,18 @@ type OnboardingSelectionState = {
 };
 
 type QuickFeedbackOption = NonNullable<WorkoutFeedbackInput["quickFeedback"]>;
+type CoachReply = {
+  replyType: "agree" | "disagree" | "clarify";
+  text?: string;
+};
+
+type CoachInterpretationState = {
+  title: string;
+  interpretation: string;
+  adjustment: string;
+  reply?: CoachReply;
+  resolution?: string;
+};
 
 interface AuthUser {
   id: string;
@@ -530,6 +542,19 @@ function detectAdaptivePlanChange(previousPlan: TrainingPlan, updatedPlan: Train
   };
 }
 
+function revertUpcomingSessionsAfterWorkout(currentPlan: TrainingPlan, previousPlan: TrainingPlan, activeSessionId: string): TrainingPlan {
+  const activeIndex = currentPlan.sessions.findIndex((session) => session.id === activeSessionId);
+  if (activeIndex < 0) return currentPlan;
+
+  return {
+    ...currentPlan,
+    sessions: currentPlan.sessions.map((session, index) => {
+      if (index <= activeIndex) return session;
+      return previousPlan.sessions[index] ?? session;
+    }),
+  };
+}
+
 function programWhySummary(params: {
   runnerProfile: RunnerProfile;
   goal: Goal;
@@ -712,18 +737,13 @@ export default function Home() {
   const [showAllSafety, setShowAllSafety] = useState(false);
   const [planTradeoff, setPlanTradeoff] = useState<string | null>(null);
   const [planFeasibilityStatus, setPlanFeasibilityStatus] = useState<"feasible" | "feasible_with_adjustments" | "not_feasible">("feasible");
-  const [feedbackConfirmation, setFeedbackConfirmation] = useState<{
-    title: string;
-    message: string;
-    interpretation: string;
-    adjustment: string;
-    bullets: string[];
-  } | null>(null);
+  const [feedbackConfirmation, setFeedbackConfirmation] = useState<CoachInterpretationState | null>(null);
   const [feedbackSubmitState, setFeedbackSubmitState] = useState<"idle" | "submitting" | "success">("idle");
   const [showProgramIntro, setShowProgramIntro] = useState(false);
   const [isProgramTransitioning, setIsProgramTransitioning] = useState(false);
   const [showDetailedFeedback, setShowDetailedFeedback] = useState(false);
   const [hasDetailedFeedbackInput, setHasDetailedFeedbackInput] = useState(false);
+  const [clarificationDraft, setClarificationDraft] = useState("");
 
   const [feedback, setFeedback] = useState<WorkoutFeedbackInput>({
     quickFeedback: undefined,
@@ -745,6 +765,7 @@ export default function Home() {
   const feedbackSuccessTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const programWeekRef = useRef<HTMLDivElement | null>(null);
   const todayPrimaryCtaRef = useRef<HTMLButtonElement | null>(null);
+  const preAdaptationPlanRef = useRef<TrainingPlan | null>(null);
   const [restDayPrompt, setRestDayPrompt] = useState<{ dateLabel: string; showIdeas: boolean } | null>(null);
   const [showStickyProgramCta, setShowStickyProgramCta] = useState(true);
 
@@ -764,6 +785,8 @@ export default function Home() {
     setSafetyAdjustments([]);
     setShowProgramIntro(false);
     setFeedbackConfirmation(null);
+    preAdaptationPlanRef.current = null;
+    setClarificationDraft("");
     setWorkoutCompleted(false);
     setCompletedSteps([]);
     setStepNotice("");
@@ -1447,6 +1470,7 @@ export default function Home() {
     const currentCapability = capabilityState ?? createInitialCapabilityState(plan);
     const coachFeedback = buildAdaptiveWorkoutFeedback(activeSession.id, feedback, hasDetailedFeedbackInput);
     const nextCapability = updateCapability(currentCapability, coachFeedback);
+    preAdaptationPlanRef.current = plan;
     const activeIndex = plan.sessions.findIndex((session) => session.id === activeSession.id);
     const upcomingPlan: TrainingPlan =
       activeIndex >= 0
@@ -1465,10 +1489,8 @@ export default function Home() {
     setPlan(updatedPlan);
     setFeedbackConfirmation({
       title: runnerProfile.firstName?.trim() ? `Tak for din feedback, ${runnerProfile.firstName.trim()}.` : "Tak for din feedback.",
-      message: "",
       interpretation: adaptiveCopy.interpretation,
       adjustment: adaptiveCopy.adjustment,
-      bullets: [],
     });
     if (adaptiveCopy.log) {
       setAdjustmentLog((prev) => [...prev, adaptiveCopy.log!]);
@@ -1476,6 +1498,7 @@ export default function Home() {
     setFeedback({ quickFeedback: undefined, effort: 6, completionPct: 100, energy: 3, painLevel: 1, notes: "" });
     setShowDetailedFeedback(false);
     setHasDetailedFeedbackInput(false);
+    setClarificationDraft("");
     setFeedbackSubmitState("success");
     if (feedbackSuccessTimeout.current) {
       clearTimeout(feedbackSuccessTimeout.current);
@@ -1483,6 +1506,50 @@ export default function Home() {
     feedbackSuccessTimeout.current = setTimeout(() => {
       setFeedbackSubmitState("idle");
     }, 2400);
+  }
+
+  function handleCoachReply(reply: CoachReply) {
+    if (!feedbackConfirmation) return;
+
+    if (reply.replyType === "agree") {
+      setFeedbackConfirmation((current) =>
+        current
+          ? {
+              ...current,
+              reply,
+              resolution: "Godt — så holder jeg den justering.",
+            }
+          : current,
+      );
+      return;
+    }
+
+    if (reply.replyType === "disagree") {
+      if (plan && activeSession && preAdaptationPlanRef.current) {
+        setPlan(revertUpcomingSessionsAfterWorkout(plan, preAdaptationPlanRef.current, activeSession.id));
+      }
+      setFeedbackConfirmation((current) =>
+        current
+          ? {
+              ...current,
+              reply,
+              resolution: "Forstået — så holder jeg planen uændret for nu.",
+            }
+          : current,
+      );
+      return;
+    }
+
+    setFeedbackConfirmation((current) =>
+      current
+        ? {
+            ...current,
+            reply,
+            resolution: "Tak — det tager jeg med i den næste vurdering.",
+          }
+        : current,
+    );
+    setClarificationDraft("");
   }
 
   async function downloadIcs() {
@@ -2734,6 +2801,50 @@ export default function Home() {
                 <div className={styles.confirmationCard}>
                   <p className={styles.subtleInline}>{feedbackConfirmation.interpretation}</p>
                   <p className={styles.subtleInline}>{feedbackConfirmation.adjustment}</p>
+                  {!feedbackConfirmation.reply && (
+                    <div className={styles.coachReplyBlock}>
+                      <div className={styles.coachReplyActions}>
+                        <button
+                          type="button"
+                          className={styles.secondaryBtn}
+                          onClick={() => handleCoachReply({ replyType: "agree" })}
+                        >
+                          Enig
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.secondaryBtn}
+                          onClick={() => handleCoachReply({ replyType: "disagree" })}
+                        >
+                          Ikke enig
+                        </button>
+                      </div>
+                      <div className={styles.coachClarifyBox}>
+                        <textarea
+                          value={clarificationDraft}
+                          onChange={(e) => setClarificationDraft(e.target.value)}
+                          placeholder="Kort forklaring, hvis du vil nuancere vurderingen"
+                          rows={3}
+                        />
+                        <button
+                          type="button"
+                          className={styles.textBtn}
+                          onClick={() => handleCoachReply({ replyType: "clarify", text: clarificationDraft.trim() })}
+                          disabled={!clarificationDraft.trim()}
+                        >
+                          Send afklaring
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {feedbackConfirmation.reply && feedbackConfirmation.resolution && (
+                    <div className={styles.coachReplyResolution}>
+                      <p className={styles.subtleInline}>{feedbackConfirmation.resolution}</p>
+                      {feedbackConfirmation.reply.replyType === "clarify" && feedbackConfirmation.reply.text && (
+                        <p className={styles.subtleInline}>Din note: {feedbackConfirmation.reply.text}</p>
+                      )}
+                    </div>
+                  )}
                   <div className={styles.confirmationActions}>
                     <button
                       type="button"

@@ -11,3 +11,4 @@ export * from "./dialogue/applyUserReply";
 export { type CapabilityState, capabilityStorageKey, createInitialCapabilityState } from "./capability";
 export { updateCapability } from "./updateCapability";
 export { adaptUpcomingSessions } from "./adaptUpcomingSessions";
+export { type RunnerState, createInitialRunnerState, updateRunnerState } from "./runnerState";
