@@ -12,3 +12,4 @@ export { type CapabilityState, capabilityStorageKey, createInitialCapabilityStat
 export { updateCapability } from "./updateCapability";
 export { adaptUpcomingSessions } from "./adaptUpcomingSessions";
 export { type RunnerState, createInitialRunnerState, updateRunnerState } from "./runnerState";
+export { type CoachDecision, type CoachDecisionType, evaluateRunnerState } from "./coachDecision";
