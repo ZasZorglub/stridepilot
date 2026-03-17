@@ -5,8 +5,9 @@ export type CapabilityState = {
   longestRunMinutes: number;
   weeklyLoad: number;
   fatigueIndex: number;
-  recoveryNeeded?: boolean;
-  lastWorkoutDifficulty?: "easy" | "moderate" | "hard" | "very_hard";
+  recoveryDebt: number;
+  intervalTolerance: number;
+  consistencyScore: number;
 };
 
 export type WorkoutFeedback = {
@@ -47,7 +48,10 @@ export function createInitialCapabilityState(plan?: TrainingPlan | null): Capabi
       continuousRunMinutes: 8,
       longestRunMinutes: 15,
       weeklyLoad: 40,
-      fatigueIndex: 0.2,
+      fatigueIndex: 2,
+      recoveryDebt: 1,
+      intervalTolerance: 2,
+      consistencyScore: 3,
     };
   }
 
@@ -59,6 +63,9 @@ export function createInitialCapabilityState(plan?: TrainingPlan | null): Capabi
     continuousRunMinutes: Math.max(5, Math.round(Math.max(...seedSessions.map(sessionContinuousMinutes), 5))),
     longestRunMinutes: Math.max(10, Math.round(Math.max(...seedSessions.map(sessionRunMinutes), 10))),
     weeklyLoad,
-    fatigueIndex: 0.25,
+    fatigueIndex: 2,
+    recoveryDebt: 1,
+    intervalTolerance: Math.max(1, Math.min(10, Math.round(seedSessions.length + 1))),
+    consistencyScore: Math.max(1, Math.min(10, seedSessions.length * 2)),
   };
 }
