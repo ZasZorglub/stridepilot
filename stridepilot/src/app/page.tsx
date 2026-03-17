@@ -6,9 +6,9 @@ import { CurrentRunningAbility, FeedbackInsights, Goal, RunnerProfile, RunnerPro
 import { APP_NAME } from "@/lib/app-config";
 import { cancelCue, initSpeech, isSpeechSupported, speakCue } from "@/lib/speech-coach";
 import { EMPTY_INSIGHTS } from "@/lib/insights";
-import { normalizeStepDuration } from "@/lib/duration";
 import { buildWeeklyLoad } from "@/lib/plan";
-import { CapabilityState, capabilityStorageKey } from "@/lib/coach";
+import { adaptUpcomingSessions, CapabilityState, capabilityStorageKey, createInitialCapabilityState, updateCapability } from "@/lib/coach";
+import { WorkoutFeedback as CoachWorkoutFeedback } from "@/lib/coach/capability";
 
 type Stage = "welcome" | "auth" | "intro" | "profile" | "intermezzo" | "program" | "workout";
 type AuthMode = "signup" | "login";
@@ -132,10 +132,6 @@ function formatClock(totalSec: number): string {
 
 function clampInt(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.round(value)));
-}
-
-function clampDuration(sec: number): number {
-  return normalizeStepDuration(sec);
 }
 
 function startOfIsoWeek(date: Date): Date {
@@ -424,6 +420,116 @@ function quickFeedbackPreset(value: QuickFeedbackOption): Pick<WorkoutFeedbackIn
   return { effort: 9, completionPct: 75, energy: 2, painLevel: 4 };
 }
 
+function mapQuickFeedbackToCoachDifficulty(value: QuickFeedbackOption): CoachWorkoutFeedback["difficulty"] {
+  if (value === "very_easy") return "easy";
+  if (value === "good") return "moderate";
+  if (value === "hard") return "hard";
+  return "very_hard";
+}
+
+function mapNumericEnergyToCoachEnergy(value: number): CoachWorkoutFeedback["energy"] {
+  if (value >= 4) return "high";
+  if (value <= 2) return "low";
+  return "normal";
+}
+
+function mapNumericPainToCoachPain(value: number): CoachWorkoutFeedback["pain"] {
+  if (value >= 7) return "high";
+  if (value >= 4) return "moderate";
+  if (value >= 2) return "mild";
+  return "none";
+}
+
+function sessionRunMinutes(session: WorkoutSession): number {
+  return session.steps.filter((step) => step.type === "run").reduce((sum, step) => sum + step.durationSec / 60, 0);
+}
+
+function classifyAdaptiveSession(session: WorkoutSession): "interval" | "tempo" | "easy" | "long" | "other" {
+  const text = `${session.title} ${session.notes ?? ""}`.toLowerCase();
+  if (/interval/.test(text)) return "interval";
+  if (/tempo/.test(text)) return "tempo";
+  if (/udholdenhed|lang|long/.test(text)) return "long";
+  if (/roligt|easy|recovery/.test(text) || session.loadScore <= 5) return "easy";
+  return "other";
+}
+
+function buildAdaptiveWorkoutFeedback(
+  sessionId: string,
+  feedback: WorkoutFeedbackInput,
+  includeDetailedSignals: boolean,
+): CoachWorkoutFeedback {
+  return {
+    sessionId,
+    completed: feedback.completionPct >= 80,
+    difficulty: mapQuickFeedbackToCoachDifficulty(feedback.quickFeedback ?? "good"),
+    energy: includeDetailedSignals ? mapNumericEnergyToCoachEnergy(feedback.energy) : "normal",
+    pain: includeDetailedSignals ? mapNumericPainToCoachPain(feedback.painLevel) : "none",
+  };
+}
+
+function mergeAdaptedUpcomingSessions(plan: TrainingPlan, activeSessionId: string, adaptedUpcoming: TrainingPlan): TrainingPlan {
+  const activeIndex = plan.sessions.findIndex((session) => session.id === activeSessionId);
+  if (activeIndex < 0) return plan;
+
+  return {
+    ...plan,
+    sessions: plan.sessions.map((session, index) => {
+      if (index <= activeIndex) return session;
+      return adaptedUpcoming.sessions[index - activeIndex - 1] ?? session;
+    }),
+  };
+}
+
+function detectAdaptivePlanChange(previousPlan: TrainingPlan, updatedPlan: TrainingPlan): { interpretation: string; adjustment: string; log?: string } {
+  const previousById = new Map(previousPlan.sessions.map((session) => [session.id, session]));
+
+  for (const updatedSession of updatedPlan.sessions) {
+    const previousSession = previousById.get(updatedSession.id);
+    if (!previousSession) continue;
+
+    const previousType = classifyAdaptiveSession(previousSession);
+    const updatedType = classifyAdaptiveSession(updatedSession);
+    const minuteDelta = Math.round(sessionRunMinutes(updatedSession) - sessionRunMinutes(previousSession));
+
+    if ((previousType === "interval" || previousType === "tempo") && updatedType === "easy") {
+      return {
+        interpretation: "Passet var mere krævende end planlagt, så næste kvalitetspas bliver gjort roligere.",
+        adjustment: "Jeg skifter det næste hårdere pas til et roligt pas og korter det lidt ned.",
+        log: "Jeg gør det næste kvalitetspas roligere, så belastningen ikke bygger sig for hurtigt op.",
+      };
+    }
+
+    if (minuteDelta <= -5 && updatedType === "long") {
+      return {
+        interpretation: "Belastningen ser lidt høj ud lige nu, så den næste længere tur bliver kortet lidt ned.",
+        adjustment: "Jeg tager lidt tid af det længste pas, så progressionen forbliver realistisk.",
+        log: "Jeg korter den næste længere tur lidt ned, så den samlede belastning bliver mere overkommelig.",
+      };
+    }
+
+    if (minuteDelta < 0) {
+      return {
+        interpretation: "Passet så ud til at koste lidt mere i dag, så næste pas holdes lidt roligere.",
+        adjustment: "Jeg tager en smule tid af den næste løbedel, så du kan holde rytmen med mere overskud.",
+        log: "Jeg holder det næste pas lidt roligere, så kroppen får bedre plads til at følge med.",
+      };
+    }
+
+    if (minuteDelta >= 3 && updatedType === "easy") {
+      return {
+        interpretation: "Du havde fint overskud i dag, så det næste rolige pas får et par ekstra minutter.",
+        adjustment: "Jeg bygger en smule videre på det næste rolige pas, men holder stadig progressionen kontrolleret.",
+        log: "Jeg lægger et par ekstra minutter på det næste rolige pas, fordi du ser ud til at have overskud.",
+      };
+    }
+  }
+
+  return {
+    interpretation: "Passet ramte et godt niveau, så planen kan fortsætte i et roligt og stabilt tempo.",
+    adjustment: "Jeg holder progressionen stabil, så du kan bygge videre uden at forcere noget.",
+  };
+}
+
 function programWhySummary(params: {
   runnerProfile: RunnerProfile;
   goal: Goal;
@@ -617,6 +723,7 @@ export default function Home() {
   const [showProgramIntro, setShowProgramIntro] = useState(false);
   const [isProgramTransitioning, setIsProgramTransitioning] = useState(false);
   const [showDetailedFeedback, setShowDetailedFeedback] = useState(false);
+  const [hasDetailedFeedbackInput, setHasDetailedFeedbackInput] = useState(false);
 
   const [feedback, setFeedback] = useState<WorkoutFeedbackInput>({
     quickFeedback: undefined,
@@ -1327,62 +1434,9 @@ export default function Home() {
     }
   }
 
-  function applyLocalAdaptation(factor: number, insights?: FeedbackInsights | null) {
-    if (!plan || !activeSession) return;
-
-    const currentSessionIdx = plan.sessions.findIndex((s) => s.id === activeSession.id);
-    if (currentSessionIdx === -1) return;
-    const pauseWeeks = insights?.progressionPauseWeeks ?? 0;
-    const targetWeekLimit = pauseWeeks > 0 ? activeSession.week + pauseWeeks : activeSession.week + 1;
-    const currentLongestRun = Math.max(
-      ...activeSession.steps.filter((step) => step.type === "run").map((step) => step.durationSec),
-      30,
-    );
-
-    const updated: TrainingPlan = {
-      ...plan,
-      sessions: plan.sessions.map((session, sessionIdx) => {
-        if (sessionIdx <= currentSessionIdx) return session;
-        if (session.week > targetWeekLimit) return session;
-
-        return {
-          ...session,
-          loadScore:
-            insights?.adjustment === "hold_progression"
-              ? Math.min(session.loadScore, activeSession.loadScore)
-              : clampInt(session.loadScore * factor, 1, 10),
-          steps: session.steps.map((step) => {
-            if (step.type !== "run") return step;
-            return {
-              ...step,
-              durationSec:
-                insights?.adjustment === "hold_progression"
-                  ? clampDuration(Math.min(step.durationSec, currentLongestRun))
-                  : clampDuration(step.durationSec * factor),
-            };
-          }),
-        };
-      }),
-    };
-
-    setPlan(updated);
-    setAdjustmentLog((prev) => [
-      ...prev,
-      insights?.adjustment === "insert_recovery"
-        ? "Jeg lægger mere restitution ind i de kommende pas, så kroppen kan følge med."
-        : insights?.adjustment === "hold_progression"
-          ? "Jeg holder progressionen lidt tilbage, så du kan bygge videre uden at forcere noget."
-          : factor < 1
-            ? "Jeg dæmper de kommende pas en smule, så du kan holde en god rytme i træningen."
-            : factor > 1
-              ? "Jeg skruer en anelse op i de kommende pas, fordi kroppen ser ud til at følge med."
-              : "Jeg lader planen fortsætte som planlagt.",
-    ]);
-  }
-
-  async function submitFeedback() {
-    if (!activeSession || !profileId) {
-      setError("Mangler aktivt pas eller profil.");
+  function submitFeedback() {
+    if (!activeSession || !plan) {
+      setError("Mangler aktivt pas eller plan.");
       return;
     }
 
@@ -1390,73 +1444,45 @@ export default function Home() {
 
     setError(null);
     setFeedbackSubmitState("submitting");
-    try {
-      const res = await fetch("/api/workout-feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          profileId,
-          workoutSessionId: activeSession.id,
-          quickFeedback: feedback.quickFeedback,
-          capabilityState,
-          ...feedback,
-          notes: feedback.notes?.trim() ?? "",
-          demoMode: isDemoMode,
-        }),
-      });
+    const currentCapability = capabilityState ?? createInitialCapabilityState(plan);
+    const coachFeedback = buildAdaptiveWorkoutFeedback(activeSession.id, feedback, hasDetailedFeedbackInput);
+    const nextCapability = updateCapability(currentCapability, coachFeedback);
+    const activeIndex = plan.sessions.findIndex((session) => session.id === activeSession.id);
+    const upcomingPlan: TrainingPlan =
+      activeIndex >= 0
+        ? {
+            ...plan,
+            sessions: plan.sessions.slice(activeIndex + 1),
+          }
+        : plan;
 
-      if (!res.ok) {
-        setFeedbackSubmitState("idle");
-        setError("Kunne ikke gemme feedback.");
-        return;
-      }
+    const adaptedUpcomingPlan = adaptUpcomingSessions(upcomingPlan, nextCapability);
+    const updatedPlan = mergeAdaptedUpcomingSessions(plan, activeSession.id, adaptedUpcomingPlan);
+    const adaptiveCopy = detectAdaptivePlanChange(plan, updatedPlan);
 
-      const data = (await res.json()) as {
-        adaptationFactor: number;
-        feedbackInsights?: FeedbackInsights;
-        capabilityState?: CapabilityState;
-        updatedPlan?: TrainingPlan;
-        note?: string;
-        confirmation?: { title?: string };
-        interpretation?: string;
-        adjustmentExplanation?: string;
-        adjustmentSummary?: string[];
-      };
-      setFeedbackInsights(data.feedbackInsights ?? null);
-      if (data.capabilityState) {
-        setCapabilityState(data.capabilityState);
-      }
-      if (data.updatedPlan) {
-        setPlan(data.updatedPlan);
-      } else {
-        applyLocalAdaptation(data.adaptationFactor, data.feedbackInsights ?? null);
-      }
-      setFeedbackConfirmation({
-        title:
-          runnerProfile.firstName?.trim()
-            ? `Tak for din feedback, ${runnerProfile.firstName.trim()}.`
-            : data.confirmation?.title ?? "Tak for din feedback.",
-        message: "",
-        interpretation: data.interpretation ?? "Jeg vurderer passet ud fra din feedback.",
-        adjustment: data.adjustmentExplanation ?? "Derfor holder jeg progressionen stabil lige nu.",
-        bullets: [],
-      });
-      if (data.adjustmentSummary?.length) {
-        setAdjustmentLog((prev) => [...prev, ...(data.adjustmentSummary ?? [])]);
-      }
-      setFeedback({ quickFeedback: undefined, effort: 6, completionPct: 100, energy: 3, painLevel: 1, notes: "" });
-      setShowDetailedFeedback(false);
-      setFeedbackSubmitState("success");
-      if (feedbackSuccessTimeout.current) {
-        clearTimeout(feedbackSuccessTimeout.current);
-      }
-      feedbackSuccessTimeout.current = setTimeout(() => {
-        setFeedbackSubmitState("idle");
-      }, 2400);
-    } catch {
-      setFeedbackSubmitState("idle");
-      setError("Kunne ikke gemme feedback.");
+    setFeedbackInsights(null);
+    setCapabilityState(nextCapability);
+    setPlan(updatedPlan);
+    setFeedbackConfirmation({
+      title: runnerProfile.firstName?.trim() ? `Tak for din feedback, ${runnerProfile.firstName.trim()}.` : "Tak for din feedback.",
+      message: "",
+      interpretation: adaptiveCopy.interpretation,
+      adjustment: adaptiveCopy.adjustment,
+      bullets: [],
+    });
+    if (adaptiveCopy.log) {
+      setAdjustmentLog((prev) => [...prev, adaptiveCopy.log!]);
     }
+    setFeedback({ quickFeedback: undefined, effort: 6, completionPct: 100, energy: 3, painLevel: 1, notes: "" });
+    setShowDetailedFeedback(false);
+    setHasDetailedFeedbackInput(false);
+    setFeedbackSubmitState("success");
+    if (feedbackSuccessTimeout.current) {
+      clearTimeout(feedbackSuccessTimeout.current);
+    }
+    feedbackSuccessTimeout.current = setTimeout(() => {
+      setFeedbackSubmitState("idle");
+    }, 2400);
   }
 
   async function downloadIcs() {
@@ -2759,7 +2785,10 @@ export default function Home() {
               <button
                 type="button"
                 className={styles.textBtn}
-                onClick={() => setShowDetailedFeedback((current) => !current)}
+                onClick={() => {
+                  setShowDetailedFeedback((current) => !current);
+                  setHasDetailedFeedbackInput(true);
+                }}
               >
                 {showDetailedFeedback ? "Skjul detaljer" : "Tilføj flere detaljer"}
               </button>
@@ -2776,6 +2805,7 @@ export default function Home() {
                   onChange={(e) => {
                     const value = e.target.value;
                     setFeedbackDraft((d) => ({ ...d, effort: value }));
+                    setHasDetailedFeedbackInput(true);
                     if (value !== "") setFeedback((f) => ({ ...f, effort: clampInt(Number(value), 1, 10) }));
                   }}
                   onBlur={() => {
@@ -2793,6 +2823,7 @@ export default function Home() {
                   onChange={(e) => {
                     const value = e.target.value;
                     setFeedbackDraft((d) => ({ ...d, completionPct: value }));
+                    setHasDetailedFeedbackInput(true);
                     if (value !== "") setFeedback((f) => ({ ...f, completionPct: clampInt(Number(value), 0, 100) }));
                   }}
                   onBlur={() => {
@@ -2810,6 +2841,7 @@ export default function Home() {
                   onChange={(e) => {
                     const value = e.target.value;
                     setFeedbackDraft((d) => ({ ...d, energy: value }));
+                    setHasDetailedFeedbackInput(true);
                     if (value !== "") setFeedback((f) => ({ ...f, energy: clampInt(Number(value), 1, 5) }));
                   }}
                   onBlur={() => {
@@ -2827,6 +2859,7 @@ export default function Home() {
                   onChange={(e) => {
                     const value = e.target.value;
                     setFeedbackDraft((d) => ({ ...d, painLevel: value }));
+                    setHasDetailedFeedbackInput(true);
                     if (value !== "") setFeedback((f) => ({ ...f, painLevel: clampInt(Number(value), 1, 10) }));
                   }}
                   onBlur={() => {
@@ -2836,7 +2869,15 @@ export default function Home() {
               </label>
               <label>
                 Noter
-                <input type="text" value={feedback.notes} onChange={(e) => setFeedback((f) => ({ ...f, notes: e.target.value }))} placeholder="Kort note om passet" />
+                <input
+                  type="text"
+                  value={feedback.notes}
+                  onChange={(e) => {
+                    setHasDetailedFeedbackInput(true);
+                    setFeedback((f) => ({ ...f, notes: e.target.value }));
+                  }}
+                  placeholder="Kort note om passet"
+                />
               </label>
               </div>
               )}
@@ -2845,7 +2886,7 @@ export default function Home() {
                 <button
                   className={styles.primaryBtn}
                   onClick={submitFeedback}
-                  disabled={!activeSession || !profileId || !workoutCompleted || feedbackSubmitState === "submitting" || !feedback.quickFeedback}
+                  disabled={!activeSession || !workoutCompleted || feedbackSubmitState === "submitting" || !feedback.quickFeedback}
                 >
                   {feedbackSubmitState === "submitting" && <span className={styles.buttonSpinner} aria-hidden="true" />}
                   {feedbackSubmitState === "submitting"
