@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentSession } from "@/lib/auth/session";
-import { normalizeStepDuration } from "@/lib/duration";
 import { interpretWorkoutFeedback } from "@/lib/ai/interpretation";
 import { factorFromFeedbackInsights } from "@/lib/adaptation";
+import { adaptPlanFromFeedback, CapabilityState, createInitialCapabilityState } from "@/lib/coach";
+import { WorkoutFeedback as CoachWorkoutFeedback } from "@/lib/coach/capability";
+import { TrainingPlan } from "@/lib/types";
 
 interface FeedbackBody {
   profileId?: string;
@@ -15,10 +17,109 @@ interface FeedbackBody {
   painLevel?: number;
   notes?: string;
   demoMode?: boolean;
+  capabilityState?: CapabilityState | null;
 }
 
 function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.round(value)));
+}
+
+function toAppTrainingPlan(planRecord: {
+  summary: string;
+  weeks: number;
+  sessionsPerWeek: number;
+  sessions: Array<{
+    id: string;
+    title: string;
+    week: number;
+    dayOfWeek: string;
+    notes: string | null;
+    loadScore: number;
+    steps: Array<{
+      id: string;
+      type: string;
+      label: string;
+      durationSec: number;
+      cue: string;
+    }>;
+  }>;
+}): TrainingPlan {
+  return {
+    summary: planRecord.summary,
+    weeks: planRecord.weeks,
+    sessionsPerWeek: planRecord.sessionsPerWeek,
+    sessions: planRecord.sessions.map((session) => ({
+      id: session.id,
+      title: session.title,
+      week: session.week,
+      dayOfWeek: session.dayOfWeek as TrainingPlan["sessions"][number]["dayOfWeek"],
+      notes: session.notes ?? undefined,
+      loadScore: session.loadScore,
+      steps: session.steps.map((step) => ({
+        type: step.type as TrainingPlan["sessions"][number]["steps"][number]["type"],
+        label: step.label,
+        durationSec: step.durationSec,
+        cue: step.cue,
+      })),
+    })),
+  };
+}
+
+async function persistAdaptedSessions(params: {
+  originalPlan: TrainingPlan;
+  adaptedPlan: TrainingPlan;
+  currentSessionId: string;
+  sessionStepIds: Map<string, string[]>;
+}) {
+  const { originalPlan, adaptedPlan, currentSessionId, sessionStepIds } = params;
+  const currentIndex = originalPlan.sessions.findIndex((session) => session.id === currentSessionId);
+  if (currentIndex < 0) return;
+
+  const sessionUpdates: ReturnType<typeof prisma.workoutSession.update>[] = [];
+  const stepUpdates: ReturnType<typeof prisma.workoutStep.update>[] = [];
+
+  adaptedPlan.sessions.forEach((session) => {
+    const original = originalPlan.sessions.find((item) => item.id === session.id);
+    if (!original) return;
+    const originalIndex = originalPlan.sessions.findIndex((item) => item.id === session.id);
+    if (originalIndex <= currentIndex) return;
+
+    if (original.loadScore !== session.loadScore || original.title !== session.title || (original.notes ?? "") !== (session.notes ?? "")) {
+      sessionUpdates.push(
+        prisma.workoutSession.update({
+          where: { id: session.id },
+          data: {
+            title: session.title,
+            notes: session.notes,
+            loadScore: session.loadScore,
+          },
+        }),
+      );
+    }
+
+    const stepIds = sessionStepIds.get(session.id) ?? [];
+    session.steps.forEach((step, index) => {
+      const originalStep = original.steps[index];
+      const stepId = stepIds[index];
+      if (!originalStep || !stepId) return;
+      if (originalStep.durationSec === step.durationSec && originalStep.label === step.label && originalStep.cue === step.cue) return;
+
+      stepUpdates.push(
+        prisma.workoutStep.update({
+          where: { id: stepId },
+          data: {
+            durationSec: step.durationSec,
+            label: step.label,
+            cue: step.cue,
+          },
+        }),
+      );
+    });
+  });
+
+  if (sessionUpdates.length > 0 || stepUpdates.length > 0) {
+    await prisma.$transaction([...sessionUpdates, ...stepUpdates]);
+  }
 }
 
 function buildAdjustmentSummary(input: {
@@ -155,13 +256,38 @@ export async function POST(req: Request) {
       factor,
       progressionPauseWeeks: feedbackInsights.progressionPauseWeeks,
     });
+    const initialCapability = body.capabilityState ?? createInitialCapabilityState(null);
+    const coachFeedback: CoachWorkoutFeedback = {
+      sessionId: body.workoutSessionId ?? "unknown-session",
+      completed: completionPct >= 80,
+      difficulty:
+        body.quickFeedback === "very_easy"
+          ? "easy"
+          : body.quickFeedback === "good"
+            ? "moderate"
+            : body.quickFeedback === "hard"
+              ? "hard"
+              : body.quickFeedback === "too_hard"
+                ? "very_hard"
+                : effort <= 4
+                  ? "easy"
+                  : effort <= 7
+                    ? "moderate"
+                    : effort <= 8
+                      ? "hard"
+                      : "very_hard",
+      energy: energy >= 4 ? "high" : energy <= 2 ? "low" : "normal",
+      pain: painLevel >= 7 ? "high" : painLevel >= 4 ? "moderate" : painLevel >= 2 ? "mild" : "none",
+    };
 
     if (demoMode) {
+      const adapted = adaptPlanFromFeedback({ summary: "", weeks: 0, sessionsPerWeek: 0, sessions: [] }, coachFeedback, initialCapability);
       return NextResponse.json({
         saved: true,
         demoMode: true,
         adaptationFactor: factor,
         feedbackInsights,
+        capabilityState: adapted.capability,
         confirmation: {
           title: "Tak for din feedback.",
         },
@@ -204,6 +330,30 @@ export async function POST(req: Request) {
     if (!workoutSession || workoutSession.plan.profileId !== body.profileId) {
       return NextResponse.json({ error: "Workout session not found for profile" }, { status: 404 });
     }
+
+    const currentPlan = toAppTrainingPlan({
+      summary: workoutSession.plan.summary,
+      weeks: workoutSession.plan.weeks,
+      sessionsPerWeek: workoutSession.plan.sessionsPerWeek,
+      sessions: workoutSession.plan.sessions.map((session) => ({
+        id: session.id,
+        title: session.title,
+        week: session.week,
+        dayOfWeek: session.dayOfWeek,
+        notes: session.notes,
+        loadScore: session.loadScore,
+        steps: session.steps.map((step) => ({
+          id: step.id,
+          type: step.type,
+          label: step.label,
+          durationSec: step.durationSec,
+          cue: step.cue,
+        })),
+      })),
+    });
+    const stepIdsBySession = new Map(workoutSession.plan.sessions.map((session) => [session.id, session.steps.map((step) => step.id)]));
+    coachFeedback.sessionId = workoutSession.id;
+
     await prisma.workoutFeedback.create({
       data: {
         profileId: body.profileId,
@@ -217,59 +367,33 @@ export async function POST(req: Request) {
       },
     });
 
-    if (factor !== 1 || feedbackInsights.progressionPauseWeeks > 0) {
-      const futureSessions = workoutSession.plan.sessions.filter((s) => {
-        if (s.order <= workoutSession.order) return false;
-        if (feedbackInsights.progressionPauseWeeks <= 0) return s.order === workoutSession.order + 1;
-        return s.week <= workoutSession.week + feedbackInsights.progressionPauseWeeks;
-      });
-      const updates: ReturnType<typeof prisma.workoutStep.update>[] = [];
-      const sessionLoadUpdates: ReturnType<typeof prisma.workoutSession.update>[] = [];
-      const currentLongestRun = Math.max(
-        ...workoutSession.steps.filter((step) => step.type === "run").map((step) => step.durationSec),
-        30,
-      );
+    const currentCapability = body.capabilityState ?? createInitialCapabilityState(currentPlan);
+    const futureOnlyPlan: TrainingPlan = {
+      ...currentPlan,
+      sessions: currentPlan.sessions.filter((session) => {
+        const persisted = workoutSession.plan.sessions.find((item) => item.id === session.id);
+        return persisted ? persisted.order > workoutSession.order : false;
+      }),
+    };
+    const adapted = adaptPlanFromFeedback(futureOnlyPlan, coachFeedback, currentCapability);
+    const mergedPlan: TrainingPlan = {
+      ...currentPlan,
+      sessions: currentPlan.sessions.map((session) => adapted.plan.sessions.find((item) => item.id === session.id) ?? session),
+    };
 
-      for (const future of futureSessions) {
-        for (const step of future.steps) {
-          if (step.type !== "run") continue;
-
-          const scaledDuration = step.durationSec * factor;
-          const heldDuration =
-            feedbackInsights.adjustment === "hold_progression"
-              ? Math.min(step.durationSec, currentLongestRun)
-              : scaledDuration;
-          const nextDuration = normalizeStepDuration(clampNumber(heldDuration, 30, 20 * 60));
-          updates.push(
-            prisma.workoutStep.update({
-              where: { id: step.id },
-              data: { durationSec: nextDuration },
-            }),
-          );
-        }
-
-        sessionLoadUpdates.push(
-          prisma.workoutSession.update({
-            where: { id: future.id },
-            data: {
-              loadScore:
-                feedbackInsights.adjustment === "hold_progression"
-                  ? Math.min(future.loadScore, workoutSession.loadScore)
-                  : clampNumber(future.loadScore * factor, 1, 10),
-            },
-          }),
-        );
-      }
-
-      if (updates.length > 0 || sessionLoadUpdates.length > 0) {
-        await prisma.$transaction([...updates, ...sessionLoadUpdates]);
-      }
-    }
+    await persistAdaptedSessions({
+      originalPlan: currentPlan,
+      adaptedPlan: mergedPlan,
+      currentSessionId: workoutSession.id,
+      sessionStepIds: stepIdsBySession,
+    });
 
     return NextResponse.json({
       saved: true,
       adaptationFactor: factor,
       feedbackInsights,
+      capabilityState: adapted.capability,
+      updatedPlan: mergedPlan,
       confirmation: {
         title: "Tak for din feedback.",
       },

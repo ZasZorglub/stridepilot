@@ -5,7 +5,14 @@ import { FeedbackInsights, Goal, RunnerProfile, TrainingPlan } from "@/lib/types
 import { getCurrentSession } from "@/lib/auth/session";
 import { applyAdaptiveGuardrails, buildAdaptationPayload, FeedbackSignal } from "@/lib/adaptation";
 import { applyPlanSafety, validatePlanFeasibility } from "@/lib/plan-safety";
-import { interpretRunnerProfile, interpretWorkoutFeedback } from "@/lib/ai/interpretation";
+import { interpretRunnerProfile as interpretAiRunnerProfile, interpretWorkoutFeedback } from "@/lib/ai/interpretation";
+import {
+  build5kPlan,
+  GoalConfig as CoachGoalConfig,
+  interpretRunnerProfile as interpretCoachRunnerProfile,
+  mapCoachPlanToAppPlan,
+  mapCoachProfileToRunnerProfileInsights,
+} from "@/lib/coach";
 
 function parseReminderTime(reminderTime?: string): { reminderHour: number; reminderMin: number } {
   const fallback = { reminderHour: 13, reminderMin: 0 };
@@ -15,6 +22,16 @@ function parseReminderTime(reminderTime?: string): { reminderHour: number; remin
   if (!Number.isFinite(h) || !Number.isFinite(m)) return fallback;
   if (h < 0 || h > 23 || m < 0 || m > 59) return fallback;
   return { reminderHour: h, reminderMin: m };
+}
+
+function addDaysToIsoDate(value: string, days: number): string {
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+  const nextYear = date.getFullYear();
+  const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
+  const nextDay = String(date.getDate()).padStart(2, "0");
+  return `${nextYear}-${nextMonth}-${nextDay}`;
 }
 
 function toTrainingPlan(
@@ -56,6 +73,19 @@ function toTrainingPlan(
         cue: step.cue,
       })),
     })),
+  };
+}
+
+function toCoachGoalConfig(goal: Goal, requestedRunsPerWeek: number): CoachGoalConfig {
+  const trainingDaysPerWeek = Math.max(2, Math.min(4, requestedRunsPerWeek)) as 2 | 3 | 4;
+  const startDate = goal.startDate;
+  const targetDate = goal.endDate ? goal.endDate : addDaysToIsoDate(goal.startDate, 7 * 7);
+
+  return {
+    goalDistance: "5k",
+    targetDate,
+    trainingDaysPerWeek,
+    startDate,
   };
 }
 
@@ -273,13 +303,25 @@ export async function POST(req: Request) {
     let source: "openai" | "fallback" = "fallback";
     const currentWeek = 1;
     const recentFeedback = await fetchRecentFeedbackSignals(session?.userId, profileId);
-    const runnerProfileInsights = await interpretRunnerProfile({
-      onboardingText: runnerProfile.userTrainingContext,
-      currentAbility: runnerProfile.currentRunningAbility,
-      goalDistance: goal.distance,
-      goalTime: goal.targetTime,
-      activityLevel: runnerProfile.activityLevel,
-    });
+    const is5kGoal = goal.distance === "5K";
+    const coachProfile = is5kGoal
+      ? interpretCoachRunnerProfile({
+          onboardingText: runnerProfile.userTrainingContext,
+          currentAbility: runnerProfile.currentRunningAbility,
+          goalDistance: goal.distance,
+          goalTime: goal.targetTime,
+          activityLevel: runnerProfile.activityLevel,
+        })
+      : null;
+    const runnerProfileInsights = is5kGoal
+      ? mapCoachProfileToRunnerProfileInsights(coachProfile!)
+      : await interpretAiRunnerProfile({
+          onboardingText: runnerProfile.userTrainingContext,
+          currentAbility: runnerProfile.currentRunningAbility,
+          goalDistance: goal.distance,
+          goalTime: goal.targetTime,
+          activityLevel: runnerProfile.activityLevel,
+        });
     const feedbackInsights = await buildRecentFeedbackInsights(recentFeedback);
     const adaptationPayload = buildAdaptationPayload({
       goal,
@@ -288,8 +330,9 @@ export async function POST(req: Request) {
       recentFeedback,
       runnerInsights: runnerProfileInsights,
     });
-    let plan: TrainingPlan = generateFallbackPlan(runnerProfile, goal, { profileInsights: runnerProfileInsights });
-    source = process.env.OPENAI_API_KEY ? "openai" : "fallback";
+    const coachPlan = is5kGoal ? build5kPlan(coachProfile!, toCoachGoalConfig(goal, requestedRunsPerWeek)) : null;
+    let plan: TrainingPlan = coachPlan ? mapCoachPlanToAppPlan(coachPlan, coachPlan.goal) : generateFallbackPlan(runnerProfile, goal, { profileInsights: runnerProfileInsights });
+    source = coachPlan ? "fallback" : process.env.OPENAI_API_KEY ? "openai" : "fallback";
 
     plan = applyAdaptiveGuardrails(plan, recentFeedback);
     const safety = applyPlanSafety({ plan, goal, recentFeedback });
@@ -312,6 +355,7 @@ export async function POST(req: Request) {
             message: "Programmet tager udgangspunkt i dit mål og justeres løbende efter din feedback.",
           },
           runnerProfileInsights,
+          explanationSummary: coachPlan?.explanationSummary ?? [],
           feedbackInsights,
           adaptationPayload,
           warnings,
@@ -343,6 +387,7 @@ export async function POST(req: Request) {
           message: "Programmet tager udgangspunkt i dit mål og justeres løbende efter din feedback.",
         },
         runnerProfileInsights,
+        explanationSummary: coachPlan?.explanationSummary ?? [],
         feedbackInsights,
         adaptationPayload,
         warnings,
@@ -361,6 +406,7 @@ export async function POST(req: Request) {
         feasible: true,
         feasibleStatus: feasibility.status,
         runnerProfileInsights,
+        explanationSummary: coachPlan?.explanationSummary ?? [],
         feedbackInsights,
         adaptationPayload,
         warnings,

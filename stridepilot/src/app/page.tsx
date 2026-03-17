@@ -8,6 +8,7 @@ import { cancelCue, initSpeech, isSpeechSupported, speakCue } from "@/lib/speech
 import { EMPTY_INSIGHTS } from "@/lib/insights";
 import { normalizeStepDuration } from "@/lib/duration";
 import { buildWeeklyLoad } from "@/lib/plan";
+import { CapabilityState, capabilityStorageKey } from "@/lib/coach";
 
 type Stage = "welcome" | "auth" | "intro" | "profile" | "intermezzo" | "program" | "workout";
 type AuthMode = "signup" | "login";
@@ -583,7 +584,9 @@ export default function Home() {
   const [baselinePlan, setBaselinePlan] = useState<TrainingPlan | null>(null);
   const [plan, setPlan] = useState<TrainingPlan | null>(null);
   const [runnerProfileInsights, setRunnerProfileInsights] = useState<RunnerProfileInsights | null>(null);
+  const [coachExplanationSummary, setCoachExplanationSummary] = useState<string[]>([]);
   const [, setFeedbackInsights] = useState<FeedbackInsights | null>(null);
+  const [capabilityState, setCapabilityState] = useState<CapabilityState | null>(null);
   const [adjustmentLog, setAdjustmentLog] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -644,7 +647,9 @@ export default function Home() {
     setBaselinePlan(null);
     setPlan(null);
     setRunnerProfileInsights(null);
+    setCoachExplanationSummary([]);
     setFeedbackInsights(null);
+    setCapabilityState(null);
     setAdjustmentLog([]);
     setSelectedSessionId("");
     setPlanTradeoff(null);
@@ -798,6 +803,7 @@ export default function Home() {
         baselinePlan?: TrainingPlan;
         goal?: Goal;
         profile?: Partial<RunnerProfile>;
+        explanationSummary?: string[];
       };
 
       if (!data.plan) return false;
@@ -817,6 +823,7 @@ export default function Home() {
           ...data.profile,
         }));
       }
+      setCoachExplanationSummary(data.explanationSummary ?? []);
 
       const userKey = activeUserId || currentProfileId;
       if (userKey) {
@@ -932,6 +939,31 @@ export default function Home() {
       window.localStorage.setItem(firstNameKey(activeUserId), runnerProfile.firstName.trim());
     }
   }, [activeUserId, runnerProfile.firstName]);
+
+  useEffect(() => {
+    if (!profileId) {
+      setCapabilityState(null);
+      return;
+    }
+
+    const saved = window.localStorage.getItem(capabilityStorageKey(profileId));
+    if (!saved) {
+      setCapabilityState(null);
+      return;
+    }
+
+    try {
+      setCapabilityState(JSON.parse(saved) as CapabilityState);
+    } catch {
+      window.localStorage.removeItem(capabilityStorageKey(profileId));
+      setCapabilityState(null);
+    }
+  }, [profileId]);
+
+  useEffect(() => {
+    if (!profileId || !capabilityState) return;
+    window.localStorage.setItem(capabilityStorageKey(profileId), JSON.stringify(capabilityState));
+  }, [profileId, capabilityState]);
 
   useEffect(() => {
     if (stage !== "program" || !activeUserId) return;
@@ -1244,6 +1276,7 @@ export default function Home() {
         baselinePlan?: TrainingPlan;
         currentPlanView?: TrainingPlan;
         runnerProfileInsights?: RunnerProfileInsights;
+        explanationSummary?: string[];
         feedbackInsights?: FeedbackInsights[];
         persistence?: { profileId?: string };
         warnings?: string[];
@@ -1257,6 +1290,7 @@ export default function Home() {
       setBaselinePlan(nextBaseline);
       setPlan(nextCurrent);
       setRunnerProfileInsights(data.runnerProfileInsights ?? null);
+      setCoachExplanationSummary(data.explanationSummary ?? []);
       setFeedbackInsights(data.feedbackInsights?.[0] ?? null);
       setAdjustmentLog([]);
       setPlanWarnings(data.warnings ?? []);
@@ -1364,6 +1398,7 @@ export default function Home() {
           profileId,
           workoutSessionId: activeSession.id,
           quickFeedback: feedback.quickFeedback,
+          capabilityState,
           ...feedback,
           notes: feedback.notes?.trim() ?? "",
           demoMode: isDemoMode,
@@ -1379,6 +1414,8 @@ export default function Home() {
       const data = (await res.json()) as {
         adaptationFactor: number;
         feedbackInsights?: FeedbackInsights;
+        capabilityState?: CapabilityState;
+        updatedPlan?: TrainingPlan;
         note?: string;
         confirmation?: { title?: string };
         interpretation?: string;
@@ -1386,7 +1423,14 @@ export default function Home() {
         adjustmentSummary?: string[];
       };
       setFeedbackInsights(data.feedbackInsights ?? null);
-      applyLocalAdaptation(data.adaptationFactor, data.feedbackInsights ?? null);
+      if (data.capabilityState) {
+        setCapabilityState(data.capabilityState);
+      }
+      if (data.updatedPlan) {
+        setPlan(data.updatedPlan);
+      } else {
+        applyLocalAdaptation(data.adaptationFactor, data.feedbackInsights ?? null);
+      }
       setFeedbackConfirmation({
         title:
           runnerProfile.firstName?.trim()
@@ -1581,13 +1625,15 @@ export default function Home() {
   const stickyProgramCtaLabel = todaySession || nextSession ? "Start næste pas" : null;
   const whyPlanLines = useMemo(
     () =>
-      programWhySummary({
-        runnerProfile,
-        goal,
-        insights: runnerProfileInsights,
-        planTradeoff,
-      }),
-    [goal, planTradeoff, runnerProfile, runnerProfileInsights],
+      coachExplanationSummary.length > 0
+        ? coachExplanationSummary
+        : programWhySummary({
+            runnerProfile,
+            goal,
+            insights: runnerProfileInsights,
+            planTradeoff,
+          }),
+    [coachExplanationSummary, goal, planTradeoff, runnerProfile, runnerProfileInsights],
   );
   const planIntermezzo = useMemo(
     () =>
@@ -2194,11 +2240,29 @@ export default function Home() {
         <section className={`${styles.centerCard} ${styles.intermezzoCard}`}>
           <p className={styles.nextLabel}>Jeg har forstået dit udgangspunkt sådan her</p>
           <h2>{planIntermezzo.title}</h2>
-          <p className={styles.subtle}>{planIntermezzo.summary}</p>
+          {coachExplanationSummary.length > 0 ? (
+            <div className={styles.valueGrid}>
+              {coachExplanationSummary.slice(0, 2).map((line, index) => (
+                <p key={`coach-summary-${index}`} className={styles.subtle}>
+                  {line}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.subtle}>{planIntermezzo.summary}</p>
+          )}
 
           <div className={styles.intermezzoReason}>
             <h3>Derfor starter planen her</h3>
-            <p className={styles.subtleInline}>{planIntermezzo.rationale}</p>
+            {coachExplanationSummary.length > 2 ? (
+              coachExplanationSummary.slice(2).map((line, index) => (
+                <p key={`coach-rationale-${index}`} className={styles.subtleInline}>
+                  {line}
+                </p>
+              ))
+            ) : (
+              <p className={styles.subtleInline}>{planIntermezzo.rationale}</p>
+            )}
           </div>
 
           <div className={styles.intermezzoGrid}>
