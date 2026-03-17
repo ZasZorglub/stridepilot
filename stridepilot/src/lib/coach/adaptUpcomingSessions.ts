@@ -1,6 +1,7 @@
 import { TrainingPlan } from "@/lib/types";
 import { normalizeStepDuration } from "@/lib/duration";
 import { CapabilityState } from "./capability";
+import { CoachDecision } from "./coachDecision";
 
 function clonePlan(plan: TrainingPlan): TrainingPlan {
   return {
@@ -22,6 +23,20 @@ function classifySession(session: TrainingPlan["sessions"][number]): "interval" 
 }
 
 function reduceRunDuration(session: TrainingPlan["sessions"][number], factor: number): TrainingPlan["sessions"][number] {
+  return {
+    ...session,
+    steps: session.steps.map((step) =>
+      step.type === "run"
+        ? {
+            ...step,
+            durationSec: normalizeStepDuration(Math.max(5 * 60, step.durationSec * factor)),
+          }
+        : step,
+    ),
+  };
+}
+
+function increaseRunDuration(session: TrainingPlan["sessions"][number], factor: number): TrainingPlan["sessions"][number] {
   return {
     ...session,
     steps: session.steps.map((step) =>
@@ -64,9 +79,42 @@ function upcomingWeekLoad(plan: TrainingPlan): number {
   return plan.sessions.filter((session) => session.week === nextWeek).reduce((sum, session) => sum + session.loadScore, 0);
 }
 
-export function adaptUpcomingSessions(plan: TrainingPlan, capability: CapabilityState): TrainingPlan {
+export function adaptUpcomingSessions(plan: TrainingPlan, capability: CapabilityState, decision?: CoachDecision): TrainingPlan {
   const nextPlan = clonePlan(plan);
   if (nextPlan.sessions.length === 0) return nextPlan;
+
+  if (decision?.type === "progress") {
+    const strategicIndex = nextPlan.sessions.findIndex((session) => {
+      const type = classifySession(session);
+      return type === "easy" || type === "long";
+    });
+    if (strategicIndex >= 0) {
+      nextPlan.sessions[strategicIndex] = increaseRunDuration(nextPlan.sessions[strategicIndex], 1.05);
+    }
+  } else if (decision?.type === "reduce_load") {
+    const strategicIndex = nextPlan.sessions.findIndex((session) => session.steps.some((step) => step.type === "run"));
+    if (strategicIndex >= 0) {
+      nextPlan.sessions[strategicIndex] = reduceRunDuration(nextPlan.sessions[strategicIndex], 0.9);
+    }
+  } else if (decision?.type === "recovery_block") {
+    const strategicIndex = nextPlan.sessions.findIndex((session) => {
+      const type = classifySession(session);
+      return type === "interval" || type === "tempo";
+    });
+    if (strategicIndex >= 0) {
+      nextPlan.sessions[strategicIndex] = convertToEasy(nextPlan.sessions[strategicIndex]);
+    }
+  } else if (decision?.type === "confidence_build") {
+    const strategicIndex = nextPlan.sessions.findIndex((session) => session.steps.some((step) => step.type === "run"));
+    if (strategicIndex >= 0) {
+      const softened = adjustPrimaryRunByMinutes(nextPlan.sessions[strategicIndex], -5);
+      nextPlan.sessions[strategicIndex] = {
+        ...softened,
+        title: `Uge ${softened.week} - Roligt pas`,
+        notes: "Holdt lidt kortere og roligere for at bygge overskud og rytme.",
+      };
+    }
+  }
 
   const baselineWeeklyLoad = upcomingWeekLoad(nextPlan);
 

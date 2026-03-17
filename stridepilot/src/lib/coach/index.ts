@@ -13,3 +13,4 @@ export { updateCapability } from "./updateCapability";
 export { adaptUpcomingSessions } from "./adaptUpcomingSessions";
 export { type RunnerState, createInitialRunnerState, updateRunnerState } from "./runnerState";
 export { type CoachDecision, type CoachDecisionType, evaluateRunnerState } from "./coachDecision";
+export { type TrendDirection, type TrainingTrend, evaluateTrainingTrend } from "./trainingTrend";

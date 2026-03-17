@@ -1,4 +1,5 @@
 import { RunnerState } from "./runnerState";
+import { TrainingTrend } from "./trainingTrend";
 
 export type CoachDecisionType =
   | "maintain"
@@ -12,7 +13,28 @@ export type CoachDecision = {
   reason: string;
 };
 
-export function evaluateRunnerState(state: RunnerState): CoachDecision {
+export function evaluateRunnerState(state: RunnerState, trend?: TrainingTrend): CoachDecision {
+  if (trend?.fatigueTrend === "rising" && trend.painTrend === "rising") {
+    return {
+      type: "recovery_block",
+      reason: "Træthed og smerte er begge på vej op, så vi lægger en kort recovery-periode ind.",
+    };
+  }
+
+  if (trend?.fatigueTrend === "rising" && trend.loadTrend === "rising") {
+    return {
+      type: "reduce_load",
+      reason: "Belastning og træthed stiger samtidig, så vi holder progressionen mere kontrolleret.",
+    };
+  }
+
+  if (trend?.fatigueTrend === "falling" && trend.loadTrend === "stable" && state.injuryRisk <= 4) {
+    return {
+      type: "progress",
+      reason: "Trætheden falder igen, og planen ser stabil ud, så vi kan bygge lidt videre.",
+    };
+  }
+
   if (state.injuryRisk >= 8) {
     return {
       type: "recovery_block",
