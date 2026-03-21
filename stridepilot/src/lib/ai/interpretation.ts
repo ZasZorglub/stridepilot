@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { ActivityLevel, CurrentRunningAbility, FeedbackInsights, GoalDistance, RunnerProfileInsights } from "@/lib/types";
+import { ActivityLevel, CurrentRunningAbility, FeedbackInsights, GoalDistance, RunnerProfileInsights, TrainingPlan } from "@/lib/types";
 
 interface InterpretRunnerProfileInput {
   onboardingText?: string;
@@ -224,4 +224,88 @@ export function generateCoachingExplanation(params: {
     return `${intro} Det så bæredygtigt ud, så jeg skruer en anelse op i næste pas.`;
   }
   return `${intro} Derfor holder jeg progressionen stabil, så du kan bygge videre uden at forcere noget.`;
+}
+
+export async function summarizePlanRationale(params: {
+  rationale?: TrainingPlan["rationale"];
+  fallbackLines: string[];
+}): Promise<string[]> {
+  const fallback = params.fallbackLines.slice(0, 4);
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey || !params.rationale?.plan) return fallback;
+
+  const prompt = {
+    instruction:
+      "Omskriv kun den givne rationale til 3-4 korte, coach-like forklaringslinjer på dansk. Bevar årsagerne, opfind ikke nye. Vær konkret, ærlig og kortfattet.",
+    rationale: params.rationale,
+  };
+
+  try {
+    const client = new OpenAI({ apiKey });
+    const model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
+    const completion = await client.chat.completions.create({
+      model,
+      temperature: 0.2,
+      messages: [
+        { role: "system", content: "Du omskriver kun struktureret løbe-rationale til korte forklaringslinjer. Du må ikke ændre træningsbeslutninger eller tilføje nye årsager." },
+        { role: "user", content: JSON.stringify(prompt) },
+      ],
+    });
+    const content = completion.choices[0]?.message?.content;
+    if (!content) return fallback;
+    const parsed = extractJsonObject(content) as { lines?: string[] };
+    return Array.isArray(parsed.lines) && parsed.lines.length > 0 ? parsed.lines.slice(0, 4) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function summarizeAdaptationRationale(params: {
+  rationale?: TrainingPlan["rationale"] extends infer R ? R extends { adaptation?: infer A } ? A : never : never;
+  fallback: {
+    interpretation: string;
+    adjustmentExplanation: string;
+    runnerFocus: string;
+  };
+}): Promise<{
+  interpretation: string;
+  adjustmentExplanation: string;
+  runnerFocus: string;
+}> {
+  const fallback = params.fallback;
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey || !params.rationale) return fallback;
+
+  const prompt = {
+    instruction:
+      "Omskriv kun denne adaptationsrationale til tre korte felter: interpretation, adjustmentExplanation og runnerFocus. Hold dig til de givne ændringer og årsager. Ingen ekstra coaching-fluff.",
+    rationale: params.rationale,
+  };
+
+  try {
+    const client = new OpenAI({ apiKey });
+    const model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
+    const completion = await client.chat.completions.create({
+      model,
+      temperature: 0.2,
+      messages: [
+        { role: "system", content: "Du omskriver kun struktureret adaptationsrationale til kort, tillidsvækkende dansk. Du må ikke opfinde nye ændringer eller årsager." },
+        { role: "user", content: JSON.stringify(prompt) },
+      ],
+    });
+    const content = completion.choices[0]?.message?.content;
+    if (!content) return fallback;
+    const parsed = extractJsonObject(content) as {
+      interpretation?: string;
+      adjustmentExplanation?: string;
+      runnerFocus?: string;
+    };
+    return {
+      interpretation: parsed.interpretation ?? fallback.interpretation,
+      adjustmentExplanation: parsed.adjustmentExplanation ?? fallback.adjustmentExplanation,
+      runnerFocus: parsed.runnerFocus ?? fallback.runnerFocus,
+    };
+  } catch {
+    return fallback;
+  }
 }

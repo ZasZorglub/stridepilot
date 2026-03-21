@@ -36,6 +36,31 @@ export const WORKOUT_LIBRARY: Record<WorkoutType, WorkoutTemplate> = {
     purpose: "Holder kroppen i gang på en meget let dag.",
     progressionNotes: ["Små justeringer i tid", "Samme rolige intensitet", "Plads til restitution"],
   },
+  steady: {
+    type: "steady",
+    purpose: "Bygger robust aerob rytme i et jævnt, kontrolleret tempo.",
+    progressionNotes: ["Længere steady-blok", "Mere sammenhængende arbejde", "Bedre rytmekontrol"],
+  },
+  fartlek: {
+    type: "fartlek",
+    purpose: "Giver mere fri kvalitetsvariation uden et tungt intervalpræg.",
+    progressionNotes: ["Flere fartskift", "Lidt længere arbejdsblokke", "Samme kontrollerede ramme"],
+  },
+  "hill-reps": {
+    type: "hill-reps",
+    purpose: "Bygger styrke og løbeøkonomi via korte kontrollerede bakkeindsatser.",
+    progressionNotes: ["Flere bakkeindsatser", "Lidt længere bakker", "Samme kontrollerede teknik"],
+  },
+  progression: {
+    type: "progression",
+    purpose: "Træner evnen til at afslutte stærkere uden at åbne for hårdt.",
+    progressionNotes: ["Længere progression", "Mere tydelig afslutning", "Bedre tempokontrol"],
+  },
+  "race-specific": {
+    type: "race-specific",
+    purpose: "Lægger blokke ind, som ligner kravene i måldistancen mere direkte.",
+    progressionNotes: ["Mere målspecifik blok", "Mindre pause", "Større rytmetryghed"],
+  },
   benchmark: {
     type: "benchmark",
     purpose: "Giver en rolig status på udviklingen uden at overdramatisere passet.",
@@ -56,6 +81,86 @@ export interface WorkoutBuildContext {
   intervalRunMin: number;
   walkBreakMin: number;
   repeats: number;
+}
+
+function runnerCategory(profile: RunnerProfile) {
+  return profile.runnerCategory ?? "recreational";
+}
+
+function easyJogMinutes(profile: RunnerProfile, fallback = 6): number {
+  if (profile.typicalWorkoutMinutes >= 60 || profile.currentWeeklyVolumeKm >= 35) return Math.max(7, fallback);
+  if (profile.currentWeeklyVolumeKm >= 18 || profile.longestRunMinutes >= 35) return Math.max(6, fallback);
+  return fallback;
+}
+
+function warmupSegments(context: WorkoutBuildContext, quality = false): WorkoutStructureSegment[] {
+  const category = runnerCategory(context.profile);
+
+  if (category === "true_beginner" || category === "run_walk_beginner") {
+    return [{ type: "walk", label: "Rask gang opvarmning", durationMin: quality ? 6 : 5 }];
+  }
+
+  if (category === "continuous_beginner") {
+    return [
+      { type: "walk", label: "Rolig gang", durationMin: 3 },
+      { type: "recovery", label: "Let jog", durationMin: quality ? 4 : 3 },
+    ];
+  }
+
+  return [{ type: "recovery", label: "Let jog opvarmning", durationMin: easyJogMinutes(context.profile, quality ? 7 : 6) }];
+}
+
+function cooldownSegments(context: WorkoutBuildContext): WorkoutStructureSegment[] {
+  const category = runnerCategory(context.profile);
+
+  if (category === "true_beginner" || category === "run_walk_beginner") {
+    return [{ type: "walk", label: "Rolig gang ned", durationMin: 5 }];
+  }
+
+  if (category === "continuous_beginner") {
+    return [
+      { type: "recovery", label: "Let jog", durationMin: 2 },
+      { type: "walk", label: "Gang ned", durationMin: 3 },
+    ];
+  }
+
+  return [
+    { type: "recovery", label: "Let jog ned", durationMin: 3 },
+    { type: "walk", label: "Rolig afslutning", durationMin: 2 },
+  ];
+}
+
+function distanceLabel(goal: GoalConfig): string {
+  return goal.goalDistance === "5K" ? "5K" : goal.goalDistance === "10K" ? "10 km" : goal.goalDistance === "Halvmaraton" ? "halvmaraton" : "maraton";
+}
+
+function readinessBand(profile: RunnerProfile): "low" | "moderate" | "high" {
+  if (profile.currentWeeklyVolumeKm >= 35 || (profile.currentRunsPerWeek >= 4 && profile.longestRunMinutes >= 60)) return "high";
+  if (profile.currentWeeklyVolumeKm >= 18 || (profile.currentRunsPerWeek >= 3 && profile.longestRunMinutes >= 35)) return "moderate";
+  return "low";
+}
+
+function intervalRunCap(context: WorkoutBuildContext): number {
+  const readiness = readinessBand(context.profile);
+  if (context.goal.goalDistance === "5K") return readiness === "high" ? 32 : readiness === "moderate" ? 26 : 20;
+  if (context.goal.goalDistance === "10K") return readiness === "high" ? 36 : readiness === "moderate" ? 30 : 22;
+  if (context.goal.goalDistance === "Halvmaraton") return readiness === "high" ? 38 : readiness === "moderate" ? 30 : 20;
+  return readiness === "high" ? 34 : readiness === "moderate" ? 28 : 18;
+}
+
+function tempoRunCap(context: WorkoutBuildContext): number {
+  const readiness = readinessBand(context.profile);
+  if (context.goal.goalDistance === "5K") return readiness === "high" ? 30 : readiness === "moderate" ? 24 : 18;
+  if (context.goal.goalDistance === "10K") return readiness === "high" ? 38 : readiness === "moderate" ? 30 : 22;
+  if (context.goal.goalDistance === "Halvmaraton") return readiness === "high" ? 44 : readiness === "moderate" ? 34 : 24;
+  return readiness === "high" ? 48 : readiness === "moderate" ? 36 : 24;
+}
+
+function benchmarkRunCap(context: WorkoutBuildContext): number {
+  if (context.goal.goalDistance === "5K") return 24;
+  if (context.goal.goalDistance === "10K") return 35;
+  if (context.goal.goalDistance === "Halvmaraton") return 45;
+  return 60;
 }
 
 function roundToHalf(value: number): number {
@@ -119,7 +224,7 @@ function baseSession(
 
 export function buildRunWalkWorkout(context: WorkoutBuildContext): WorkoutSession {
   const structure: WorkoutStructureSegment[] = [
-    { type: "warmup", label: "Opvarmning", durationMin: 5 },
+    ...warmupSegments(context),
     {
       type: "run",
       label: "Løb/gang blok",
@@ -127,7 +232,7 @@ export function buildRunWalkWorkout(context: WorkoutBuildContext): WorkoutSessio
       repeats: context.repeats,
       recoverMin: context.walkBreakMin,
     },
-    { type: "cooldown", label: "Nedkøling", durationMin: 5 },
+    ...cooldownSegments(context),
   ];
 
   return baseSession(
@@ -143,9 +248,9 @@ export function buildRunWalkWorkout(context: WorkoutBuildContext): WorkoutSessio
 
 export function buildEasyWorkout(context: WorkoutBuildContext): WorkoutSession {
   const structure: WorkoutStructureSegment[] = [
-    { type: "warmup", label: "Opvarmning", durationMin: 5 },
+    ...warmupSegments(context),
     { type: "steady", label: "Roligt løb", durationMin: context.continuousRunMin },
-    { type: "cooldown", label: "Nedkøling", durationMin: 5 },
+    ...cooldownSegments(context),
   ];
 
   return baseSession(
@@ -161,9 +266,9 @@ export function buildEasyWorkout(context: WorkoutBuildContext): WorkoutSession {
 
 export function buildLongWorkout(context: WorkoutBuildContext): WorkoutSession {
   const structure: WorkoutStructureSegment[] = [
-    { type: "warmup", label: "Opvarmning", durationMin: 5 },
+    ...warmupSegments(context),
     { type: "steady", label: "Lang rolig blok", durationMin: context.longRunMin },
-    { type: "cooldown", label: "Nedkøling", durationMin: 5 },
+    ...cooldownSegments(context),
   ];
 
   return baseSession(
@@ -171,23 +276,26 @@ export function buildLongWorkout(context: WorkoutBuildContext): WorkoutSession {
     "long",
     "Langt roligt pas",
     "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
-    "Udvide den rolige kapacitet.",
+    `Udvide den rolige kapacitet frem mod ${distanceLabel(context.goal)}.`,
     "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
     structure,
   );
 }
 
 export function buildIntervalWorkout(context: WorkoutBuildContext): WorkoutSession {
+  const totalRunCap = intervalRunCap(context);
+  const repeats = Math.max(3, Math.min(context.repeats, Math.floor(totalRunCap / Math.max(1, context.intervalRunMin))));
+  const intervalDuration = roundToHalf(Math.min(context.intervalRunMin, totalRunCap / repeats));
   const structure: WorkoutStructureSegment[] = [
-    { type: "warmup", label: "Opvarmning", durationMin: 6 },
+    ...warmupSegments(context, true),
     {
       type: "run",
       label: "Interval",
-      durationMin: context.intervalRunMin,
-      repeats: context.repeats,
+      durationMin: intervalDuration,
+      repeats,
       recoverMin: Math.max(1, context.walkBreakMin - 0.5),
     },
-    { type: "cooldown", label: "Nedkøling", durationMin: 5 },
+    ...cooldownSegments(context),
   ];
 
   return baseSession(
@@ -202,19 +310,19 @@ export function buildIntervalWorkout(context: WorkoutBuildContext): WorkoutSessi
 }
 
 export function buildTempoWorkout(context: WorkoutBuildContext): WorkoutSession {
-  const blockDuration = roundToHalf(Math.max(6, context.continuousRunMin * 0.6));
+  const blockDuration = roundToHalf(Math.min(Math.max(6, context.continuousRunMin * 0.6), tempoRunCap(context) / 2));
   const structure: WorkoutStructureSegment[] = [
-    { type: "warmup", label: "Opvarmning", durationMin: 6 },
+    ...warmupSegments(context, true),
     { type: "tempo", label: "Tempoblok", durationMin: blockDuration, repeats: 2, recoverMin: 2 },
-    { type: "cooldown", label: "Nedkøling", durationMin: 5 },
+    ...cooldownSegments(context),
   ];
 
   return baseSession(
     context,
     "tempo",
     "Tempopas",
-    "Et jævnt pas tættere på 5K-rytme, men stadig under kontrol.",
-    "Bygge stabil fartkontrol.",
+    `Et jævnt pas tættere på den rytme du skal kunne holde mod ${distanceLabel(context.goal)}, men stadig under kontrol.`,
+    "Bygge stabil fartkontrol og arbejde omkring tærskel.",
     "Løb fast og fokuseret, men undgå at gå i rødt.",
     structure,
   );
@@ -222,10 +330,10 @@ export function buildTempoWorkout(context: WorkoutBuildContext): WorkoutSession 
 
 export function buildStridesWorkout(context: WorkoutBuildContext): WorkoutSession {
   const structure: WorkoutStructureSegment[] = [
-    { type: "warmup", label: "Opvarmning", durationMin: 5 },
+    ...warmupSegments(context),
     { type: "steady", label: "Let løb", durationMin: Math.max(10, context.continuousRunMin * 0.7) },
     { type: "stride", label: "Strides", durationMin: 0.25, repeats: 6, recoverMin: 0.75 },
-    { type: "cooldown", label: "Nedkøling", durationMin: 4 },
+    ...cooldownSegments(context),
   ];
 
   return baseSession(
@@ -239,11 +347,110 @@ export function buildStridesWorkout(context: WorkoutBuildContext): WorkoutSessio
   );
 }
 
+export function buildSteadyWorkout(context: WorkoutBuildContext): WorkoutSession {
+  const steadyMinutes = roundToHalf(Math.min(Math.max(16, context.continuousRunMin * 0.85), tempoRunCap(context)));
+  const structure: WorkoutStructureSegment[] = [
+    ...warmupSegments(context, true),
+    { type: "steady", label: "Steady-blok", durationMin: steadyMinutes },
+    ...cooldownSegments(context),
+  ];
+
+  return baseSession(
+    context,
+    "steady",
+    "Steady-pas",
+    "Et kontrolleret pas i jævn rytme, tydeligere end et roligt løb men uden at blive et hårdt tempopas.",
+    `Bygge robust 10 km-rytme og aerob styrke frem mod ${distanceLabel(context.goal)}.`,
+    "Løb fast og roligt kontrolleret. Du må gerne arbejde, men du skal ikke i rødt.",
+    structure,
+  );
+}
+
+export function buildFartlekWorkout(context: WorkoutBuildContext): WorkoutSession {
+  const workMinutes = roundToHalf(Math.min(Math.max(3, context.intervalRunMin), 6));
+  const repeats = Math.max(4, Math.min(context.repeats, 6));
+  const structure: WorkoutStructureSegment[] = [
+    ...warmupSegments(context, true),
+    { type: "run", label: "Fartlek-blok", durationMin: workMinutes, repeats, recoverMin: Math.max(1.5, context.walkBreakMin) },
+    ...cooldownSegments(context),
+  ];
+
+  return baseSession(
+    context,
+    "fartlek",
+    "Fartlek",
+    "Et mere legende kvalitetspas med kontrollerede fartskift, så du bygger styrke uden stiv intervalfølelse.",
+    "Udvikle rytmeskift og aerob robusthed.",
+    "Hold fartskiftene kontrollerede. De skal føles som arbejde, ikke sprint.",
+    structure,
+  );
+}
+
+export function buildHillWorkout(context: WorkoutBuildContext): WorkoutSession {
+  const hillMinutes = roundToHalf(Math.min(Math.max(1, context.intervalRunMin * 0.5), 2.5));
+  const repeats = Math.max(5, Math.min(context.repeats + 1, 8));
+  const structure: WorkoutStructureSegment[] = [
+    ...warmupSegments(context, true),
+    { type: "run", label: "Bakkedrag", durationMin: hillMinutes, repeats, recoverMin: 1.5 },
+    ...cooldownSegments(context),
+  ];
+
+  return baseSession(
+    context,
+    "hill-reps",
+    "Bakkepas",
+    "Korte bakkedrag med rolig pause imellem for at bygge styrke og teknik.",
+    "Styrke, rytme og løbeøkonomi.",
+    "Løb kontrolleret opad med god holdning. Hold igen nok til at alle drag bliver ens.",
+    structure,
+  );
+}
+
+export function buildProgressionWorkout(context: WorkoutBuildContext): WorkoutSession {
+  const firstBlock = roundToHalf(Math.max(10, context.continuousRunMin * 0.45));
+  const secondBlock = roundToHalf(Math.max(8, Math.min(context.continuousRunMin * 0.4, tempoRunCap(context) * 0.55)));
+  const structure: WorkoutStructureSegment[] = [
+    ...warmupSegments(context, true),
+    { type: "steady", label: "Rolig åbningsblok", durationMin: firstBlock },
+    { type: "tempo", label: "Fremadbyggende afslutning", durationMin: secondBlock },
+    ...cooldownSegments(context),
+  ];
+
+  return baseSession(
+    context,
+    "progression",
+    "Progressionspas",
+    "Et pas der åbner roligt og slutter mere fokuseret, så du træner kontrol frem for bare fart.",
+    "Bygge tempokontrol og stærkere afslutning.",
+    "Start tydeligt roligt og arbejd dig gradvist frem. Afslut stærkt, men ikke presset.",
+    structure,
+  );
+}
+
+export function buildRaceSpecificWorkout(context: WorkoutBuildContext): WorkoutSession {
+  const blockDuration = roundToHalf(Math.min(Math.max(8, context.intervalRunMin * 1.5), tempoRunCap(context) * 0.6));
+  const structure: WorkoutStructureSegment[] = [
+    ...warmupSegments(context, true),
+    { type: "tempo", label: `${distanceLabel(context.goal)}-blok`, durationMin: blockDuration, repeats: 2, recoverMin: 2 },
+    ...cooldownSegments(context),
+  ];
+
+  return baseSession(
+    context,
+    "race-specific",
+    `${distanceLabel(context.goal)}-specifikt pas`,
+    "Et pas med blokke tættere på selve måldistancens rytme og krav.",
+    `Gøre dig mere tryg ved rytmen mod ${distanceLabel(context.goal)}.`,
+    "Hold fokus på jævn rytme og kontrol. Du skal føle dig skarp, ikke færdig.",
+    structure,
+  );
+}
+
 export function buildRecoveryWorkout(context: WorkoutBuildContext): WorkoutSession {
   const structure: WorkoutStructureSegment[] = [
-    { type: "warmup", label: "Rolig start", durationMin: 4 },
+    ...warmupSegments(context),
     { type: "recovery", label: "Meget let bevægelse", durationMin: Math.max(12, context.continuousRunMin * 0.65) },
-    { type: "cooldown", label: "Nedkøling", durationMin: 4 },
+    ...cooldownSegments(context),
   ];
 
   return baseSession(
@@ -258,16 +465,17 @@ export function buildRecoveryWorkout(context: WorkoutBuildContext): WorkoutSessi
 }
 
 export function buildBenchmarkWorkout(context: WorkoutBuildContext): WorkoutSession {
+  const benchmarkDuration = Math.min(Math.max(12, context.continuousRunMin), benchmarkRunCap(context));
   const structure: WorkoutStructureSegment[] = [
-    { type: "warmup", label: "Opvarmning", durationMin: 8 },
-    { type: "tempo", label: context.phase === "race_preparation" ? "5K-kontrolblok" : "Benchmark-blok", durationMin: Math.max(12, context.continuousRunMin) },
-    { type: "cooldown", label: "Nedkøling", durationMin: 6 },
+    ...warmupSegments(context, true),
+    { type: "tempo", label: context.phase === "race_preparation" || context.phase === "taper" ? `${distanceLabel(context.goal)}-kontrolblok` : "Benchmark-blok", durationMin: benchmarkDuration },
+    ...cooldownSegments(context),
   ];
 
   return baseSession(
     context,
     "benchmark",
-    context.phase === "race_preparation" ? "5K-benchmark" : "Benchmark-pas",
+    context.phase === "race_preparation" || context.phase === "taper" ? `${distanceLabel(context.goal)}-benchmark` : "Benchmark-pas",
     "Et kontrolleret statuspas, så du kan mærke din udvikling uden at det bliver et alt-eller-intet testløb.",
     "Måle udviklingen roligt og realistisk.",
     "Start kontrolleret og hold igen i første halvdel.",

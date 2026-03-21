@@ -32,7 +32,7 @@ const MIN_RUNS_PER_WEEK: Record<Goal["distance"], number> = {
 
 const TARGET_TIME_FLOOR_SEC: Record<Goal["distance"], { beginner: number; experienced: number }> = {
   "5K": { beginner: 22 * 60, experienced: 17 * 60 },
-  "10K": { beginner: 48 * 60, experienced: 40 * 60 },
+  "10K": { beginner: 48 * 60, experienced: 38 * 60 },
   Halvmaraton: { beginner: 105 * 60, experienced: 90 * 60 },
   Marathon: { beginner: 240 * 60, experienced: 200 * 60 },
 };
@@ -47,6 +47,18 @@ function abilityPressure(ability: RunnerProfile["currentRunningAbility"]): numbe
   if (ability === "ti_femten_min") return 1.05;
   if (ability === "mere_end_tredive_min") return 0.95;
   return 1;
+}
+
+function targetTimeFlexibility(profile: RunnerProfile, runsPerWeek: number): number {
+  let modifier = 1;
+
+  if (profile.runningExperience === "ovet") modifier *= 0.96;
+  if ((profile.currentWeeklyVolumeKm ?? 0) >= 35) modifier *= 0.96;
+  if ((profile.currentWeeklyVolumeKm ?? 0) >= 50) modifier *= 0.94;
+  if ((profile.currentRunsPerWeek ?? runsPerWeek) >= 4) modifier *= 0.97;
+  if (profile.currentRunningAbility === "mere_end_tredive_min") modifier *= 0.97;
+
+  return Math.max(0.82, modifier);
 }
 
 function parseTargetTimeToSec(value?: string): number | null {
@@ -129,7 +141,9 @@ export function validatePlanFeasibility(params: {
       ? TARGET_TIME_FLOOR_SEC[goal.distance].beginner
       : TARGET_TIME_FLOOR_SEC[goal.distance].experienced;
     const pressureModifier = runsPerWeek < minRuns || goal.weeks <= minWeeksRequired + 1 ? 1.08 * abilityModifier : abilityModifier;
-    if (targetTimeSec < floor / pressureModifier) {
+    const flexibilityModifier = targetTimeFlexibility(runnerProfile, runsPerWeek);
+    const realisticFloor = floor * flexibilityModifier;
+    if (targetTimeSec < realisticFloor / pressureModifier) {
       return {
         feasible: false,
         status: "not_feasible",
@@ -149,8 +163,8 @@ export function validatePlanFeasibility(params: {
   };
 }
 
-function applyWeeklyProgressionCap(plan: TrainingPlan, adjustments: SafetyAdjustment[]): TrainingPlan {
-  const weeks = buildWeeklyLoad(plan);
+function applyWeeklyProgressionCap(plan: TrainingPlan, startDateIso: string, adjustments: SafetyAdjustment[]): TrainingPlan {
+  const weeks = buildWeeklyLoad(plan, startDateIso);
   let sessions = [...plan.sessions];
 
   for (let i = 1; i < weeks.length; i += 1) {
@@ -286,7 +300,7 @@ export function applyPlanSafety(params: {
   const adjustments: SafetyAdjustment[] = [];
 
   let plan = params.plan;
-  plan = applyWeeklyProgressionCap(plan, adjustments);
+  plan = applyWeeklyProgressionCap(plan, goal.startDate, adjustments);
   plan = applySessionSpikeProtection(plan, adjustments);
   plan = applyRecoveryWeek(plan, adjustments);
   plan = applyFeedbackSafety(plan, recentFeedback, adjustments);

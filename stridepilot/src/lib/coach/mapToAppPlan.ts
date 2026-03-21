@@ -60,6 +60,14 @@ function expandStructure(structure: WorkoutStructureSegment[]): WorkoutStep[] {
 }
 
 export function mapCoachProfileToRunnerProfileInsights(profile: RunnerProfile): RunnerProfileInsights {
+  const targetSessionsPerWeek = Math.max(
+    2,
+    Math.min(
+      4,
+      profile.realisticTrainingDaysPerWeek || profile.currentRunsPerWeek || (profile.archetype === "fit_but_inexperienced" ? 4 : 3),
+    ),
+  );
+
   return {
     runnerProfile: {
       experience: profile.runningSpecificity >= 4 ? "advanced" : profile.runningSpecificity >= 3 ? "intermediate" : "beginner",
@@ -73,7 +81,7 @@ export function mapCoachProfileToRunnerProfileInsights(profile: RunnerProfile): 
       avoidRapidLoadIncrease: profile.injurySensitivity >= 4 || profile.archetype === "overeager_runner",
     },
     trainingRecommendations: {
-      targetSessionsPerWeek: profile.archetype === "nervous_beginner" ? 3 : profile.archetype === "fit_but_inexperienced" ? 4 : 3,
+      targetSessionsPerWeek,
       preferShortIntervalsInitially: profile.archetype === "nervous_beginner" || profile.runningSpecificity <= 2,
     },
     coachTone: {
@@ -84,7 +92,7 @@ export function mapCoachProfileToRunnerProfileInsights(profile: RunnerProfile): 
 
 export function mapCoachPlanToAppPlan(plan: CoachTrainingPlan, goal: GoalConfig): AppTrainingPlan {
   return {
-    summary: `8 ugers 5K-program med ${goal.trainingDaysPerWeek} træningsdage om ugen.`,
+    summary: `${plan.weeks.length} ugers program mod ${goal.goalDistance} med ${goal.trainingDaysPerWeek} træningsdage om ugen.`,
     weeks: plan.weeks.length,
     sessionsPerWeek: goal.trainingDaysPerWeek,
     sessions: plan.sessions.map((session) => ({
@@ -96,5 +104,12 @@ export function mapCoachPlanToAppPlan(plan: CoachTrainingPlan, goal: GoalConfig)
       loadScore: clampLoadScore(session.estimatedLoad),
       steps: expandStructure(session.structure),
     })),
+    rationale: plan.rationale
+      ? {
+          plan: plan.rationale.plan,
+          weeks: plan.rationale.weeks,
+          workouts: plan.rationale.workouts,
+        }
+      : undefined,
   };
 }

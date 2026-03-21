@@ -3,6 +3,15 @@
 :root {
   --font-sans: "Raleway", "Avenir Next", "Segoe UI", sans-serif;
   --font-mono: "Menlo", "Consolas", monospace;
+  --background: #ffffff;
+  --foreground: #111111;
+  --muted: #4b5563;
+}
+
+.dark {
+  --background: #222222;
+  --foreground: #ffffff;
+  --muted: #9ca3af;
 }
 
 * {
@@ -17,15 +26,30 @@ body {
   overflow-x: hidden;
 }
 
+html {
+  background: #0b0f14;
+}
+
 body {
+  min-height: 100dvh;
   font-family: var(--font-sans);
   line-height: 1.45;
-  background: #0b0f14;
-  color: #f2f5f7;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@media (prefers-color-scheme: light) {
+  html {
+    background: #eef3f7;
+  }
 }
 
 code {
   font-family: var(--font-mono);
+}
+
+.text-muted {
+  color: var(--muted);
 }
 
 button,

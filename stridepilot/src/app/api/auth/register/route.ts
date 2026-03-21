@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
 import { createSessionToken, getSessionCookieName, getSessionMaxAge } from "@/lib/auth/session";
+import { sendWelcomeEmail } from "@/lib/email";
 
 interface RegisterBody {
   email?: string;
@@ -30,6 +31,12 @@ export async function POST(req: Request) {
         passwordHash: hashPassword(password),
       },
     });
+
+    try {
+      await sendWelcomeEmail({ to: user.email });
+    } catch (mailError) {
+      console.error("Could not send welcome email", mailError);
+    }
 
     const token = createSessionToken(user.id, user.email);
     const response = NextResponse.json({

@@ -1,11 +1,18 @@
 export type ActivityLevel = "meget_lav" | "lav" | "moderat" | "høj" | "meget_høj";
 export type GoalDistance = "5K" | "10K" | "Halvmaraton" | "Marathon";
+export type GoalType = "complete" | "run_without_walking" | "target_time" | "pr";
+export type GuidancePreference = "simple" | "flexible" | "performance_oriented";
 export type CurrentRunningAbility =
   | "helt_ny"
   | "fem_min"
   | "ti_femten_min"
   | "tyve_tredive_min"
   | "mere_end_tredive_min";
+
+export interface RecentRaceTime {
+  distance: GoalDistance;
+  time: string;
+}
 
 export interface RunnerProfile {
   firstName?: string;
@@ -17,6 +24,16 @@ export interface RunnerProfile {
   currentRunningAbility: CurrentRunningAbility;
   gender?: "kvinde" | "mand" | "andet" | "vil_ikke_oplyse";
   userTrainingContext?: string;
+  currentWeeklyVolumeKm?: number;
+  currentRunsPerWeek?: number;
+  longestCurrentRunMin?: number;
+  recentRaceTimes?: RecentRaceTime[];
+  injuryHistory?: string;
+  weakPoints?: string;
+  realisticTrainingDaysPerWeek?: number;
+  typicalWorkoutMinutes?: number;
+  otherTraining?: string;
+  preferredGuidance?: GuidancePreference;
 }
 
 export interface RunnerProfileInsights {
@@ -49,11 +66,13 @@ export interface FeedbackInsights {
 
 export interface Goal {
   distance: GoalDistance;
+  goalType?: GoalType;
   weeks: number;
   startDate: string;
   endDate?: string;
   reminderTime?: string;
   targetTime?: string;
+  targetPaceSecPerKm?: number;
   availableTrainingDays?: WorkoutSession["dayOfWeek"][];
 }
 
@@ -81,6 +100,37 @@ export interface TrainingPlan {
   weeks: number;
   sessionsPerWeek: number;
   sessions: WorkoutSession[];
+  rationale?: {
+    plan?: {
+      profileSummary: string[];
+      structureSummary: string[];
+      safetySummary: string[];
+      ambitionAdjustment?: {
+        applied: boolean;
+        originalIntent: "finish" | "finish_comfortably" | "improve" | "target_time";
+        effectiveIntent: "finish" | "finish_comfortably" | "improve" | "target_time" | "conservative_improve";
+        reason: string;
+      };
+    };
+    weeks?: Array<{
+      weekNumber: number;
+      summary: string;
+      focus: string;
+      loadShape: "build" | "stabilize" | "taper";
+    }>;
+    workouts?: Array<{
+      sessionId: string;
+      summary: string;
+      purpose: string;
+    }>;
+    adaptation?: {
+      mode: "hold" | "down_shift" | "recovery_microcycle" | "resume_build" | "progress";
+      reason: string;
+      changeSummary: string[];
+      learnedTendencies?: string[];
+      runnerFocus: string;
+    };
+  };
 }
 
 export interface WorkoutFeedbackInput {
@@ -90,4 +140,16 @@ export interface WorkoutFeedbackInput {
   energy: number;
   painLevel: number;
   notes: string;
+}
+
+export interface SavedWorkoutSessionFeedback {
+  sessionId: string;
+  status: "completed" | "shortened" | "missed";
+  quickFeedback?: WorkoutFeedbackInput["quickFeedback"];
+  effort: number;
+  completionPct: number;
+  energy: number;
+  painLevel: number;
+  notes?: string;
+  submittedAt: string;
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentSession } from "@/lib/auth/session";
-import { Goal, RunnerProfile, TrainingPlan } from "@/lib/types";
+import { Goal, RunnerProfile, SavedWorkoutSessionFeedback, TrainingPlan } from "@/lib/types";
 
 function toTrainingPlan(planRecord: {
   summary: string;
@@ -43,6 +43,12 @@ function toTrainingPlan(planRecord: {
   };
 }
 
+function feedbackStatusFromCompletion(completionPct: number): SavedWorkoutSessionFeedback["status"] {
+  if (completionPct <= 0) return "missed";
+  if (completionPct < 95) return "shortened";
+  return "completed";
+}
+
 export async function GET() {
   try {
     const session = await getCurrentSession();
@@ -63,7 +69,13 @@ export async function GET() {
           include: {
             sessions: {
               orderBy: [{ week: "asc" }, { order: "asc" }],
-              include: { steps: { orderBy: { order: "asc" } } },
+              include: {
+                steps: { orderBy: { order: "asc" } },
+                feedback: {
+                  orderBy: { createdAt: "desc" },
+                  take: 1,
+                },
+              },
             },
           },
         },
@@ -76,6 +88,24 @@ export async function GET() {
 
     const latestGoal = profile.goals[0];
     const latestPlan = profile.plans[0];
+    const sessionFeedback: SavedWorkoutSessionFeedback[] = latestPlan.sessions.flatMap((session) => {
+      const latestFeedback = session.feedback[0];
+      if (!latestFeedback) return [];
+
+      return [
+        {
+          sessionId: session.id,
+          status: feedbackStatusFromCompletion(latestFeedback.completionPct),
+          quickFeedback: latestFeedback.quickFeedback as SavedWorkoutSessionFeedback["quickFeedback"] | undefined,
+          effort: latestFeedback.effort,
+          completionPct: latestFeedback.completionPct,
+          energy: latestFeedback.energy,
+          painLevel: latestFeedback.painLevel,
+          notes: latestFeedback.notes ?? undefined,
+          submittedAt: latestFeedback.createdAt.toISOString(),
+        },
+      ];
+    });
 
     return NextResponse.json({
       profileId: profile.id,
@@ -97,6 +127,7 @@ export async function GET() {
         : null,
       baselinePlan: toTrainingPlan(latestPlan),
       plan: toTrainingPlan(latestPlan),
+      sessionFeedback,
     });
   } catch {
     return NextResponse.json({ error: "Could not load current plan" }, { status: 500 });

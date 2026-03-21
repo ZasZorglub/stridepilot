@@ -146,6 +146,7 @@ model WorkoutFeedback {
   createdAt        DateTime @default(now())
   profileId        String
   workoutSessionId String
+  quickFeedback    String?
   effort           Int
   completionPct    Int
   energy           Int

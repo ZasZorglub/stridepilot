@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentSession } from "@/lib/auth/session";
-import { interpretWorkoutFeedback } from "@/lib/ai/interpretation";
+import { interpretWorkoutFeedback, summarizeAdaptationRationale } from "@/lib/ai/interpretation";
 import { factorFromFeedbackInsights } from "@/lib/adaptation";
-import { adaptPlanFromFeedback, CapabilityState, createInitialCapabilityState } from "@/lib/coach";
+import { adaptPlanFromFeedback, CapabilityState, createInitialCapabilityState, summarizeNextWeekShift } from "@/lib/coach";
 import { WorkoutFeedback as CoachWorkoutFeedback } from "@/lib/coach/capability";
+import { buildFeedbackResponseCopy } from "@/lib/coach/explanations";
 import { TrainingPlan } from "@/lib/types";
 
 interface FeedbackBody {
@@ -164,59 +165,6 @@ function buildAdjustmentSummary(input: {
   return summary;
 }
 
-function describeFeedbackInterpretation(input: {
-  quickFeedback?: FeedbackBody["quickFeedback"];
-  effort: number;
-  completionPct: number;
-  energy: number;
-  painLevel: number;
-}): string {
-  if (input.quickFeedback === "very_easy") {
-    return "Jeg vurderer, at passet føltes let, med godt overskud og lav belastning.";
-  }
-  if (input.quickFeedback === "good") {
-    return "Jeg vurderer, at passet ramte et godt niveau, med fint overskud og stabil belastning.";
-  }
-  if (input.quickFeedback === "hard") {
-    return "Jeg vurderer, at passet var lidt hårdere end planlagt, men stadig under kontrol.";
-  }
-  if (input.quickFeedback === "too_hard") {
-    return "Jeg vurderer, at passet var krævende, og at belastningen var højere end ønsket.";
-  }
-
-  const effortText = input.effort >= 8 ? "hårdt" : input.effort <= 4 ? "let" : "moderat";
-  const energyText = input.energy <= 2 ? "lav energi" : input.energy >= 4 ? "god energi" : "moderat energi";
-  const painText = input.painLevel >= 6 ? "forhøjet belastning" : input.painLevel <= 3 ? "lav belastning" : "moderat belastning";
-  return `Jeg vurderer, at passet føltes ${effortText}, med ${energyText} og ${painText}.`;
-}
-
-function describeAdjustment(input: {
-  quickFeedback?: FeedbackBody["quickFeedback"];
-  factor: number;
-  progressionPauseWeeks: number;
-}): string {
-  if (input.quickFeedback === "very_easy") {
-    return "Derfor kan planen fortsætte som planlagt, så du kan bygge videre med rolig progression.";
-  }
-  if (input.quickFeedback === "good") {
-    return "Derfor holder jeg progressionen stabil, så du kan bygge videre uden at forcere noget.";
-  }
-  if (input.quickFeedback === "hard") {
-    return "Derfor holder jeg næste pas en smule roligere, så du kan bevare en stabil rytme i træningen.";
-  }
-  if (input.quickFeedback === "too_hard") {
-    return "Derfor justerer jeg planen lidt ned, så progressionen bliver mere stabil og bæredygtig.";
-  }
-
-  if (input.progressionPauseWeeks > 0 || input.factor < 1) {
-    return "Derfor holder jeg den næste del af planen lidt roligere, så kroppen bedre kan følge med.";
-  }
-  if (input.factor > 1) {
-    return "Derfor kan planen fortsætte som planlagt med en rolig og stabil progression.";
-  }
-  return "Derfor holder jeg progressionen stabil, så du kan bygge videre uden at forcere noget.";
-}
-
 export async function POST(req: Request) {
   try {
     const session = await getCurrentSession();
@@ -250,12 +198,6 @@ export async function POST(req: Request) {
       factor,
       progressionPauseWeeks: feedbackInsights.progressionPauseWeeks,
     });
-    const interpretation = describeFeedbackInterpretation({ quickFeedback: body.quickFeedback, effort, completionPct, energy, painLevel });
-    const adjustmentExplanation = describeAdjustment({
-      quickFeedback: body.quickFeedback,
-      factor,
-      progressionPauseWeeks: feedbackInsights.progressionPauseWeeks,
-    });
     const initialCapability = body.capabilityState ?? createInitialCapabilityState(null);
     const coachFeedback: CoachWorkoutFeedback = {
       sessionId: body.workoutSessionId ?? "unknown-session",
@@ -278,28 +220,53 @@ export async function POST(req: Request) {
                       : "very_hard",
       energy: energy >= 4 ? "high" : energy <= 2 ? "low" : "normal",
       pain: painLevel >= 7 ? "high" : painLevel >= 4 ? "moderate" : painLevel >= 2 ? "mild" : "none",
+      completionPct,
+      effort,
+      adaptationFactor: factor,
+      progressionPauseWeeks: feedbackInsights.progressionPauseWeeks,
+      noteCaution: feedbackInsights.adjustment === "insert_recovery" || feedbackInsights.adjustment === "hold_progression",
     };
 
     if (demoMode) {
       const adapted = adaptPlanFromFeedback({ summary: "", weeks: 0, sessionsPerWeek: 0, sessions: [] }, coachFeedback, initialCapability);
+      const responseCopy = buildFeedbackResponseCopy({
+        rationale: adapted.rationale,
+        feedback: { quickFeedback: body.quickFeedback, completionPct, effort, energy, painLevel },
+      });
+      const adaptationCopy = await summarizeAdaptationRationale({
+        rationale: adapted.rationale,
+        fallback: {
+          interpretation: responseCopy.interpretation,
+          adjustmentExplanation: responseCopy.adjustmentExplanation,
+          runnerFocus: responseCopy.runnerFocus,
+        },
+      });
       return NextResponse.json({
         saved: true,
         demoMode: true,
         adaptationFactor: factor,
+        adaptationMode: adapted.capability.lastAdaptationMode,
+        adaptationReason: adapted.capability.lastAdaptationReason,
         feedbackInsights,
         capabilityState: adapted.capability,
+        adaptationRationale: adapted.rationale,
         confirmation: {
           title: "Tak for din feedback.",
         },
-        interpretation,
-        adjustmentExplanation,
+        interpretation: adaptationCopy.interpretation,
+        adjustmentExplanation: adaptationCopy.adjustmentExplanation,
+        runnerFocus: adaptationCopy.runnerFocus,
         adjustmentSummary: summary,
         note:
-          factor < 1
-            ? "Næste pas er justeret ned for bedre restitution."
-            : factor > 1
-              ? "Næste pas er justeret let op ud fra din indsats."
-              : "Næste pas fastholdes på samme niveau.",
+          adapted.capability.lastAdaptationMode === "recovery_microcycle"
+            ? "Den næste uge er gjort tydeligt lettere for at give kroppen mere ro."
+            : adapted.capability.lastAdaptationMode === "down_shift"
+              ? "Den næste uge er justeret lidt ned for at holde belastningen bæredygtig."
+              : adapted.capability.lastAdaptationMode === "resume_build"
+                ? "Den næste uge bygger forsigtigt videre efter en lidt roligere periode."
+                : adapted.capability.lastAdaptationMode === "progress"
+                  ? "Den næste uge er justeret en smule op, fordi de seneste signaler var stærke."
+                  : "Den næste uge holdes overordnet stabil.",
       });
     }
 
@@ -358,6 +325,7 @@ export async function POST(req: Request) {
       data: {
         profileId: body.profileId,
         workoutSessionId: workoutSession.id,
+        quickFeedback: body.quickFeedback ?? null,
         effort,
         completionPct,
         energy,
@@ -376,10 +344,27 @@ export async function POST(req: Request) {
       }),
     };
     const adapted = adaptPlanFromFeedback(futureOnlyPlan, coachFeedback, currentCapability);
+    const responseCopy = buildFeedbackResponseCopy({
+      rationale: adapted.rationale,
+      feedback: { quickFeedback: body.quickFeedback, completionPct, effort, energy, painLevel },
+    });
+    const adaptationCopy = await summarizeAdaptationRationale({
+      rationale: adapted.rationale,
+      fallback: {
+        interpretation: responseCopy.interpretation,
+        adjustmentExplanation: responseCopy.adjustmentExplanation,
+        runnerFocus: responseCopy.runnerFocus,
+      },
+    });
     const mergedPlan: TrainingPlan = {
       ...currentPlan,
       sessions: currentPlan.sessions.map((session) => adapted.plan.sessions.find((item) => item.id === session.id) ?? session),
+      rationale: {
+        ...currentPlan.rationale,
+        adaptation: adapted.rationale,
+      },
     };
+    const nextWeekShift = summarizeNextWeekShift(futureOnlyPlan, adapted.plan);
 
     await persistAdaptedSessions({
       originalPlan: currentPlan,
@@ -391,21 +376,30 @@ export async function POST(req: Request) {
     return NextResponse.json({
       saved: true,
       adaptationFactor: factor,
+      adaptationMode: adapted.capability.lastAdaptationMode,
+      adaptationReason: adapted.capability.lastAdaptationReason,
+      nextWeekLoadShift: nextWeekShift,
       feedbackInsights,
       capabilityState: adapted.capability,
       updatedPlan: mergedPlan,
+      adaptationRationale: adapted.rationale,
       confirmation: {
         title: "Tak for din feedback.",
       },
-      interpretation,
-      adjustmentExplanation,
+      interpretation: adaptationCopy.interpretation,
+      adjustmentExplanation: adaptationCopy.adjustmentExplanation,
+      runnerFocus: adaptationCopy.runnerFocus,
       adjustmentSummary: summary,
       note:
-        factor < 1
-          ? "Næste pas er justeret ned for bedre restitution."
-          : factor > 1
-            ? "Næste pas er justeret let op ud fra din indsats."
-            : "Næste pas fastholdes på samme niveau.",
+        adapted.capability.lastAdaptationMode === "recovery_microcycle"
+          ? "Den næste uge er gjort tydeligt lettere for at give kroppen mere ro."
+          : adapted.capability.lastAdaptationMode === "down_shift"
+            ? "Den næste uge er justeret lidt ned for at holde belastningen bæredygtig."
+            : adapted.capability.lastAdaptationMode === "resume_build"
+              ? "Den næste uge bygger forsigtigt videre efter en lidt roligere periode."
+              : adapted.capability.lastAdaptationMode === "progress"
+                ? "Den næste uge er justeret en smule op, fordi de seneste signaler var stærke."
+                : "Den næste uge holdes overordnet stabil.",
     });
   } catch {
     return NextResponse.json({ error: "Could not save feedback" }, { status: 500 });
