@@ -1,0 +1,191 @@
+import { classifyRunner, validateRunnerClassification } from "../src/lib/engine-v2";
+import type { RunnerInput } from "../src/lib/engine-v2";
+
+const fixtures: Array<{ name: string; input: RunnerInput }> = [
+  {
+    name: "true_beginner_5k_finish",
+    input: {
+      raceDistance: "5K",
+      goalType: "finish",
+      startDate: "2026-03-23",
+      goalDate: "2026-06-14",
+      currentContinuousRunMin: 0,
+      currentWeeklyRuns: 0,
+      currentWeeklyVolumeKm: 0,
+      longestRecentRunMin: 0,
+      recentConsistency: 0,
+      availableTrainingDays: ["tuesday", "thursday", "sunday"],
+      typicalAvailableTimeMin: 30,
+      trainingStylePreference: "conservative",
+      experienceLevel: "none",
+      injuryConcern: "low",
+      externalTrainingLoad: "none",
+      confidence: 2,
+    },
+  },
+  {
+    name: "beginner_5k_no_walk",
+    input: {
+      raceDistance: "5K",
+      goalType: "finish_without_walking",
+      startDate: "2026-03-23",
+      goalDate: "2026-06-14",
+      currentContinuousRunMin: 5,
+      currentWeeklyRuns: 1,
+      currentWeeklyVolumeKm: 5,
+      longestRecentRunMin: 15,
+      recentConsistency: 0.22,
+      availableTrainingDays: ["tuesday", "thursday", "sunday"],
+      typicalAvailableTimeMin: 35,
+      trainingStylePreference: "conservative",
+      experienceLevel: "new",
+      injuryConcern: "low",
+      externalTrainingLoad: "light",
+      confidence: 2,
+    },
+  },
+  {
+    name: "recreational_10k_finish",
+    input: {
+      raceDistance: "10K",
+      goalType: "finish",
+      startDate: "2026-03-23",
+      goalDate: "2026-07-19",
+      currentContinuousRunMin: 20,
+      currentWeeklyRuns: 3,
+      currentWeeklyVolumeKm: 18,
+      longestRecentRunMin: 32,
+      recentConsistency: 0.6,
+      availableTrainingDays: ["tuesday", "thursday", "sunday"],
+      typicalAvailableTimeMin: 45,
+      trainingStylePreference: "balanced",
+      experienceLevel: "recreational",
+      injuryConcern: "low",
+      externalTrainingLoad: "light",
+      confidence: 3,
+    },
+  },
+  {
+    name: "intermediate_10k_improve",
+    input: {
+      raceDistance: "10K",
+      goalType: "improve_time",
+      startDate: "2026-03-23",
+      goalDate: "2026-06-14",
+      currentContinuousRunMin: 40,
+      currentWeeklyRuns: 4,
+      currentWeeklyVolumeKm: 30,
+      longestRecentRunMin: 55,
+      recentConsistency: 0.82,
+      availableTrainingDays: ["monday", "wednesday", "friday", "sunday"],
+      typicalAvailableTimeMin: 60,
+      trainingStylePreference: "performance",
+      experienceLevel: "intermediate",
+      injuryConcern: "low",
+      externalTrainingLoad: "light",
+      confidence: 4,
+    },
+  },
+  {
+    name: "hm_finish_low_availability",
+    input: {
+      raceDistance: "HalfMarathon",
+      goalType: "finish",
+      startDate: "2026-03-23",
+      goalDate: "2026-07-12",
+      currentContinuousRunMin: 35,
+      currentWeeklyRuns: 3,
+      currentWeeklyVolumeKm: 22,
+      longestRecentRunMin: 45,
+      recentConsistency: 0.66,
+      availableTrainingDays: ["tuesday", "thursday", "sunday"],
+      typicalAvailableTimeMin: 35,
+      trainingStylePreference: "balanced",
+      experienceLevel: "recreational",
+      injuryConcern: "low",
+      externalTrainingLoad: "moderate",
+      confidence: 3,
+    },
+  },
+  {
+    name: "marathon_improve",
+    input: {
+      raceDistance: "Marathon",
+      goalType: "improve_time",
+      startDate: "2026-03-23",
+      goalDate: "2026-08-09",
+      currentContinuousRunMin: 65,
+      currentWeeklyRuns: 5,
+      currentWeeklyVolumeKm: 52,
+      longestRecentRunMin: 110,
+      recentConsistency: 0.86,
+      availableTrainingDays: ["monday", "wednesday", "friday", "saturday", "sunday"],
+      typicalAvailableTimeMin: 85,
+      trainingStylePreference: "performance",
+      experienceLevel: "intermediate",
+      injuryConcern: "low",
+      externalTrainingLoad: "light",
+      confidence: 4,
+    },
+  },
+  {
+    name: "return_to_running",
+    input: {
+      raceDistance: "10K",
+      goalType: "return_to_running",
+      startDate: "2026-03-23",
+      goalDate: "2026-07-05",
+      currentContinuousRunMin: 10,
+      currentWeeklyRuns: 1,
+      currentWeeklyVolumeKm: 8,
+      longestRecentRunMin: 20,
+      recentConsistency: 0.35,
+      availableTrainingDays: ["tuesday", "thursday", "sunday"],
+      typicalAvailableTimeMin: 40,
+      trainingStylePreference: "conservative",
+      experienceLevel: "recreational",
+      injuryConcern: "moderate",
+      externalTrainingLoad: "light",
+      confidence: 3,
+      freeTextFlags: ["coming back after a long break"],
+    },
+  },
+  {
+    name: "injury_sensitive_recreational",
+    input: {
+      raceDistance: "10K",
+      goalType: "finish",
+      startDate: "2026-03-23",
+      goalDate: "2026-07-12",
+      currentContinuousRunMin: 28,
+      currentWeeklyRuns: 3,
+      currentWeeklyVolumeKm: 20,
+      longestRecentRunMin: 40,
+      recentConsistency: 0.64,
+      availableTrainingDays: ["tuesday", "thursday", "sunday"],
+      typicalAvailableTimeMin: 50,
+      trainingStylePreference: "balanced",
+      experienceLevel: "recreational",
+      injuryConcern: "high",
+      externalTrainingLoad: "light",
+      confidence: 3,
+    },
+  },
+];
+
+for (const fixture of fixtures) {
+  const classification = classifyRunner(fixture.input);
+  const issues = validateRunnerClassification(fixture.input, classification);
+  console.log(`\n=== ${fixture.name} ===`);
+  console.log(`primaryType=${classification.traits.primaryRunnerType}`);
+  console.log(`runnerLevel=${classification.traits.runnerLevel}`);
+  console.log(`modifiers=${classification.traits.modifiers.length > 0 ? classification.traits.modifiers.join(", ") : "none"}`);
+  console.log(
+    `traits=durability:${Math.round(classification.traits.durabilityScore * 100)}, progression:${Math.round(classification.traits.progressionTolerance * 100)}, intensity:${Math.round(classification.traits.intensityReadiness * 100)}, longRun:${Math.round(classification.traits.longRunReadiness * 100)}, recoveryNeed:${Math.round(classification.traits.recoveryNeed * 100)}, injuryRisk:${Math.round(classification.traits.injuryRiskScore * 100)}, consistency:${classification.traits.consistencyProfile}/${Math.round(classification.traits.consistencyScore * 100)}, confidence:${classification.traits.confidenceProfile}, schedule:${classification.traits.scheduleConstraintLevel}`,
+  );
+  console.log(`why=${classification.explanation.classificationSummary}`);
+  console.log(`capability=${classification.explanation.capabilitySummary}`);
+  console.log(`risk=${classification.explanation.riskSummary}`);
+  console.log(`intent=${classification.explanation.intentSummary}`);
+  console.log(`issues=${issues.length > 0 ? issues.map((issue) => `${issue.severity}:${issue.message}`).join(" | ") : "none"}`);
+}

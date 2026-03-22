@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "validate:engine": "tsc -p tmp/tsconfig.eval.json && node tmp-cjs/scripts/engine-validation.js",
+    "validate:engine-v2": "tsc -p tmp/tsconfig.engine-v2.json && node tmp-v2/scripts/engine-v2-validation.js",
+    "validate:engine-v2:classification": "tsc -p tmp/tsconfig.engine-v2.json && node tmp-v2/scripts/engine-v2-classification-validation.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {
