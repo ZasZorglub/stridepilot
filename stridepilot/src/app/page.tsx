@@ -2,14 +2,76 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./page.module.css";
-import { CurrentRunningAbility, FeedbackInsights, Goal, GuidancePreference, GoalType, RunnerProfile, RunnerProfileInsights, SavedWorkoutSessionFeedback, TrainingPlan, WorkoutFeedbackInput, WorkoutSession, WorkoutStep } from "@/lib/types";
+import {
+  CurrentRunningAbility,
+  FeedbackInsights,
+  Goal,
+  GoalType,
+  PlanHistorySummary,
+  PlanAmbition,
+  PlanRecommendation,
+  PlanRecommendationOption,
+  RunnerProfile,
+  RunnerProfileInsights,
+  SavedPlanAdaptation,
+  SavedProfileNote,
+  SavedWorkoutSessionFeedback,
+  TrainingPlan,
+  WorkoutFeedbackInput,
+  WorkoutSession,
+  WorkoutStep,
+} from "@/lib/types";
 import { APP_NAME } from "@/lib/app-config";
 import { cancelCue, initSpeech, isSpeechSupported, speakCue } from "@/lib/speech-coach";
 import { buildWeeklyLoad } from "@/lib/plan";
 import {
+  buildRecommendationLeadCopy,
+  buildPlanStartDateHelpText,
+  buildRecentRaceTimeFromParts,
+  buildRecentRaceTimes,
+  deriveBaselineLoadFromAbility,
+  getGoalTypeOptions,
+  getOnboardingStepDefinition,
+  getSuggestedPlanStartDate,
+  hasRecentRaceEntry,
+  isGoalTypeAllowed,
+  mapAbilityToRunningExperience,
+  ONBOARDING_STEP_COUNT,
+  recentRaceDraftFromEntries,
+  recentRaceDraftSummaryLabel,
+  recentRaceSummaryLabel,
+  recentRaceTimePartsFromString,
+} from "@/lib/onboarding-flow";
+import {
+  buildWeekOverviewAction,
+  buildNextWorkoutState,
+  buildProgressGraphState,
+  buildProgressGraphWeekAction,
+  buildProgramStatusLine,
+  buildTodayActionState,
+  buildProgramAdjustmentHighlights,
+  buildProgramInsightState,
+  buildProgressOverviewSummary,
+  getAdjustmentToneAppearance,
+  getProgramDayVisualState,
+  shouldHighlightNextWorkout,
+} from "@/lib/program-screen";
+import { buildPulseGuidanceSummary, buildPulseGuidanceWarning, parseMaxHeartRateInput } from "@/lib/profile-settings";
+import {
+  buildWorkoutActionState,
+  buildWorkoutCheckInState,
+  buildWorkoutCueState,
+  buildWorkoutInterruptionNotice,
+  getNextWorkoutStep,
+  getWorkoutHeartRateGuidance,
+  getWorkoutAudioStatus,
+  getVisibleWorkoutSteps,
+  hasRequiredWorkoutFeedback,
+  shouldSpeakWorkoutCue,
+} from "@/lib/workout-screen";
+import {
   calendarWeekDatesForIndex,
   calendarWeekIndexFromDate,
-  deriveCalendarWeekCount,
   sessionDateFromCalendarWeek,
   visiblePlanSessions,
 } from "@/lib/calendar-week";
@@ -34,18 +96,19 @@ import {
 } from "@/lib/coach";
 import { WorkoutFeedback as CoachWorkoutFeedback } from "@/lib/coach/capability";
 import { buildFeedbackResponseCopy } from "@/lib/coach/explanations";
-import { buildProfileExplanationSummary, interpretProfileSignals, recommendTrainingDays } from "@/lib/profile-interpretation";
+import { recommendTrainingDays } from "@/lib/profile-interpretation";
 
 type Stage = "welcome" | "auth" | "intro" | "profile" | "intermezzo" | "program" | "workout";
 type AuthMode = "signup" | "login";
 type AudioMode = "off" | "short" | "coach";
-type ThemePref = "system" | "dark" | "light";
+type ThemePref = "dark";
 type InfoField = "targetPace" | "runningExperience" | "activityLevel" | "availableTrainingDays" | "currentRunningAbility" | "graph" | null;
 type OnboardingSelectionState = {
   runningAbility: boolean;
   goalDistance: boolean;
   goalType: boolean;
   activityLevel: boolean;
+  ambition: boolean;
 };
 
 type QuickFeedbackOption = NonNullable<WorkoutFeedbackInput["quickFeedback"]>;
@@ -64,6 +127,11 @@ type CoachInterpretationState = {
   learnedInsights?: string[];
   reply?: CoachReply;
   resolution?: string;
+};
+
+type WakeLockSentinelLike = {
+  released: boolean;
+  release: () => Promise<void>;
 };
 
 type SessionFeedbackMap = Record<string, SavedWorkoutSessionFeedback>;
@@ -117,13 +185,6 @@ const GOAL_DISTANCE_OPTIONS: Array<{ value: Goal["distance"]; label: string }> =
   { value: "Marathon", label: "Maraton" },
 ];
 
-const GOAL_TYPE_OPTIONS: Array<{ value: GoalType; label: string }> = [
-  { value: "complete", label: "Gennemføre" },
-  { value: "run_without_walking", label: "Løbe uden gangpauser" },
-  { value: "target_time", label: "Løbe med et bestemt tempo" },
-  { value: "pr", label: "Sæt PR" },
-];
-
 const ACTIVITY_LEVEL_OPTIONS: Array<{ value: RunnerProfile["activityLevel"]; label: string }> = [
   { value: "meget_lav", label: "Næsten ingen anden træning" },
   { value: "lav", label: "Lidt anden træning" },
@@ -139,35 +200,24 @@ const GENDER_OPTIONS: Array<{ value: NonNullable<RunnerProfile["gender"]>; label
   { value: "vil_ikke_oplyse", label: "Ønsker ikke at oplyse" },
 ];
 
-const GUIDANCE_OPTIONS: Array<{ value: GuidancePreference; label: string; help: string }> = [
-  { value: "simple", label: "Enkel og overskuelig", help: "Få tydelige pas uden for mange nuancer." },
-  { value: "flexible", label: "Fleksibel og tilpasningsdygtig", help: "Gør planen lettere at få til at passe ind i hverdagen." },
-  { value: "performance_oriented", label: "Mere præstationsorienteret", help: "Læg lidt mere vægt på fremgang og målretning." },
+const AMBITION_OPTIONS: Array<{ value: PlanAmbition; label: string; help: string }> = [
+  { value: "gentle", label: "Rolig", help: "En roligere og lidt længere vej med mere plads til restitution og stabile vaner." },
+  { value: "standard", label: "Anbefalet", help: "StridePilots standardanbefaling og som regel den mest realistiske vej." },
+  { value: "ambitious", label: "Ambitiøs", help: "En kortere vej, men kun når dit nuværende niveau understøtter det på en forsvarlig måde." },
+];
+
+const LONG_RUN_DAY_OPTIONS: Array<{ value: NonNullable<Goal["preferredLongRunDay"]>; label: string; help: string }> = [
+  { value: "saturday", label: "Lørdag", help: "StridePilot prøver først at placere den lange tur om lørdagen." },
+  { value: "sunday", label: "Søndag", help: "StridePilot prøver først at placere den lange tur om søndagen." },
+  { value: "both", label: "Begge dage passer", help: "StridePilot vælger den weekenddag, der passer bedst til restitutionen." },
+  { value: "flexible", label: "Fleksibel", help: "StridePilot vælger den dag, der giver den mest robuste uge." },
 ];
 
 const PACE_MINUTE_OPTIONS = Array.from({ length: 8 }, (_, index) => 3 + index);
 const PACE_SECOND_OPTIONS = Array.from({ length: 12 }, (_, index) => index * 5);
-const RECENT_RACE_TIME_OPTIONS = Array.from({ length: 691 }, (_, index) => 15 * 60 + index * 30);
-const TRAINING_TIME_OPTIONS = [
-  "05:00",
-  "06:00",
-  "07:00",
-  "08:00",
-  "09:00",
-  "10:00",
-  "11:00",
-  "12:00",
-  "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-  "18:00",
-  "19:00",
-  "20:00",
-  "21:00",
-];
-
+const RECENT_RACE_HOUR_OPTIONS = Array.from({ length: 10 }, (_, index) => index);
+const RECENT_RACE_MINUTE_OPTIONS = Array.from({ length: 60 }, (_, index) => index);
+const RECENT_RACE_SECOND_OPTIONS = Array.from({ length: 60 }, (_, index) => index);
 const QUICK_FEEDBACK_OPTIONS: Array<{ value: QuickFeedbackOption; label: string }> = [
   { value: "very_easy", label: "For let" },
   { value: "good", label: "Passende" },
@@ -212,30 +262,8 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function addDaysToIso(value: string, days: number): string {
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  date.setDate(date.getDate() + days);
-  const nextYear = date.getFullYear();
-  const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
-  const nextDay = String(date.getDate()).padStart(2, "0");
-  return `${nextYear}-${nextMonth}-${nextDay}`;
-}
-
-function derivePlanWeeks(startDate: string, endDate?: string): number | null {
-  if (!isValidIsoDate(startDate) || !endDate || !isValidIsoDate(endDate)) return null;
-  return deriveCalendarWeekCount(startDate, endDate);
-}
-
 function shouldShowGoalPaceInput(goalType?: GoalType): boolean {
   return goalType === "target_time" || goalType === "pr";
-}
-
-function formatPace(secPerKm?: number): string | null {
-  if (!secPerKm || secPerKm <= 0) return null;
-  const minutes = Math.floor(secPerKm / 60);
-  const seconds = secPerKm % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")} min/km`;
 }
 
 function pacePickerValues(goal: Goal): { minute: string; second: string } {
@@ -244,18 +272,6 @@ function pacePickerValues(goal: Goal): { minute: string; second: string } {
     minute: String(Math.floor(goal.targetPaceSecPerKm / 60)),
     second: String(goal.targetPaceSecPerKm % 60).padStart(2, "0"),
   };
-}
-
-function formatDurationOption(totalSeconds: number): string {
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 function pacePickerValuesFromSeconds(targetPaceSecPerKm?: number): { minute: string; second: string } {
@@ -301,13 +317,6 @@ function goalPaceFieldHint(goal: Goal): string {
     return `Vælg det tempo du gerne vil kunne holde for at sætte PR på ${goal.distance}.`;
   }
   return `Vælg det tempo du går efter på ${goal.distance}.`;
-}
-
-function goalPerformanceLabel(goal: Goal): string {
-  const paceLabel = formatPace(goal.targetPaceSecPerKm);
-  if (goal.goalType === "run_without_walking") return `${goal.distance} uden gangpauser`;
-  if (paceLabel) return `${goal.distance} omkring ${paceLabel}`;
-  return goal.distance;
 }
 
 function formatClock(totalSec: number): string {
@@ -368,12 +377,6 @@ function phaseName(step: WorkoutStep): string {
   return "Nedkøling";
 }
 
-function intensityFromLoad(loadScore: number): string {
-  if (loadScore <= 3) return "Let intensitet";
-  if (loadScore <= 6) return "Moderat intensitet";
-  return "Høj intensitet";
-}
-
 function coachingHint(step: WorkoutStep): string {
   if (step.type === "warmup") return "Gå i rask tempo og bliv varm i kroppen.";
   if (step.type === "run") return "Løb i kontrolleret tempo. Du skal kunne tale i korte sætninger.";
@@ -407,6 +410,10 @@ function setupKey(userId: string): string {
 
 function profileKey(userId: string): string {
   return `runnerCoachProfileId:${userId}`;
+}
+
+function pulseSettingsKey(userId: string): string {
+  return `stridepilotPulseSettings:${userId}`;
 }
 
 function sessionFeedbackStorageKey(currentProfileId: string): string {
@@ -477,9 +484,150 @@ function formatMinutesLabel(totalSec: number): string {
   return `${minutes.toFixed(1).replace(".", ",")} min`;
 }
 
-function linePath(points: Array<{ x: number; y: number }>): string {
-  if (points.length === 0) return "";
-  return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+function progressionTempoLabel(mode?: PlanRecommendationOption["progressionMode"]): string {
+  if (mode === "conservative") return "Roligt";
+  if (mode === "ambitious") return "Ambitiøst";
+  return "Standard";
+}
+
+function longRunPreferenceLabel(value?: Goal["preferredLongRunDay"]): string {
+  if (value === "saturday") return "Lørdag";
+  if (value === "sunday") return "Søndag";
+  if (value === "both") return "Begge dage passer";
+  return "Fleksibel";
+}
+
+function goalTypeLabel(value?: GoalType): string {
+  if (value === "run_without_walking") return "Løbe uden stop";
+  if (value === "target_time") return "Måltempo";
+  if (value === "pr") return "Forbedre tid";
+  return "Gennemføre";
+}
+
+function sessionTypeLabel(session: WorkoutSession): string {
+  if (/måldag|test/i.test(session.title)) return "Måldag";
+  if (/lang/i.test(session.title)) return "Lang tur";
+  if (/run\/walk|udvikling/i.test(session.title)) return "Run/walk";
+  if (/steady/i.test(session.title)) return "Steady";
+  if (/progression/i.test(session.title)) return "Progression";
+  if (/tempo/i.test(session.title)) return "Tempo";
+  if (/recovery/i.test(session.title)) return "Recovery";
+  return shortSessionTitle(session.title);
+}
+
+function sessionStructureText(session: WorkoutSession): string {
+  const runSteps = session.steps.filter((step) => step.type === "run");
+  const walkSteps = session.steps.filter((step) => step.type === "walk");
+  if (runSteps.length > 1 && walkSteps.length > 0) {
+    const runLabel = formatMinutesLabel(runSteps[0].durationSec);
+    const walkLabel = formatMinutesLabel(walkSteps[0].durationSec);
+    return `${runSteps.length} x ${runLabel} løb / ${walkLabel} gang`;
+  }
+  if (runSteps.length === 1) return `${formatMinutesLabel(runSteps[0].durationSec)} sammenhængende løb`;
+  return session.steps.map((step) => `${phaseName(step)} ${formatStepDuration(step)}`).join(", ");
+}
+
+function buildProgramTextExport(params: {
+  plan: TrainingPlan;
+  goal: Goal;
+  runnerProfile: RunnerProfile;
+  recommendation?: PlanRecommendation | null;
+}): string {
+  const { plan, goal, runnerProfile, recommendation } = params;
+  const sessions = visiblePlanSessions(plan, goal.startDate);
+  const weeks = Array.from({ length: plan.weeks }, (_, index) => index + 1);
+  const weeklyLoad = buildWeeklyLoad(plan, goal.startDate);
+  const runnerName = runnerProfile.firstName?.trim();
+  const goalText =
+    goal.goalType === "run_without_walking"
+      ? `${goal.distance} uden stop`
+      : goal.goalType === "pr"
+        ? `forbedre din tid på ${goal.distance}`
+        : goal.goalType === "target_time"
+          ? `${goal.distance} i måltempo`
+          : `gennemføre ${goal.distance}`;
+  const backboneType =
+    goal.goalType === "run_without_walking" || goal.goalType === "complete" && goal.distance === "5K" || runnerProfile.currentRunningAbility === "helt_ny" || runnerProfile.currentRunningAbility === "fem_min"
+      ? "Kontinuitets-backbone"
+      : "Langturs-backbone";
+  const longRunPeakMinutes = sessions
+    .filter((session) => /lang|måldag|test/i.test(session.title))
+    .reduce((max, session) => Math.max(max, Math.round(sessionTotalDurationSec(session) / 60)), 0);
+  const continuousPeakMinutes = weeklyLoad.reduce((max, week) => Math.max(max, Math.round(week.longestContinuousRunSec / 60)), 0);
+  const stepBackWeeks = weeklyLoad
+    .filter((week, index) => index > 0 && week.load < weeklyLoad[index - 1]!.load * 0.94)
+    .map((week) => week.week);
+  const taperWeek = Math.max(plan.weeks - 1, 1);
+  const raceWeek = plan.weeks;
+  const totalTrainingMinutes = Math.round(sessions.reduce((sum, session) => sum + sessionTotalDurationSec(session), 0) / 60);
+  const weeklyStructureLines = weeks.map((week) => {
+    const weekSessions = sessions.filter((session) => session.week === week);
+    const labels = weekSessions.map((session) => sessionTypeLabel(session));
+    const stepBack = stepBackWeeks.includes(week) ? " · Step-back-uge" : "";
+    return `Uge ${week}: ${labels.join(" / ") || "Ingen pas"}${stepBack}`;
+  });
+
+  const lines: string[] = [
+    "StridePilot programeksport",
+    runnerName ? `Løber: ${runnerName}` : "Løber: StridePilot-bruger",
+    `Løberniveau: ${runnerProfile.runningExperience}`,
+    `Mål: ${goalText}`,
+    `Måltype: ${goalTypeLabel(goal.goalType)}`,
+    `Varighed: ${plan.weeks} uger`,
+    `Træningsrytme: ${recommendation ? `${recommendation.startingSessionsPerWeek} -> ${recommendation.peakSessionsPerWeek} pas/uge` : `${plan.sessionsPerWeek} pas/uge`}`,
+    `Foretrukken dag til lang tur: ${longRunPreferenceLabel(goal.preferredLongRunDay)}`,
+    `Progressionstempo: ${progressionTempoLabel(recommendation?.selectedOption?.progressionMode)}`,
+    `Anbefalet varighed: ${recommendation?.recommendedDurationWeeks ?? plan.weeks} uger`,
+    `Valgt varighed: ${recommendation?.selectedOption?.durationWeeks ?? plan.weeks} uger`,
+    `Realistisk spænd: ${recommendation?.minDurationWeeks ?? plan.weeks}–${recommendation?.maxDurationWeeks ?? plan.weeks} uger`,
+    `Planens niveau: ${recommendation?.selectedOption?.planLevelLabel ?? "Realistisk"}`,
+    "",
+    "Engine-resume",
+    `Backbone-type: ${backboneType}`,
+    `Peak lang tur: ${longRunPeakMinutes} min`,
+    `Peak sammenhængende løb: ${continuousPeakMinutes} min`,
+    `Step-back-uger: ${stepBackWeeks.length > 0 ? stepBackWeeks.join(", ") : "Ingen tydelige step-back-uger fundet"}`,
+    `Taper-uge: Uge ${taperWeek}`,
+    `Måluge: Uge ${raceWeek}`,
+    `Antal pas i alt: ${sessions.length}`,
+    `Samlet træningstid: ${totalTrainingMinutes} min`,
+    "",
+    "Tabel for sammenhængende løb",
+    ...weeklyLoad.map((week) => `Uge ${week.week}: ${formatMinutesLabel(week.longestContinuousRunSec)}`),
+    "",
+    "Tabel for lang tur",
+    ...weeks.map((week) => {
+      const weekLongRun = sessions
+        .filter((session) => session.week === week && /lang|måldag|test/i.test(session.title))
+        .reduce((max, session) => Math.max(max, Math.round(sessionTotalDurationSec(session) / 60)), 0);
+      return `Uge ${week}: ${weekLongRun} min`;
+    }),
+    "",
+    "Ugestruktur",
+    ...weeklyStructureLines,
+    "",
+  ];
+
+  for (const week of weeks) {
+    lines.push(`Uge ${week}`);
+    const weekSessions = sessions.filter((session) => session.week === week);
+    if (weekSessions.length === 0) {
+      lines.push("Ingen planlagte pas.");
+      lines.push("");
+      continue;
+    }
+    for (const session of weekSessions) {
+      const dateLabel = formatDanishDateWithWeekday(sessionDateFromPlan(goal.startDate, session));
+      lines.push(`${session.dayOfWeek} – ${sessionTypeLabel(session)} – ${Math.round(sessionTotalDurationSec(session) / 60)} min`);
+      lines.push(`Dato: ${dateLabel}`);
+      lines.push(`Struktur: ${sessionStructureText(session)}`);
+      lines.push(`Formål: ${sessionShortDescription(session)}`);
+      if (session.notes) lines.push(`Note: ${session.notes}`);
+      lines.push("");
+    }
+  }
+
+  return lines.join("\n");
 }
 
 function sessionTotalDurationSec(session: WorkoutSession): number {
@@ -498,70 +646,6 @@ function intervalSummary(session: WorkoutSession): string {
     return `${formatMinutesLabel(runSteps[0].durationSec)} sammenhængende løb`;
   }
   return "Let bevægelse og rolig rytme";
-}
-
-function runningAbilityLabel(value: CurrentRunningAbility): string {
-  return CURRENT_RUNNING_ABILITY_OPTIONS.find((option) => option.value === value)?.label ?? "dit nuværende niveau";
-}
-
-function intermezzoSummary(params: {
-  runnerProfile: RunnerProfile;
-  goal: Goal;
-  insights: RunnerProfileInsights | null;
-  recommendation: { recommendedDays: number };
-  planFeasibilityStatus: "feasible" | "feasible_with_adjustments" | "not_feasible";
-  planTradeoff: string | null;
-}): {
-  title: string;
-  summary: string;
-  rationale: string;
-  bullets: Array<{ label: string; value: string }>;
-} {
-  const { runnerProfile, goal, insights, recommendation, planFeasibilityStatus, planTradeoff } = params;
-  const explanationLines = buildProfileExplanationSummary(runnerProfile, goal);
-  const signals = interpretProfileSignals(runnerProfile, goal);
-  const name = runnerProfile.firstName?.trim();
-  const goalLabel = goalPerformanceLabel(goal);
-  const abilityLabel = runningAbilityLabel(runnerProfile.currentRunningAbility);
-  const strategyStyle = insights?.progressionStrategy.style ?? "balanced";
-
-  const title = name ? `Tak ${name} — her er mit udgangspunkt for din plan` : "Her er mit udgangspunkt for din plan";
-
-  const focusText =
-    strategyStyle === "conservative"
-      ? "rolig og tryg progression"
-      : strategyStyle === "aggressive"
-        ? "målrettet progression i et kontrolleret tempo"
-        : "stabil progression med fokus på kontinuitet";
-
-  const cautionText =
-    planFeasibilityStatus === "feasible_with_adjustments" && planTradeoff
-      ? planTradeoff
-      : signals.injuryConcern
-        ? "du nævner skader eller sårbare områder, som planen skal tage hensyn til"
-        : signals.fitButRunSpecificLow
-          ? "du har god generel form, men skal stadig bygge mere løbespecifik tolerance"
-          : runnerProfile.currentRunningAbility === "helt_ny"
-            ? "du er stadig i gang med at bygge dit løbegrundlag op"
-            : goal.targetPaceSecPerKm
-              ? "du har et konkret ambitionsniveau, som kræver stabil opbygning"
-              : "det vigtigste er at bygge stabilitet og gode vaner op";
-
-  const summary = name
-    ? `${name}, du vil gerne frem mod ${goalLabel}, og lige nu peger dine svar på et udgangspunkt omkring ${abilityLabel.toLowerCase()}. Derfor lægger jeg planen an med fokus på ${focusText}.`
-    : `Du vil gerne frem mod ${goalLabel}, og dine svar peger på, at planen skal bygges op med fokus på ${focusText}.`;
-
-  const rationale = explanationLines[2] ?? explanationLines[0] ?? "Planen er lagt, så den passer til dit aktuelle udgangspunkt.";
-
-  const bullets = [
-    { label: "Mål", value: goalLabel },
-    { label: "Udgangspunkt", value: explanationLines[0] ?? `${abilityLabel} lige nu` },
-    { label: "Træningsrytme", value: `${recommendation.recommendedDays} træningsdage om ugen` },
-    { label: "Særligt hensyn", value: cautionText },
-    { label: "Åbning", value: rationale },
-  ];
-
-  return { title, summary, rationale, bullets };
 }
 
 function quickFeedbackPreset(value: QuickFeedbackOption): Pick<WorkoutFeedbackInput, "effort" | "completionPct" | "energy" | "painLevel"> {
@@ -837,7 +921,8 @@ export default function Home() {
   const [authMode, setAuthMode] = useState<AuthMode>("signup");
   const [hasSetup, setHasSetup] = useState(false);
   const [displayWeek, setDisplayWeek] = useState(1);
-  const [appearance, setAppearance] = useState<ThemePref>("system");
+  const [isCompactProgramViewport, setIsCompactProgramViewport] = useState(false);
+  const [appearance] = useState<ThemePref>("dark");
   const [effectiveTheme, setEffectiveTheme] = useState<"dark" | "light">("dark");
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboardingSelections, setOnboardingSelections] = useState<OnboardingSelectionState>({
@@ -845,6 +930,7 @@ export default function Home() {
     goalDistance: false,
     goalType: false,
     activityLevel: false,
+    ambition: true,
   });
 
   const [runnerProfile, setRunnerProfile] = useState<RunnerProfile>({
@@ -866,20 +952,29 @@ export default function Home() {
     typicalWorkoutMinutes: 45,
     otherTraining: "",
     preferredGuidance: undefined,
+    pulseGuidanceEnabled: false,
+    maxHeartRate: null,
   });
   const [goal, setGoal] = useState<Goal>({
     distance: "5K",
     goalType: "complete",
     weeks: 12,
-    startDate: todayIso(),
+    startDate: getSuggestedPlanStartDate(),
     reminderTime: "13:00",
     targetTime: "",
     targetPaceSecPerKm: undefined,
-    endDate: addDaysToIso(todayIso(), 84),
+    endDate: undefined,
     availableTrainingDays: ["Tirsdag", "Torsdag", "Lordag"],
+    preferredLongRunDay: "both",
   });
   const [goalPaceDraft, setGoalPaceDraft] = useState<{ minute: string; second: string }>({ minute: "", second: "" });
   const [recentRaceDraft, setRecentRaceDraft] = useState<{ distance: Goal["distance"] | ""; time: string }>({ distance: "", time: "" });
+  const [recentRaceTimeParts, setRecentRaceTimeParts] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  const [showRecentRaceFields, setShowRecentRaceFields] = useState(false);
+  const [pulseDraft, setPulseDraft] = useState({ maxHeartRate: "" });
+  const pulseSettingsHydratedUserRef = useRef<string | null>(null);
+  const [planAmbition, setPlanAmbition] = useState<PlanAmbition>("standard");
+  const [planRecommendation, setPlanRecommendation] = useState<PlanRecommendation | null>(null);
 
   const [profileDraft, setProfileDraft] = useState({
     heightCm: "175",
@@ -895,8 +990,14 @@ export default function Home() {
   const [profileId, setProfileId] = useState<string>("");
   const [baselinePlan, setBaselinePlan] = useState<TrainingPlan | null>(null);
   const [plan, setPlan] = useState<TrainingPlan | null>(null);
+  const [persistedCurrentWeek, setPersistedCurrentWeek] = useState<number | null>(null);
+  const [historySummary, setHistorySummary] = useState<PlanHistorySummary | null>(null);
+  const [savedAdaptations, setSavedAdaptations] = useState<SavedPlanAdaptation[]>([]);
+  const [savedNotes, setSavedNotes] = useState<SavedProfileNote[]>([]);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteSaveState, setNoteSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [runnerProfileInsights, setRunnerProfileInsights] = useState<RunnerProfileInsights | null>(null);
-  const [coachExplanationSummary, setCoachExplanationSummary] = useState<string[]>([]);
+  const [, setCoachExplanationSummary] = useState<string[]>([]);
   const [, setFeedbackInsights] = useState<FeedbackInsights | null>(null);
   const [capabilityState, setCapabilityState] = useState<CapabilityState | null>(null);
   const [runnerState, setRunnerState] = useState<RunnerState | null>(null);
@@ -917,9 +1018,11 @@ export default function Home() {
   const [workoutCompleted, setWorkoutCompleted] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [stepNotice, setStepNotice] = useState("");
+  const [workoutInterruptionNotice, setWorkoutInterruptionNotice] = useState<string | null>(null);
   const [safetyAdjustments, setSafetyAdjustments] = useState<string[]>([]);
   const [planWarnings, setPlanWarnings] = useState<string[]>([]);
   const [showAllSafety, setShowAllSafety] = useState(false);
+  const [showProgramMore, setShowProgramMore] = useState(false);
   const [planTradeoff, setPlanTradeoff] = useState<string | null>(null);
   const [planFeasibilityStatus, setPlanFeasibilityStatus] = useState<"feasible" | "feasible_with_adjustments" | "not_feasible">("feasible");
   const [feedbackConfirmation, setFeedbackConfirmation] = useState<CoachInterpretationState | null>(null);
@@ -927,6 +1030,7 @@ export default function Home() {
   const [showProgramIntro, setShowProgramIntro] = useState(false);
   const [isProgramTransitioning, setIsProgramTransitioning] = useState(false);
   const [showDetailedFeedback, setShowDetailedFeedback] = useState(false);
+  const [showFullWorkoutStructure, setShowFullWorkoutStructure] = useState(false);
   const [clarificationDraft, setClarificationDraft] = useState("");
 
   const [feedback, setFeedback] = useState<WorkoutFeedbackInput>({
@@ -947,7 +1051,13 @@ export default function Home() {
   const lastSpokenStepKey = useRef<string>("");
   const thirtySecCueKey = useRef<string>("");
   const feedbackSuccessTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const workoutNoticeTimeout = useRef<number | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
+  const lastTickAtRef = useRef<number | null>(null);
+  const hiddenAtRef = useRef<number | null>(null);
+  const wasRunningBeforeHideRef = useRef(false);
   const programWeekRef = useRef<HTMLDivElement | null>(null);
+  const nextWorkoutDayRef = useRef<HTMLButtonElement | null>(null);
   const todayPrimaryCtaRef = useRef<HTMLButtonElement | null>(null);
   const preAdaptationPlanRef = useRef<TrainingPlan | null>(null);
   const recentFeedbackRef = useRef<CoachWorkoutFeedback[]>([]);
@@ -961,6 +1071,12 @@ export default function Home() {
     setProfileId("");
     setBaselinePlan(null);
     setPlan(null);
+    setPersistedCurrentWeek(null);
+    setHistorySummary(null);
+    setSavedAdaptations([]);
+    setSavedNotes([]);
+    setNoteDraft("");
+    setNoteSaveState("idle");
     setRunnerProfileInsights(null);
     setCoachExplanationSummary([]);
     setFeedbackInsights(null);
@@ -1004,7 +1120,7 @@ export default function Home() {
     setIsDemoMode(false);
     setStage("welcome");
     setAuthMode("signup");
-    setAppearance("system");
+    setEffectiveTheme("dark");
     setAudioMode("coach");
     setEmail("");
     setPassword("");
@@ -1014,18 +1130,22 @@ export default function Home() {
     setCueFallbackText("");
     setStepIndex(0);
     setRemainingSec(0);
+    setWorkoutInterruptionNotice(null);
     setOnboardingStep(1);
     setOnboardingSelections({
       runningAbility: false,
       goalDistance: false,
       goalType: false,
       activityLevel: false,
+      ambition: true,
     });
     setOpenInfoField(null);
     setRestDayPrompt(null);
     setShowAllSafety(false);
     setShowStickyProgramCta(true);
     setPlanFeasibilityStatus("feasible");
+    setPlanAmbition("standard");
+    setPlanRecommendation(null);
     setShowDetailedFeedback(false);
     setFeedbackSubmitState("idle");
     setFeedback({
@@ -1061,7 +1181,10 @@ export default function Home() {
       typicalWorkoutMinutes: 45,
       otherTraining: "",
       preferredGuidance: undefined,
+      pulseGuidanceEnabled: false,
+      maxHeartRate: null,
     });
+    setPulseDraft({ maxHeartRate: "" });
     setProfileDraft({
       heightCm: "175",
       weightKg: "75",
@@ -1071,13 +1194,15 @@ export default function Home() {
       distance: "5K",
       goalType: "complete",
       weeks: 12,
-      startDate: todayIso(),
+      startDate: getSuggestedPlanStartDate(),
       reminderTime: "13:00",
       targetTime: "",
       targetPaceSecPerKm: undefined,
-      endDate: addDaysToIso(todayIso(), 84),
+      endDate: undefined,
       availableTrainingDays: ["Tirsdag", "Torsdag", "Lordag"],
+      preferredLongRunDay: "both",
     });
+    setShowRecentRaceFields(false);
 
     if (typeof window !== "undefined") {
       const keysToRemove: string[] = [];
@@ -1106,6 +1231,11 @@ export default function Home() {
     [activeSession, sessionFeedbackMap],
   );
   const currentStep = activeSession?.steps[stepIndex];
+  const nextWorkoutStep = useMemo(() => (activeSession ? getNextWorkoutStep(activeSession.steps, stepIndex) : null), [activeSession, stepIndex]);
+  const visibleWorkoutSteps = useMemo(
+    () => (activeSession ? getVisibleWorkoutSteps(activeSession.steps, stepIndex, completedSteps, showFullWorkoutStructure) : []),
+    [activeSession, stepIndex, completedSteps, showFullWorkoutStructure],
+  );
   const activeUserId = authUser?.id ?? (isDemoMode ? "demo-user" : profileId || "");
   const goalDestinationSession = useMemo(() => {
     if (!plan?.sessions.length) return null;
@@ -1115,61 +1245,70 @@ export default function Home() {
     () => recommendTrainingDays(runnerProfile, goal),
     [goal, runnerProfile],
   );
-  const derivedPlanWeeks = useMemo(() => derivePlanWeeks(goal.startDate, goal.endDate), [goal.endDate, goal.startDate]);
   const feedbackSubmitted = Boolean(feedbackConfirmation);
-  const baselineWeeklyLoad = useMemo(() => (baselinePlan ? buildWeeklyLoad(baselinePlan, goal.startDate) : []), [baselinePlan, goal.startDate]);
   const currentWeeklyLoad = useMemo(() => (plan ? buildWeeklyLoad(plan, goal.startDate) : []), [goal.startDate, plan]);
-  const maxWeeklyLoad = useMemo(() => {
-    const allLoads = [...baselineWeeklyLoad, ...currentWeeklyLoad].map((point) => point.load);
-    return allLoads.length ? Math.max(...allLoads, 1) : 1;
-  }, [baselineWeeklyLoad, currentWeeklyLoad]);
-  const longestRunNow = currentWeeklyLoad.reduce((longest, point) => Math.max(longest, point.longestContinuousRunSec), 0);
+  const baselineWeeklyLoad = useMemo(() => (baselinePlan ? buildWeeklyLoad(baselinePlan, goal.startDate) : []), [baselinePlan, goal.startDate]);
   const currentWeekLoad = currentWeeklyLoad.find((point) => point.week === displayWeek) ?? currentWeeklyLoad[0] ?? null;
-  const graphSeries = useMemo(() => {
-    const chartWidth = 300;
-    const chartHeight = 120;
-    const padding = 18;
-
-    function toPoints(series: typeof currentWeeklyLoad) {
-      if (series.length === 0) return [];
-      return series.map((point, index) => ({
-        x: padding + (index / Math.max(series.length - 1, 1)) * (chartWidth - padding * 2),
-        y: chartHeight - padding - (point.load / maxWeeklyLoad) * (chartHeight - padding * 2),
-      }));
+  const currentWeekLongestContinuousRunSec = currentWeekLoad?.longestContinuousRunSec ?? 0;
+  const releaseWakeLock = useCallback(async () => {
+    if (!wakeLockRef.current) return;
+    try {
+      await wakeLockRef.current.release();
+    } catch {
+      // Ignore release errors; the sentinel may already be gone.
+    } finally {
+      wakeLockRef.current = null;
     }
+  }, []);
 
-    return {
-      width: chartWidth,
-      height: chartHeight,
-      baselinePath: linePath(toPoints(baselineWeeklyLoad)),
-      currentPath: linePath(toPoints(currentWeeklyLoad)),
-    };
-  }, [baselineWeeklyLoad, currentWeeklyLoad, maxWeeklyLoad]);
+  const requestWakeLock = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    if (typeof document === "undefined" || document.visibilityState !== "visible") return;
+    if (!("wakeLock" in navigator)) return;
+
+    try {
+      const sentinel = await (navigator as Navigator & {
+        wakeLock?: { request: (type: "screen") => Promise<WakeLockSentinelLike> };
+      }).wakeLock?.request("screen");
+      if (!sentinel) return;
+      wakeLockRef.current = sentinel;
+    } catch {
+      // Safari/iOS may not support or may deny wake lock; we handle that quietly.
+    }
+  }, []);
+
   const finishWorkout = useCallback(() => {
     cancelCue();
     setIsRunning(false);
+    void releaseWakeLock();
     setWorkoutCompleted(true);
     const cue = "Godt løbet. Passet er gennemført.";
     setCueFallbackText(cue);
     if (audioMode !== "off" && ttsSupported && speechEnabled) {
       speakCue(cue);
     }
-  }, [audioMode, speechEnabled, ttsSupported]);
+  }, [audioMode, releaseWakeLock, speechEnabled, ttsSupported]);
 
   useEffect(() => {
     return () => {
       if (feedbackSuccessTimeout.current) {
         clearTimeout(feedbackSuccessTimeout.current);
       }
+      if (workoutNoticeTimeout.current) {
+        window.clearTimeout(workoutNoticeTimeout.current);
+      }
     };
   }, []);
 
   const weekNumber = useMemo(() => {
     if (!plan) return 1;
+    if (persistedCurrentWeek) {
+      return Math.max(1, Math.min(plan.weeks, persistedCurrentWeek));
+    }
     const now = new Date();
     const computedWeek = calendarWeekIndexFromDate(goal.startDate, now);
     return Math.max(1, Math.min(plan.weeks, computedWeek));
-  }, [goal.startDate, plan]);
+  }, [goal.startDate, persistedCurrentWeek, plan]);
 
   const calendarWeekDates = useMemo(() => {
     return calendarWeekDatesForIndex(goal.startDate, displayWeek);
@@ -1200,6 +1339,10 @@ export default function Home() {
     const upcoming = sorted.find((session) => sessionDateFromPlan(goal.startDate, session).getTime() > today.getTime());
     return upcoming ?? null;
   }, [goal.startDate, plan]);
+  const nextSessionWeek = useMemo(() => {
+    if (!nextSession) return null;
+    return calendarWeekIndexFromDate(goal.startDate, sessionDateFromPlan(goal.startDate, nextSession));
+  }, [goal.startDate, nextSession]);
   const todaySession = useMemo(() => {
     if (!plan) return null;
     const today = new Date();
@@ -1230,12 +1373,20 @@ export default function Home() {
         profile?: Partial<RunnerProfile>;
         explanationSummary?: string[];
         sessionFeedback?: SavedWorkoutSessionFeedback[];
+        currentWeek?: number;
+        history?: PlanHistorySummary;
+        adaptations?: SavedPlanAdaptation[];
+        notes?: SavedProfileNote[];
       };
 
       if (!data.plan) return false;
 
       setPlan(data.plan);
       setBaselinePlan(data.baselinePlan ?? data.plan);
+      setPersistedCurrentWeek(data.currentWeek ?? null);
+      setHistorySummary(data.history ?? null);
+      setSavedAdaptations(data.adaptations ?? []);
+      setSavedNotes(data.notes ?? []);
       setSelectedSessionId(data.plan.sessions[0]?.id ?? "");
       if (data.goal) {
         setGoal((current) => ({
@@ -1278,12 +1429,8 @@ export default function Home() {
 
   useEffect(() => {
     const savedAudioMode = window.localStorage.getItem("stridepilotAudioMode");
-    const savedAppearance = window.localStorage.getItem("stridepilotAppearance");
     if (savedAudioMode === "off" || savedAudioMode === "short" || savedAudioMode === "coach") {
       setAudioMode(savedAudioMode);
-    }
-    if (savedAppearance === "dark" || savedAppearance === "light" || savedAppearance === "system") {
-      setAppearance(savedAppearance);
     }
     setTtsSupported(isSpeechSupported());
 
@@ -1346,10 +1493,6 @@ export default function Home() {
   }, [audioMode]);
 
   useEffect(() => {
-    window.localStorage.setItem("stridepilotAppearance", appearance);
-  }, [appearance]);
-
-  useEffect(() => {
     if (!menuOpen) return;
 
     function handlePointerDown(event: PointerEvent) {
@@ -1374,14 +1517,7 @@ export default function Home() {
   }, [menuOpen]);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
-    const applyTheme = () => {
-      setEffectiveTheme(appearance === "system" ? (mediaQuery.matches ? "light" : "dark") : appearance);
-    };
-
-    applyTheme();
-    mediaQuery.addEventListener("change", applyTheme);
-    return () => mediaQuery.removeEventListener("change", applyTheme);
+    setEffectiveTheme("dark");
   }, [appearance]);
 
   useEffect(() => {
@@ -1417,6 +1553,50 @@ export default function Home() {
       window.localStorage.setItem(firstNameKey(activeUserId), runnerProfile.firstName.trim());
     }
   }, [activeUserId, runnerProfile.firstName]);
+
+  useEffect(() => {
+    setPulseDraft({
+      maxHeartRate: runnerProfile.maxHeartRate ? String(runnerProfile.maxHeartRate) : "",
+    });
+  }, [runnerProfile.maxHeartRate]);
+
+  useEffect(() => {
+    if (!activeUserId) return;
+
+    const saved = window.localStorage.getItem(pulseSettingsKey(activeUserId));
+    if (!saved) {
+      pulseSettingsHydratedUserRef.current = activeUserId;
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(saved) as {
+        pulseGuidanceEnabled?: boolean;
+        maxHeartRate?: number | null;
+      };
+      setRunnerProfile((current) => ({
+        ...current,
+        pulseGuidanceEnabled: parsed.pulseGuidanceEnabled ?? false,
+        maxHeartRate: typeof parsed.maxHeartRate === "number" ? parsed.maxHeartRate : null,
+      }));
+      pulseSettingsHydratedUserRef.current = activeUserId;
+    } catch {
+      window.localStorage.removeItem(pulseSettingsKey(activeUserId));
+      pulseSettingsHydratedUserRef.current = activeUserId;
+    }
+  }, [activeUserId]);
+
+  useEffect(() => {
+    if (!activeUserId) return;
+    if (pulseSettingsHydratedUserRef.current !== activeUserId) return;
+    window.localStorage.setItem(
+      pulseSettingsKey(activeUserId),
+      JSON.stringify({
+        pulseGuidanceEnabled: Boolean(runnerProfile.pulseGuidanceEnabled),
+        maxHeartRate: runnerProfile.maxHeartRate ?? null,
+      }),
+    );
+  }, [activeUserId, runnerProfile.maxHeartRate, runnerProfile.pulseGuidanceEnabled]);
 
   useEffect(() => {
     if (!profileId) {
@@ -1484,9 +1664,21 @@ export default function Home() {
         goalDistance: hasSetup,
         goalType: hasSetup,
         activityLevel: hasSetup,
+        ambition: true,
       });
     }
   }, [stage, hasSetup]);
+
+  useEffect(() => {
+    if (isGoalTypeAllowed(goal.distance, runnerProfile.currentRunningAbility, goal.goalType)) return;
+    setGoal((current) => ({
+      ...current,
+      goalType: undefined,
+      targetPaceSecPerKm: undefined,
+      targetTime: "",
+    }));
+    setOnboardingSelections((current) => ({ ...current, goalType: false }));
+  }, [goal.distance, goal.goalType, runnerProfile.currentRunningAbility]);
 
   useEffect(() => {
     setProfileDraft({
@@ -1497,20 +1689,28 @@ export default function Home() {
   }, [runnerProfile.heightCm, runnerProfile.weightKg, runnerProfile.age]);
 
   useEffect(() => {
-    const derivedWeeks = derivePlanWeeks(goal.startDate, goal.endDate);
-    if (!derivedWeeks || goal.weeks === derivedWeeks) return;
-    setGoal((current) => ({ ...current, weeks: derivedWeeks }));
-  }, [goal.endDate, goal.startDate, goal.weeks]);
+    if (hasRecentRaceEntry(runnerProfile.recentRaceTimes)) {
+      const nextDraft = recentRaceDraftFromEntries(runnerProfile.recentRaceTimes);
+      setRecentRaceDraft((current) =>
+        current.distance === nextDraft.distance && current.time === nextDraft.time ? current : nextDraft,
+      );
+      setRecentRaceTimeParts((current) => {
+        const nextParts = recentRaceTimePartsFromString(nextDraft.time);
+        return current.hours === nextParts.hours && current.minutes === nextParts.minutes && current.seconds === nextParts.seconds
+          ? current
+          : nextParts;
+      });
+      setShowRecentRaceFields(true);
+      return;
+    }
 
-  useEffect(() => {
-    const firstRecentRace = runnerProfile.recentRaceTimes?.[0];
-    const nextDraft: { distance: Goal["distance"] | ""; time: string } = firstRecentRace
-      ? { distance: firstRecentRace.distance, time: firstRecentRace.time }
-      : { distance: "", time: "" };
-
-    if (recentRaceDraft.distance === nextDraft.distance && recentRaceDraft.time === nextDraft.time) return;
-    setRecentRaceDraft(nextDraft);
-  }, [recentRaceDraft.distance, recentRaceDraft.time, runnerProfile.recentRaceTimes]);
+    if (!showRecentRaceFields) {
+      setRecentRaceDraft((current) => (current.distance || current.time ? { distance: "", time: "" } : current));
+      setRecentRaceTimeParts((current) =>
+        current.hours === 0 && current.minutes === 0 && current.seconds === 0 ? current : { hours: 0, minutes: 0, seconds: 0 },
+      );
+    }
+  }, [runnerProfile.recentRaceTimes, showRecentRaceFields]);
 
   useEffect(() => {
     if (!shouldShowGoalPaceInput(goal.goalType)) {
@@ -1566,8 +1766,12 @@ export default function Home() {
     setFeedbackConfirmation(null);
     setFeedbackSubmitState("idle");
     setShowDetailedFeedback(false);
+    setWorkoutInterruptionNotice(null);
     lastSpokenStepKey.current = "";
     thirtySecCueKey.current = "";
+    lastTickAtRef.current = null;
+    hiddenAtRef.current = null;
+    wasRunningBeforeHideRef.current = false;
   }, [activeSession]);
 
   useEffect(() => {
@@ -1577,36 +1781,75 @@ export default function Home() {
   }, [stepNotice]);
 
   useEffect(() => {
-    if (stage !== "workout") {
-      cancelCue();
+    if (!workoutInterruptionNotice) return;
+    if (workoutNoticeTimeout.current) {
+      window.clearTimeout(workoutNoticeTimeout.current);
     }
-  }, [stage]);
+    workoutNoticeTimeout.current = window.setTimeout(() => setWorkoutInterruptionNotice(null), 4500);
+    return () => {
+      if (workoutNoticeTimeout.current) {
+        window.clearTimeout(workoutNoticeTimeout.current);
+      }
+    };
+  }, [workoutInterruptionNotice]);
 
   useEffect(() => {
-    if (!isRunning || !activeSession) return;
+    if (stage !== "workout") {
+      cancelCue();
+      void releaseWakeLock();
+    }
+  }, [releaseWakeLock, stage]);
+
+  useEffect(() => {
+    if (!isRunning || !activeSession) {
+      lastTickAtRef.current = null;
+      return;
+    }
+
+    lastTickAtRef.current = Date.now();
     const interval = window.setInterval(() => {
-      setRemainingSec((prev) => Math.max(prev - 1, 0));
-    }, 1000);
+      const now = Date.now();
+      const lastTickAt = lastTickAtRef.current ?? now;
+      const elapsedSeconds = Math.floor((now - lastTickAt) / 1000);
+      if (elapsedSeconds <= 0) return;
+      lastTickAtRef.current = lastTickAt + elapsedSeconds * 1000;
+      setRemainingSec((prev) => Math.max(prev - elapsedSeconds, 0));
+    }, 300);
     return () => window.clearInterval(interval);
   }, [isRunning, activeSession]);
 
   useEffect(() => {
     if (!activeSession || !currentStep || audioMode === "off") return;
+    const cue = buildCue(currentStep, audioMode);
+    setCueFallbackText(cue);
+
+    if (!isRunning) {
+      lastSpokenStepKey.current = "";
+      return;
+    }
+
     const key = `${activeSession.id}-${stepIndex}`;
     if (lastSpokenStepKey.current === key) return;
 
     lastSpokenStepKey.current = key;
-    const cue = buildCue(currentStep, audioMode);
-    setCueFallbackText(cue);
-
-    if (!ttsSupported || !speechEnabled) return;
+    if (
+      !shouldSpeakWorkoutCue({
+        isRunning,
+        audioMode,
+        ttsSupported,
+        speechEnabled,
+      })
+    ) {
+      return;
+    }
     if (!speakCue(cue)) {
       setCueFallbackText(cue);
+      setWorkoutInterruptionNotice(buildWorkoutInterruptionNotice({ reason: "audio_interrupted" }));
     }
-  }, [activeSession, currentStep, speechEnabled, stepIndex, audioMode, ttsSupported]);
+  }, [activeSession, audioMode, currentStep, isRunning, speechEnabled, stepIndex, ttsSupported]);
 
   useEffect(() => {
-    if (!activeSession || !currentStep || audioMode === "off" || remainingSec !== 30) return;
+    if (!activeSession || !currentStep || audioMode === "off" || remainingSec !== 30 || !isRunning) return;
 
     const key = `${activeSession.id}-${stepIndex}`;
     if (thirtySecCueKey.current === key) return;
@@ -1614,10 +1857,19 @@ export default function Home() {
     thirtySecCueKey.current = key;
     const cue = audioMode === "coach" ? "30 sekunder tilbage. Hold fokus på rytmen." : "30 sekunder tilbage";
     setCueFallbackText(cue);
-    if (ttsSupported && speechEnabled) {
-      speakCue(cue);
+    if (
+      shouldSpeakWorkoutCue({
+        isRunning,
+        audioMode,
+        ttsSupported,
+        speechEnabled,
+      })
+    ) {
+      if (!speakCue(cue)) {
+        setWorkoutInterruptionNotice(buildWorkoutInterruptionNotice({ reason: "audio_interrupted" }));
+      }
     }
-  }, [activeSession, currentStep, remainingSec, speechEnabled, stepIndex, audioMode, ttsSupported]);
+  }, [activeSession, audioMode, currentStep, isRunning, remainingSec, speechEnabled, stepIndex, ttsSupported]);
 
   useEffect(() => {
     if (!activeSession || remainingSec > 0) return;
@@ -1632,6 +1884,57 @@ export default function Home() {
     setStepIndex(nextStep);
     setRemainingSec(activeSession.steps[nextStep].durationSec);
   }, [remainingSec, stepIndex, activeSession, finishWorkout]);
+
+  useEffect(() => {
+    if (stage !== "workout" || !isRunning || workoutCompleted) {
+      void releaseWakeLock();
+      return;
+    }
+
+    void requestWakeLock();
+    return () => {
+      void releaseWakeLock();
+    };
+  }, [isRunning, releaseWakeLock, requestWakeLock, stage, workoutCompleted]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "hidden") {
+        hiddenAtRef.current = Date.now();
+        if (stage === "workout" && isRunning) {
+          wasRunningBeforeHideRef.current = true;
+          setIsRunning(false);
+          cancelCue();
+          void releaseWakeLock();
+        } else {
+          wasRunningBeforeHideRef.current = false;
+        }
+        return;
+      }
+
+      void requestWakeLock();
+      if (!wasRunningBeforeHideRef.current) return;
+
+      const secondsAway = hiddenAtRef.current ? Math.max(1, Math.round((Date.now() - hiddenAtRef.current) / 1000)) : undefined;
+      setWorkoutInterruptionNotice(
+        buildWorkoutInterruptionNotice({
+          reason: "hidden",
+          secondsAway,
+        }),
+      );
+      setCueFallbackText("Passet er sat på pause. Tryk start, når du er klar igen.");
+      wasRunningBeforeHideRef.current = false;
+      hiddenAtRef.current = null;
+      lastTickAtRef.current = null;
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isRunning, releaseWakeLock, requestWakeLock, stage]);
 
   function startFlow() {
     setError(null);
@@ -1755,10 +2058,11 @@ export default function Home() {
     setStage(window.localStorage.getItem(introSeenKey("demo-user")) === "1" ? "profile" : "intro");
   }
 
-  async function generatePlan() {
+  async function requestPlanRecommendation() {
     setError(null);
     setFeedbackConfirmation(null);
     setPlanTradeoff(null);
+    setPlanRecommendation(null);
     const trimmedFirstName = runnerProfile.firstName?.trim() ?? "";
 
     if (trimmedFirstName !== runnerProfile.firstName) {
@@ -1771,23 +2075,97 @@ export default function Home() {
     }
 
     if (!isValidIsoDate(goal.startDate)) {
-      setError("Vælg en gyldig startdato, før jeg bygger programmet.");
-      return;
-    }
-
-    if (!goal.endDate || !isValidIsoDate(goal.endDate)) {
-      setError("Vælg en gyldig måldato eller racedato, før jeg bygger programmet.");
-      return;
-    }
-
-    const calculatedWeeks = derivePlanWeeks(goal.startDate, goal.endDate);
-    if (!calculatedWeeks) {
-      setError("Startdato og måldato skal give en realistisk tidsramme.");
+      setError("Vælg en gyldig startdato, før jeg beder StridePilot om en anbefaling.");
       return;
     }
 
     if ((goal.goalType === "target_time" || goal.goalType === "pr") && !goal.targetPaceSecPerKm) {
       setError("Vælg et ønsket tempo, hvis du går efter et bestemt tempo eller en PR.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/recommend-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          runnerProfile,
+          goal: {
+            ...goal,
+            targetTime: shouldShowGoalPaceInput(goal.goalType) ? targetTimeFromPace(goal.distance, goal.targetPaceSecPerKm) : "",
+          },
+          ambition: planAmbition,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Fejl under anbefaling af plan.");
+      }
+
+      const data = (await res.json()) as PlanRecommendation;
+      setPlanRecommendation(data);
+      setPlanAmbition(data.selectedOption.mode);
+      setStage("intermezzo");
+    } catch {
+      setError("Kunne ikke hente en anbefaling lige nu.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function selectRecommendationOption(mode: PlanAmbition) {
+    setPlanRecommendation((current) => {
+      if (!current) return current;
+      const nextOption = current.options.find((option) => option.mode === mode) ?? current.recommendedOption;
+      return {
+        ...current,
+        progressionMode: nextOption.progressionMode,
+        realism: nextOption.realism,
+        warnings: nextOption.warnings,
+        headline: nextOption.headline,
+        summary: nextOption.summary,
+        selectedPathVariant: nextOption.mode,
+        selectedOption: nextOption,
+      };
+    });
+    setPlanAmbition(mode);
+  }
+
+  async function generatePlan(selectedRecommendation?: PlanRecommendationOption) {
+    setError(null);
+    setFeedbackConfirmation(null);
+    setPlanTradeoff(null);
+    setIsProgramTransitioning(true);
+    const trimmedFirstName = runnerProfile.firstName?.trim() ?? "";
+    const resolvedRecommendation = selectedRecommendation ?? planRecommendation?.selectedOption ?? null;
+
+    if (trimmedFirstName !== runnerProfile.firstName) {
+      setRunnerProfile((current) => ({ ...current, firstName: trimmedFirstName }));
+    }
+
+    if (!goal.availableTrainingDays || goal.availableTrainingDays.length === 0) {
+      setError("Vælg mindst én træningsdag for at generere programmet.");
+      setIsProgramTransitioning(false);
+      return;
+    }
+
+    if (!isValidIsoDate(goal.startDate)) {
+      setError("Vælg en gyldig startdato, før jeg bygger programmet.");
+      setIsProgramTransitioning(false);
+      return;
+    }
+
+    if (!resolvedRecommendation) {
+      setError("Hent først en anbefaling, så StridePilot kan bygge planen ud fra en realistisk tidslinje.");
+      setIsProgramTransitioning(false);
+      return;
+    }
+
+    if ((goal.goalType === "target_time" || goal.goalType === "pr") && !goal.targetPaceSecPerKm) {
+      setError("Vælg et ønsket tempo, hvis du går efter et bestemt tempo eller en PR.");
+      setIsProgramTransitioning(false);
       return;
     }
 
@@ -1802,10 +2180,12 @@ export default function Home() {
           goal: {
             ...goal,
             targetTime: shouldShowGoalPaceInput(goal.goalType) ? targetTimeFromPace(goal.distance, goal.targetPaceSecPerKm) : "",
-            weeks: calculatedWeeks,
+            weeks: resolvedRecommendation.durationWeeks,
+            endDate: resolvedRecommendation.goalDate,
           },
           profileId: isDemoMode ? undefined : profileId || undefined,
-          runsPerWeek: goal.availableTrainingDays.length,
+          recommendationSelection: resolvedRecommendation,
+          runsPerWeek: resolvedRecommendation.sessionsPerWeek,
           demoMode: isDemoMode,
         }),
       });
@@ -1836,6 +2216,25 @@ export default function Home() {
 
       const nextBaseline = data.baselinePlan ?? data.plan;
       const nextCurrent = data.currentPlanView ?? data.plan;
+      setGoal((current) => ({
+        ...current,
+        weeks: resolvedRecommendation.durationWeeks,
+        endDate: resolvedRecommendation.goalDate,
+      }));
+      setPlanRecommendation((current) =>
+        current
+          ? {
+              ...current,
+              selectedOption: resolvedRecommendation,
+              selectedPathVariant: resolvedRecommendation.mode,
+              progressionMode: resolvedRecommendation.progressionMode,
+              realism: resolvedRecommendation.realism,
+              warnings: resolvedRecommendation.warnings,
+              headline: resolvedRecommendation.headline,
+              summary: resolvedRecommendation.summary,
+            }
+          : current,
+      );
       setBaselinePlan(nextBaseline);
       setPlan(nextCurrent);
       setSessionFeedbackMap({});
@@ -1869,10 +2268,13 @@ export default function Home() {
       if (storageUserId) {
         window.localStorage.setItem(setupKey(storageUserId), "1");
       }
-      setStage("intermezzo");
+      setStage("program");
+      setShowProgramIntro(true);
+      setIsProgramTransitioning(false);
     } catch {
       setError("Kunne ikke generere plan lige nu.");
     } finally {
+      setIsProgramTransitioning(false);
       setIsLoading(false);
     }
   }
@@ -1962,7 +2364,7 @@ export default function Home() {
     setFeedback({ quickFeedback: undefined, effort: 6, completionPct: 100, energy: 3, painLevel: 1, notes: "" });
     setShowDetailedFeedback(false);
     setClarificationDraft("");
-    setFeedbackSubmitState("success");
+      setFeedbackSubmitState("success");
     if (feedbackSuccessTimeout.current) {
       clearTimeout(feedbackSuccessTimeout.current);
     }
@@ -2008,8 +2410,41 @@ export default function Home() {
       if (payload.capabilityState) {
         setCapabilityState(payload.capabilityState);
       }
+      await hydrateProgramState(profileId);
     } catch {
       // The UI already holds a local saved copy, so a persistence miss should not break the workout flow.
+    }
+  }
+
+  async function saveProfileNote() {
+    if (!profileId || isDemoMode) return;
+    const text = noteDraft.trim();
+    if (!text) return;
+
+    setNoteSaveState("saving");
+    setError(null);
+
+    try {
+      const res = await fetch("/api/profile-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profileId, text }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Kunne ikke gemme note.");
+      }
+
+      const payload = (await res.json()) as { note?: SavedProfileNote };
+      if (payload.note) {
+        setSavedNotes((current) => [payload.note!, ...current]);
+      }
+      setNoteDraft("");
+      setNoteSaveState("saved");
+      window.setTimeout(() => setNoteSaveState("idle"), 1800);
+    } catch {
+      setNoteSaveState("idle");
+      setError("Kunne ikke gemme note lige nu.");
     }
   }
 
@@ -2087,6 +2522,24 @@ export default function Home() {
     URL.revokeObjectURL(url);
   }
 
+  function downloadProgramText() {
+    if (!plan) return;
+
+    const content = buildProgramTextExport({
+      plan,
+      goal,
+      runnerProfile,
+      recommendation: planRecommendation,
+    });
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "stridepilot-program.txt";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   const canOpenAuthenticatedPages = Boolean(authUser);
   const canOpenProgram = Boolean(authUser && hasSetup);
   const canOpenWorkout = Boolean(plan);
@@ -2098,32 +2551,25 @@ export default function Home() {
     setStage("profile");
   }
 
-  function openProgramFromIntermezzo() {
-    const storageUserId = authUser?.id ?? (isDemoMode ? "demo-user" : profileId || "");
-    setIsProgramTransitioning(true);
-    window.setTimeout(() => {
-      if (storageUserId) {
-        window.localStorage.setItem(programSeenKey(storageUserId), "1");
-      }
-      setShowProgramIntro(false);
-      setStage("program");
-      setIsProgramTransitioning(false);
-    }, 700);
-  }
-
   function openStage(nextStage: Stage) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setStage(nextStage);
     setMenuOpen(false);
   }
 
   function openWorkoutSession(sessionId: string) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setSelectedSessionId(sessionId);
+    setWorkoutInterruptionNotice(null);
     setStage("workout");
   }
 
   function closeWorkoutSession() {
     setIsRunning(false);
     cancelCue();
+    void releaseWakeLock();
+    setWorkoutInterruptionNotice(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setStage("program");
   }
 
@@ -2143,12 +2589,14 @@ export default function Home() {
     const safeIndex = clampInt(index, 0, activeSession.steps.length - 1);
     setIsRunning(false);
     cancelCue();
+    void releaseWakeLock();
     setStepIndex(safeIndex);
     setRemainingSec(activeSession.steps[safeIndex].durationSec);
     setWorkoutCompleted(false);
     setCueFallbackText(buildCue(activeSession.steps[safeIndex], audioMode));
     lastSpokenStepKey.current = "";
     thirtySecCueKey.current = "";
+    lastTickAtRef.current = null;
   }
 
   function nextStep() {
@@ -2167,6 +2615,7 @@ export default function Home() {
     setCueFallbackText(buildCue(activeSession.steps[next], audioMode));
     lastSpokenStepKey.current = "";
     thirtySecCueKey.current = "";
+    lastTickAtRef.current = null;
     setIsRunning(wasRunning);
   }
 
@@ -2188,9 +2637,23 @@ export default function Home() {
     }
   }
 
+  function revealWeekOverview(options?: { focusNextWorkout?: boolean }) {
+    if (weekOverviewAction.shouldExpand) {
+      setShowProgramMore(true);
+    }
+
+    setVisibleWeek(weekOverviewAction.targetWeek, { scrollIntoView: true });
+
+    if (options?.focusNextWorkout && weekOverviewAction.shouldFocusNextWorkout) {
+      window.setTimeout(() => {
+        nextWorkoutDayRef.current?.focus({ preventScroll: true });
+      }, 140);
+    }
+  }
+
   const contextualHeader =
     stage === "program"
-      ? { title: "Dit program", subtitle: `Uge ${weekNumber}` }
+      ? { title: "Dit program", subtitle: `Uge ${displayWeek}` }
       : stage === "workout"
         ? {
             title: activeSession ? `Uge ${activeSession.week} · ${shortSessionTitle(activeSession.title)}` : "Intervalpas",
@@ -2199,18 +2662,28 @@ export default function Home() {
         : stage === "auth"
           ? {
               title: `Velkommen til ${APP_NAME}`,
-              subtitle: "Dit adaptive løbeprogram der udvikler sig sammen med dig",
+              subtitle: "Et adaptivt løbeprogram, der følger din træning roligt.",
             }
         : {
             title: APP_NAME,
-            subtitle: "Din AI løbecoach",
+            subtitle: "Din adaptive løbeapp",
           };
-  const programAdjustments = [...safetyAdjustments, ...adjustmentLog];
-  const visibleSafetyAdjustments = showAllSafety ? programAdjustments : programAdjustments.slice(0, 3);
+  const programAdjustments = useMemo(() => [...safetyAdjustments, ...adjustmentLog], [safetyAdjustments, adjustmentLog]);
   const hasMoreSafetyAdjustments = programAdjustments.length > 3;
   const isLastWorkoutStep = Boolean(activeSession && stepIndex === activeSession.steps.length - 1);
-  const nextStepLabel = isLastWorkoutStep ? "Afslut pas" : "Næste interval";
-  const onboardingSteps = 5;
+  const onboardingSteps = ONBOARDING_STEP_COUNT;
+  const currentOnboardingStep = getOnboardingStepDefinition(onboardingStep);
+  const activeRecommendationOption = planRecommendation?.selectedOption ?? null;
+  const recommendedRecommendationOption = planRecommendation?.recommendedOption ?? null;
+  const recommendationWarnings =
+    activeRecommendationOption && recommendedRecommendationOption && activeRecommendationOption.mode !== recommendedRecommendationOption.mode
+      ? activeRecommendationOption.warnings
+      : [];
+  const recommendationLeadCopy = buildRecommendationLeadCopy(
+    activeRecommendationOption?.summary ?? planRecommendation?.summary ?? "",
+    activeRecommendationOption?.planLevelExplanation,
+  );
+  const recommendationProgressionLabel = progressionTempoLabel(activeRecommendationOption?.progressionMode);
   const goalSummaryDate =
     goalDestinationSession &&
     sessionDateFromPlan(goal.startDate, goalDestinationSession).toLocaleDateString("da-DK", {
@@ -2228,34 +2701,141 @@ export default function Home() {
         : runnerProfileInsights
           ? "Jeg har lagt planen an med en stabil progression, der passer til dit udgangspunkt."
           : null;
-  const greeting = runnerProfile.firstName?.trim() ? `Hej ${runnerProfile.firstName.trim()}` : "Hej";
-  const stickyProgramCtaLabel = todaySession ? "Start dagens træningspas" : nextSession ? "Se næste træningspas" : null;
-  const weekRationale = plan?.rationale?.weeks?.find((week) => week.weekNumber === weekNumber) ?? null;
-  const weekState = weekStateLabel(plan, weekNumber);
+  const stickyProgramCtaLabel = todaySession ? "Start dagens træningspas" : null;
+  const suggestedPlanStartDate = useMemo(() => getSuggestedPlanStartDate(), []);
+  const planStartDateHelpText = useMemo(
+    () => buildPlanStartDateHelpText(goal.startDate, suggestedPlanStartDate),
+    [goal.startDate, suggestedPlanStartDate],
+  );
+  const weekRationale = plan?.rationale?.weeks?.find((week) => week.weekNumber === displayWeek) ?? null;
+  const weekState = weekStateLabel(plan, displayWeek);
   const learnedInsights = useMemo(() => learnedInsightLines(capabilityState, plan ?? null), [capabilityState, plan]);
-  const planIntermezzo = useMemo(
+  const programInsightState = useMemo(() => buildProgramInsightState(learnedInsights), [learnedInsights]);
+  const programAdjustmentState = useMemo(
     () =>
-      intermezzoSummary({
-        runnerProfile,
-        goal,
-        insights: runnerProfileInsights,
-        recommendation: trainingDayRecommendation,
-        planFeasibilityStatus,
-        planTradeoff,
+      buildProgramAdjustmentHighlights({
+        planWarnings,
+        safetyAdjustments: programAdjustments,
+        savedAdaptations,
       }),
-    [goal, planFeasibilityStatus, planTradeoff, runnerProfile, runnerProfileInsights, trainingDayRecommendation],
+    [planWarnings, programAdjustments, savedAdaptations],
+  );
+  const programAdjustmentToneAppearance = useMemo(
+    () => getAdjustmentToneAppearance(programAdjustmentState.kind),
+    [programAdjustmentState.kind],
+  );
+  const visibleAdjustmentHighlights = useMemo(() => {
+    const all = programAdjustmentState.highlights;
+    return showAllSafety ? all : all.slice(0, 3);
+  }, [programAdjustmentState.highlights, showAllSafety]);
+  const todayActionState = useMemo(
+    () =>
+      buildTodayActionState({
+        todaySession,
+        nextSession,
+      }),
+    [todaySession, nextSession],
+  );
+  const recentRaceSummary = useMemo(() => recentRaceSummaryLabel(runnerProfile.recentRaceTimes), [runnerProfile.recentRaceTimes]);
+  const recentRaceDraftSummary = useMemo(() => recentRaceDraftSummaryLabel(recentRaceDraft), [recentRaceDraft]);
+  const pulseGuidanceSummary = useMemo(
+    () =>
+      buildPulseGuidanceSummary({
+        enabled: Boolean(runnerProfile.pulseGuidanceEnabled),
+        maxHeartRate: runnerProfile.maxHeartRate ?? null,
+      }),
+    [runnerProfile.maxHeartRate, runnerProfile.pulseGuidanceEnabled],
+  );
+  const pulseGuidanceWarning = useMemo(
+    () => buildPulseGuidanceWarning(pulseDraft.maxHeartRate, Boolean(runnerProfile.pulseGuidanceEnabled)),
+    [pulseDraft.maxHeartRate, runnerProfile.pulseGuidanceEnabled],
+  );
+  const updateRecentRaceTimeParts = useCallback(
+    (part: "hours" | "minutes" | "seconds", value: number) => {
+      const nextParts = { ...recentRaceTimeParts, [part]: value };
+      const nextTime = buildRecentRaceTimeFromParts(nextParts);
+      setRecentRaceTimeParts(nextParts);
+      setRecentRaceDraft((draft) => ({ ...draft, time: nextTime }));
+      setRunnerProfile((profile) => ({
+        ...profile,
+        recentRaceTimes: buildRecentRaceTimes(recentRaceDraft.distance, nextTime),
+      }));
+    },
+    [recentRaceDraft.distance, recentRaceTimeParts],
+  );
+  const progressOverviewSummary = useMemo(
+    () =>
+      buildProgressOverviewSummary({
+        plan,
+        historySummary,
+        displayWeek,
+        currentWeekLoad,
+      }),
+    [plan, historySummary, displayWeek, currentWeekLoad],
+  );
+  const progressGraphState = useMemo(
+    () =>
+      buildProgressGraphState({
+        weeklyLoads: currentWeeklyLoad.map((point) => ({ week: point.week, load: point.load })),
+        baselineWeeklyLoads: baselineWeeklyLoad.map((point) => ({ week: point.week, load: point.load })),
+        displayWeek,
+        visibleWeekCount: isCompactProgramViewport ? 9 : undefined,
+      }),
+    [baselineWeeklyLoad, currentWeeklyLoad, displayWeek, isCompactProgramViewport],
+  );
+  const weeklyFocusSummary = feedbackConfirmation?.adjustment ?? plan?.rationale?.adaptation?.reason ?? weekRationale?.focus ?? "Hold rytmen og lad ugen gøre sit arbejde.";
+  const weeklyFocusSupport = feedbackConfirmation?.focus ?? plan?.rationale?.adaptation?.runnerFocus ?? weekState.tone;
+  const programStatusLine = useMemo(
+    () =>
+      plan
+        ? buildProgramStatusLine({
+            distance: goal.distance,
+            goalDateLabel: goalSummaryDate,
+            displayWeek,
+            totalWeeks: plan.weeks,
+          })
+        : "",
+    [displayWeek, goal.distance, goalSummaryDate, plan],
+  );
+  const nextWorkoutState = useMemo(
+    () =>
+      buildNextWorkoutState({
+        nextSession,
+        durationMin: nextDuration,
+        dateLabel: nextSession ? formatDanishDateWithWeekday(sessionDateFromPlan(goal.startDate, nextSession)) : null,
+      }),
+    [goal.startDate, nextDuration, nextSession],
+  );
+  const weekOverviewAction = useMemo(
+    () =>
+      buildWeekOverviewAction({
+        displayWeek,
+        nextSessionWeek,
+        showProgramMore,
+      }),
+    [displayWeek, nextSessionWeek, showProgramMore],
+  );
+  const filteredGoalTypeOptions = useMemo(
+    () => getGoalTypeOptions(goal.distance, runnerProfile.currentRunningAbility),
+    [goal.distance, runnerProfile.currentRunningAbility],
   );
   const isOnboardingStepValid =
-    onboardingStep === 2
-      ? onboardingSelections.runningAbility
-      : onboardingStep === 3
-        ? onboardingSelections.goalDistance &&
-          onboardingSelections.goalType &&
-          Boolean(goal.endDate) &&
-          (!shouldShowGoalPaceInput(goal.goalType) || Boolean(goal.targetPaceSecPerKm))
-        : onboardingStep === 4
-          ? onboardingSelections.activityLevel && Boolean(goal.availableTrainingDays?.length) && isValidIsoDate(goal.startDate) && Boolean(derivedPlanWeeks)
-          : true;
+    onboardingStep === 1
+      ? Boolean(runnerProfile.firstName?.trim()) && Boolean(runnerProfile.userTrainingContext?.trim())
+      : onboardingStep === 2
+        ? onboardingSelections.runningAbility
+        : onboardingStep === 3
+          ? onboardingSelections.goalDistance
+          : onboardingStep === 4
+            ? onboardingSelections.goalType && (!shouldShowGoalPaceInput(goal.goalType) || Boolean(goal.targetPaceSecPerKm))
+            : onboardingStep === 5
+              ? Boolean(runnerProfile.typicalWorkoutMinutes) &&
+                Boolean(goal.availableTrainingDays?.length) &&
+                Boolean(goal.preferredLongRunDay) &&
+                isValidIsoDate(goal.startDate)
+              : onboardingStep === 6
+                ? onboardingSelections.activityLevel && onboardingSelections.ambition
+                : true;
   const completedWorkoutCoach = useMemo(
     () =>
       postWorkoutCoachMessage({
@@ -2265,6 +2845,55 @@ export default function Home() {
     [activeSession, runnerProfile.firstName],
   );
   const activeWorkoutPurpose = useMemo(() => (activeSession ? getWorkoutPurpose(activeSession) : ""), [activeSession]);
+  const workoutActionState = useMemo(
+    () =>
+      buildWorkoutActionState({
+        isRunning,
+        isLastStep: isLastWorkoutStep,
+      }),
+    [isLastWorkoutStep, isRunning],
+  );
+  const workoutCueState = useMemo(
+    () =>
+      buildWorkoutCueState({
+        nextStepTitle: nextWorkoutStep ? phaseName(nextWorkoutStep) : null,
+        nextStepDetail: nextWorkoutStep ? `${formatClock(nextWorkoutStep.durationSec)} · ${coachingHint(nextWorkoutStep)}` : null,
+        nextStepHeartRateDetail: getWorkoutHeartRateGuidance(nextWorkoutStep, Boolean(runnerProfile.pulseGuidanceEnabled)),
+        cueFallbackText,
+        isLastStep: isLastWorkoutStep,
+        audioMode,
+        ttsSupported,
+        speechEnabled,
+      }),
+    [audioMode, cueFallbackText, isLastWorkoutStep, nextWorkoutStep, runnerProfile.pulseGuidanceEnabled, speechEnabled, ttsSupported],
+  );
+  const currentStepHeartRateGuidance = useMemo(
+    () => getWorkoutHeartRateGuidance(currentStep, Boolean(runnerProfile.pulseGuidanceEnabled)),
+    [currentStep, runnerProfile.pulseGuidanceEnabled],
+  );
+  const workoutAudioStatus = useMemo(
+    () => getWorkoutAudioStatus(audioMode, ttsSupported, speechEnabled),
+    [audioMode, speechEnabled, ttsSupported],
+  );
+  const workoutCheckInState = useMemo(
+    () => buildWorkoutCheckInState(showDetailedFeedback),
+    [showDetailedFeedback],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(max-width: 720px)");
+    const syncViewport = (matches: boolean) => {
+      setIsCompactProgramViewport((current) => (current === matches ? current : matches));
+    };
+
+    syncViewport(mediaQuery.matches);
+
+    const handler = (event: MediaQueryListEvent) => syncViewport(event.matches);
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
+  }, []);
 
   useEffect(() => {
     if (stage !== "program" || !stickyProgramCtaLabel) {
@@ -2335,6 +2964,7 @@ export default function Home() {
         styles.page,
         effectiveTheme === "light" ? styles.pageLight : styles.pageDark,
         stage === "welcome" ? styles.pageWelcomeStage : "",
+        stage === "intro" ? styles.pageIntroStage : "",
         stage === "intermezzo" ? styles.pageIntermezzoStage : "",
         stage === "program" ? styles.pageProgramStage : "",
       ].join(" ")}
@@ -2398,18 +3028,55 @@ export default function Home() {
               </div>
             </div>
             <div className={styles.audioSettings}>
-              <p className={styles.menuLabel}>Udseende</p>
-              <div className={styles.audioModeRow}>
-                <button className={appearance === "light" ? styles.audioModeActive : styles.audioModeBtn} onClick={() => setAppearance("light")} type="button">
-                  Lys
+              <p className={styles.menuLabel}>Puls som ekstra guide</p>
+              <p className={styles.menuHint}>Valgfrit. Hvis du kender din makspuls, kan jeg bruge den som ekstra guide på relevante pas.</p>
+              <div className={styles.menuToggleRow}>
+                <button
+                  className={!runnerProfile.pulseGuidanceEnabled ? styles.audioModeActive : styles.audioModeBtn}
+                  onClick={() => setRunnerProfile((current) => ({ ...current, pulseGuidanceEnabled: false }))}
+                  type="button"
+                >
+                  Fra
                 </button>
-                <button className={appearance === "dark" ? styles.audioModeActive : styles.audioModeBtn} onClick={() => setAppearance("dark")} type="button">
-                  Mørk
-                </button>
-                <button className={appearance === "system" ? styles.audioModeActive : styles.audioModeBtn} onClick={() => setAppearance("system")} type="button">
-                  Automatisk
+                <button
+                  className={runnerProfile.pulseGuidanceEnabled ? styles.audioModeActive : styles.audioModeBtn}
+                  onClick={() => setRunnerProfile((current) => ({ ...current, pulseGuidanceEnabled: true }))}
+                  type="button"
+                >
+                  Brug puls
                 </button>
               </div>
+              {runnerProfile.pulseGuidanceEnabled && (
+                <label className={styles.menuFieldGroup}>
+                  <span>Makspuls</span>
+                  <input
+                    className={styles.menuFieldInput}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="Fx 190"
+                    value={pulseDraft.maxHeartRate}
+                    onChange={(event) => {
+                      const rawValue = event.target.value.replace(/[^\d]/g, "").slice(0, 3);
+                      setPulseDraft({ maxHeartRate: rawValue });
+                      setRunnerProfile((current) => ({
+                        ...current,
+                        maxHeartRate: parseMaxHeartRateInput(rawValue),
+                      }));
+                    }}
+                  />
+                </label>
+              )}
+              <p className={styles.subtleInline}>{pulseGuidanceSummary}</p>
+              {pulseGuidanceWarning && <p className={styles.menuWarning}>{pulseGuidanceWarning}</p>}
+            </div>
+            <div className={styles.audioSettings}>
+              <p className={styles.menuLabel}>Udseende</p>
+              <div className={styles.audioModeRow}>
+                <button className={styles.audioModeActive} type="button" disabled>
+                  Mørk
+                </button>
+              </div>
+              <p className={styles.subtleInline}>StridePilot bruger mørk tilstand som fast visning i betaen.</p>
             </div>
             <button
               className={styles.menuBtn}
@@ -2419,7 +3086,17 @@ export default function Home() {
               }}
               disabled={!plan}
             >
-              Download .ics
+              Hent .ics
+            </button>
+            <button
+              className={styles.menuBtn}
+              onClick={() => {
+                downloadProgramText();
+                setMenuOpen(false);
+              }}
+              disabled={!plan}
+            >
+              Hent program
             </button>
             {authUser && (
               <button
@@ -2458,7 +3135,7 @@ export default function Home() {
           <div className={styles.welcomeOverlay}>
             <div className={styles.welcomeBody}>
               <h1>{APP_NAME}</h1>
-              <p>Din AI løbecoach</p>
+              <p>Din adaptive løbeapp</p>
               <button className={styles.primaryBtn} onClick={startFlow}>
                 Kom i gang
               </button>
@@ -2475,7 +3152,7 @@ export default function Home() {
           <div className={styles.authOverlay}>
             <section className={styles.centerCard}>
               <h2>Velkommen til {APP_NAME}</h2>
-              <p className={styles.subtle}>Dit adaptive løbeprogram der udvikler sig sammen med dig</p>
+              <p className={styles.subtle}>Et adaptivt løbeprogram, der følger din træning roligt.</p>
 
               <div className={styles.formGrid}>
                 <label>
@@ -2529,7 +3206,7 @@ export default function Home() {
       {stage === "intro" && (
         <section className={`${styles.centerCard} ${styles.introCard}`}>
           <h2>Klar til et program, der faktisk passer til dig?</h2>
-          <p className={styles.subtle}>StridePilot starter ud fra dit niveau nu og justerer videre, når din træning viser hvad du reagerer bedst på.</p>
+          <p className={styles.subtle}>StridePilot starter ud fra dit niveau nu og justerer stille videre, når din træning viser hvad du responderer bedst på.</p>
           <ul className={styles.bulletList}>
             <li>Startniveauet matcher det du realistisk kan løbe lige nu</li>
             <li>De næste uger justeres ud fra din feedback efter dine træningspas</li>
@@ -2546,26 +3223,21 @@ export default function Home() {
       {stage === "profile" && (
         <section className={`${styles.card} ${styles.onboardingCard}`}>
           <div className={styles.onboardingHeader}>
-            <h2>Byg dit personlige løbeprogram</h2>
-            <p className={styles.onboardingIntro}>Et par korte svar. Så sætter {APP_NAME} dit startniveau, din træningsrytme og hvor forsigtigt planen skal åbne.</p>
+            <p className={styles.nextLabel}>Onboarding</p>
+            <h2>{currentOnboardingStep.title}</h2>
+            <p className={styles.onboardingIntro}>{currentOnboardingStep.subtitle}</p>
           </div>
-          {onboardingStep === 1 && (
-            <div className={styles.planWhyCard}>
-              <p className={styles.nextLabel}>Sådan bruger jeg dine svar</p>
-              <p className={styles.subtleInline}>Dit niveau afgør startpunktet. Dit mål og din tidsramme sætter retningen. Din feedback justerer ugerne undervejs.</p>
-            </div>
-          )}
           <div className={styles.onboardingProgress}>
             <p className={styles.nextLabel}>Trin {onboardingStep} af {onboardingSteps}</p>
             <div className={styles.progressTrack}>
               <div className={styles.progressFill} style={{ width: `${(onboardingStep / onboardingSteps) * 100}%` }} />
             </div>
           </div>
+          <div className={styles.onboardingContent}>
 
           {onboardingStep === 1 && (
             <div className={styles.sectionBlock}>
-              <h3>Fortæl lidt om dig selv</h3>
-              <p className={styles.subtleInline}>Et kort fritekstsvar er nok. Jeg bruger det til at forstå dine mål, udfordringer og hvad der skal føles realistisk.</p>
+              <h3>Navn og en kort note</h3>
               <div className={styles.formGrid}>
                 <label>
                   <span>Hvad skal jeg kalde dig?</span>
@@ -2576,17 +3248,18 @@ export default function Home() {
                     onBlur={(e) => setRunnerProfile((current) => ({ ...current, firstName: e.target.value.trim() }))}
                     placeholder="Fx Anders"
                   />
-                  <small className={styles.fieldHint}>Jeg bruger navnet i coach-oplevelsen i appen.</small>
+                  <small className={styles.fieldHint}>Brug fornavn eller kaldenavn.</small>
                 </label>
                 <label>
-                  <span>Din situation lige nu</span>
+                  <span>Kort om dig lige nu</span>
                   <textarea
-                    rows={5}
+                    rows={3}
+                    className={styles.compactTextarea}
                     value={runnerProfile.userTrainingContext ?? ""}
                     onChange={(e) => setRunnerProfile((p) => ({ ...p, userTrainingContext: e.target.value }))}
-                    placeholder="Skriv kort om dine mål, udfordringer eller hvad du gerne vil blive bedre til."
+                    placeholder="Fx: Jeg vil gerne tilbage i rytme og bygge roligt op igen."
                   />
-                  <small className={styles.fieldHint}>Du kan skrive frit. Det hjælper StridePilot med at forstå dine mål og udfordringer.</small>
+                  <small className={styles.fieldHint}>Et par ord er nok.</small>
                 </label>
               </div>
             </div>
@@ -2594,7 +3267,7 @@ export default function Home() {
 
           {onboardingStep === 2 && (
             <div className={styles.sectionBlock}>
-              <h3>Hvad kan du realistisk løbe lige nu?</h3>
+              <h3>Hvad føles realistisk lige nu?</h3>
               <div className={styles.abilityGrid}>
                 {CURRENT_RUNNING_ABILITY_OPTIONS.map((option) => {
                   const active = onboardingSelections.runningAbility && runnerProfile.currentRunningAbility === option.value;
@@ -2604,7 +3277,13 @@ export default function Home() {
                       type="button"
                       className={active ? styles.abilityCardActive : styles.abilityCard}
                       onClick={() => {
-                        setRunnerProfile((p) => ({ ...p, currentRunningAbility: option.value }));
+                        const derivedBaseline = deriveBaselineLoadFromAbility(option.value);
+                        setRunnerProfile((p) => ({
+                          ...p,
+                          currentRunningAbility: option.value,
+                          runningExperience: mapAbilityToRunningExperience(option.value),
+                          ...derivedBaseline,
+                        }));
                         setOnboardingSelections((current) => ({ ...current, runningAbility: true }));
                       }}
                     >
@@ -2614,30 +3293,53 @@ export default function Home() {
                   );
                 })}
               </div>
-              <div className={styles.infoRow}>
-                <button type="button" className={styles.infoBtn} onClick={() => setOpenInfoField((field) => (field === "currentRunningAbility" ? null : "currentRunningAbility"))}>
-                  i
-                </button>
-                <span>Hvordan bruges det?</span>
-              </div>
-              {openInfoField === "currentRunningAbility" && <small className={styles.infoTextBox}>{INFO_TEXT.currentRunningAbility}</small>}
+              <small className={styles.fieldHint}>Det hjælper mig med at ramme et roligt og realistisk udgangspunkt.</small>
             </div>
           )}
 
           {onboardingStep === 3 && (
             <div className={styles.sectionBlock}>
-              <h3>Dit mål</h3>
+              <h3>Hvilken distance vil du bygge op til?</h3>
               <div className={styles.choiceGrid}>
                 {GOAL_DISTANCE_OPTIONS.map((option) => {
                   const active = onboardingSelections.goalDistance && goal.distance === option.value;
                   return (
                     <button
                       key={option.value}
+                        type="button"
+                        className={active ? styles.choiceCardActive : styles.choiceCard}
+                        onClick={() => {
+                          setGoal((g) => ({ ...g, distance: option.value }));
+                          setOnboardingSelections((current) => ({ ...current, goalDistance: true, goalType: false }));
+                        }}
+                      >
+                        <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
+                        <span className={styles.choiceText}>{option.label}</span>
+                      </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {onboardingStep === 4 && (
+            <div className={styles.sectionBlock}>
+              <h3>Hvad vil du gerne kunne på den distance?</h3>
+              <div className={styles.choiceGrid}>
+                {filteredGoalTypeOptions.map((option) => {
+                  const active = onboardingSelections.goalType && goal.goalType === option.value;
+                  return (
+                    <button
+                      key={option.value}
                       type="button"
                       className={active ? styles.choiceCardActive : styles.choiceCard}
                       onClick={() => {
-                        setGoal((g) => ({ ...g, distance: option.value }));
-                        setOnboardingSelections((current) => ({ ...current, goalDistance: true }));
+                        setGoal((current) => ({
+                          ...current,
+                          goalType: option.value,
+                          ...(shouldShowGoalPaceInput(option.value) ? {} : { targetPaceSecPerKm: undefined, targetTime: "" }),
+                        }));
+                        setOnboardingSelections((current) => ({ ...current, goalType: true }));
                       }}
                     >
                       <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
@@ -2646,38 +3348,10 @@ export default function Home() {
                   );
                 })}
               </div>
-              <div className={styles.trainingDays}>
-                <p className={styles.daysLabel}>Hvad er dit mål med denne distance?</p>
-                <div className={styles.choiceGrid}>
-                  {GOAL_TYPE_OPTIONS.map((option) => {
-                    const active = onboardingSelections.goalType && goal.goalType === option.value;
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={active ? styles.choiceCardActive : styles.choiceCard}
-                        onClick={() => {
-                          setGoal((current) => ({ ...current, goalType: option.value }));
-                          setOnboardingSelections((current) => ({ ...current, goalType: true }));
-                        }}
-                      >
-                        <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
-                        <span className={styles.choiceText}>{option.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {filteredGoalTypeOptions.length < 4 && (
+                <small className={styles.fieldHint}>Jeg holder kun de mål åbne, der passer til dit niveau lige nu.</small>
+              )}
               <div className={styles.formGrid}>
-                <label>
-                  Måldato eller racedato
-                  <input
-                    type="date"
-                    value={goal.endDate ?? ""}
-                    onChange={(e) => setGoal((current) => ({ ...current, endDate: e.target.value }))}
-                  />
-                  <small className={styles.fieldHint}>Vælg den dato du gerne vil være klar til målet.</small>
-                </label>
                 {shouldShowGoalPaceInput(goal.goalType) && (
                   <label>
                     <span className={styles.labelRow}>
@@ -2728,42 +3402,18 @@ export default function Home() {
                   </label>
                 )}
               </div>
-              {!goal.endDate && <p className={styles.warningText}>Vælg en måldato eller racedato for at gå videre.</p>}
-              {goal.endDate && isValidIsoDate(goal.startDate) && isValidIsoDate(goal.endDate) && derivePlanWeeks(goal.startDate, goal.endDate) === null && (
-                <p className={styles.warningText}>Slutdatoen skal ligge efter startdatoen.</p>
-              )}
               {(goal.goalType === "target_time" || goal.goalType === "pr") && !goal.targetPaceSecPerKm && (
-                <p className={styles.warningText}>Vælg et ønsket tempo for at gå videre.</p>
+                <p className={styles.warningText}>Vælg et tempo for at fortsætte.</p>
               )}
             </div>
           )}
 
-          {onboardingStep === 4 && (
+          {onboardingStep === 5 && (
             <div className={styles.sectionBlock}>
-              <h3>Træningsrammer</h3>
+              <h3>Rammerne for din uge</h3>
               <div className={styles.formGrid}>
                 <label>
-                  Startdato
-                  <input
-                    type="date"
-                    value={goal.startDate}
-                    onChange={(e) => setGoal((g) => ({ ...g, startDate: e.target.value }))}
-                    aria-invalid={!isValidIsoDate(goal.startDate)}
-                  />
-                  <small className={styles.fieldHint}>Programmet starter fra denne dato, og uge 1 tager udgangspunkt i den.</small>
-                </label>
-                <label>
-                  Foretrukkent træningstidspunkt
-                  <select value={goal.reminderTime ?? "13:00"} onChange={(e) => setGoal((g) => ({ ...g, reminderTime: e.target.value }))}>
-                    {TRAINING_TIME_OPTIONS.map((time) => (
-                      <option key={`training-time-${time}`} value={time}>
-                        {time}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Hvor lang tid har du typisk til et træningspas?
+                  Typisk tid til et pas
                   <select
                     value={String(runnerProfile.typicalWorkoutMinutes ?? 45)}
                     onChange={(e) => setRunnerProfile((current) => ({ ...current, typicalWorkoutMinutes: Number(e.target.value) }))}
@@ -2775,44 +3425,70 @@ export default function Home() {
                   </select>
                 </label>
                 <label>
-                  Hvordan skal planen føles i hverdagen?
-                  <select
-                    value={runnerProfile.preferredGuidance ?? ""}
-                    onChange={(e) =>
-                      setRunnerProfile((current) => ({
-                        ...current,
-                        preferredGuidance: e.target.value ? (e.target.value as GuidancePreference) : undefined,
-                      }))
-                    }
-                  >
-                    <option value="">Ingen særlig præference</option>
-                    {GUIDANCE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <small className={styles.fieldHint}>
-                    {runnerProfile.preferredGuidance
-                      ? GUIDANCE_OPTIONS.find((option) => option.value === runnerProfile.preferredGuidance)?.help
-                      : "Valgfrit. Brug feltet hvis du gerne vil signalere, hvordan planen skal opleves i praksis."}
-                  </small>
+                  Hvornår vil du gerne starte?
+                  <input
+                    type="date"
+                    value={goal.startDate}
+                    min={suggestedPlanStartDate}
+                    onChange={(e) => setGoal((current) => ({ ...current, startDate: e.target.value }))}
+                  />
+                  <small className={styles.fieldHint}>{planStartDateHelpText}</small>
                 </label>
               </div>
-              <p className={styles.recommendationText}>
-                {derivedPlanWeeks ? `Programlængde: ${derivedPlanWeeks} uger.` : "Vælg både startdato og måldato for at beregne programmets længde."}
-              </p>
-              {goal.endDate && isValidIsoDate(goal.startDate) && isValidIsoDate(goal.endDate) && derivedPlanWeeks === null && (
-                <p className={styles.warningText}>Slutdatoen skal ligge efter startdatoen.</p>
-              )}
-              {derivedPlanWeeks !== null && derivedPlanWeeks < 6 && <p className={styles.fieldHint}>Det er en kort tidshorisont. Planen kan blive mere komprimeret end normalt.</p>}
               <div className={styles.trainingDays}>
-                <p className={styles.daysLabel}>
-                  Hvor meget træner du generelt ud over løb?
-                  <button type="button" className={styles.infoBtn} onClick={() => setOpenInfoField((field) => (field === "activityLevel" ? null : "activityLevel"))}>
-                    i
-                  </button>
-                </p>
+                <p className={styles.daysLabel}>Træningsdage</p>
+                <p className={styles.subtleInline}>Vælg de dage, der normalt passer bedst.</p>
+                <p className={styles.recommendationText}>{trainingDayRecommendation.reason}</p>
+                {trainingDayRecommendation.caution && <p className={styles.fieldHint}>{trainingDayRecommendation.caution}</p>}
+                <div className={styles.daysGrid}>
+                  {WEEK_DAY_NAMES.map((day) => {
+                    const active = goal.availableTrainingDays?.includes(day);
+                    return (
+                      <button key={`day-${day}`} type="button" className={active ? styles.dayChipActive : styles.dayChip} onClick={() => toggleTrainingDay(day)}>
+                        <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
+                        <span className={styles.choiceText}>{DAY_LABEL[day]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {(goal.availableTrainingDays?.length ?? 0) < requiredRunsPerWeek(goal.distance) && (
+                  <p className={styles.warningText}>Du har valgt færre træningsdage, end planen normalt arbejder bedst med.</p>
+                )}
+                {(goal.availableTrainingDays?.length ?? 0) < trainingDayRecommendation.recommendedDays && (
+                  <p className={styles.warningText}>Det kan stadig fungere, men ofte med roligere fremgang eller lidt længere tidshorisont.</p>
+                )}
+              </div>
+              <div className={styles.trainingDays}>
+                <p className={styles.daysLabel}>Lang tur</p>
+                <div className={styles.choiceGrid}>
+                  {LONG_RUN_DAY_OPTIONS.map((option) => {
+                    const active = (goal.preferredLongRunDay ?? "both") === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={active ? styles.choiceCardActive : styles.choiceCard}
+                        onClick={() => setGoal((current) => ({ ...current, preferredLongRunDay: option.value }))}
+                      >
+                        <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
+                        <span className={styles.choiceText}>{option.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <small className={styles.fieldHint}>
+                  {LONG_RUN_DAY_OPTIONS.find((option) => option.value === (goal.preferredLongRunDay ?? "both"))?.help}
+                </small>
+                <small className={styles.fieldHint}>Det hjælper mig med at placere ugens længste pas dér, hvor det er lettest at få til at hænge sammen.</small>
+              </div>
+            </div>
+          )}
+
+          {onboardingStep === 6 && (
+            <div className={styles.sectionBlock}>
+              <h3>Tempoet i planen</h3>
+              <div className={styles.trainingDays}>
+                <p className={styles.daysLabel}>Anden træning i hverdagen</p>
                 <div className={styles.choiceGrid}>
                   {ACTIVITY_LEVEL_OPTIONS.map((option) => {
                     const active = onboardingSelections.activityLevel && runnerProfile.activityLevel === option.value;
@@ -2829,211 +3505,251 @@ export default function Home() {
                         <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
                         <span className={styles.choiceText}>{option.label}</span>
                       </button>
-                    );
-                  })}
+                  );
+                })}
                 </div>
                 <small className={styles.fieldHint}>{ACTIVITY_LEVEL_INFO[runnerProfile.activityLevel]}</small>
-                {openInfoField === "activityLevel" && <small className={styles.infoTextBox}>{INFO_TEXT.activityLevel}</small>}
               </div>
-              <div className={styles.trainingDays}>
-                <p className={styles.daysLabel}>
-                  Tilgængelige træningsdage
-                  <button type="button" className={styles.infoBtn} onClick={() => setOpenInfoField((field) => (field === "availableTrainingDays" ? null : "availableTrainingDays"))}>
-                    i
-                  </button>
-                </p>
-                <p className={styles.subtleInline}>Vælg de dage hvor du realistisk kan træne.</p>
-                <p className={styles.recommendationText}>{trainingDayRecommendation.reason}</p>
-                {trainingDayRecommendation.caution && <p className={styles.fieldHint}>{trainingDayRecommendation.caution}</p>}
-                {openInfoField === "availableTrainingDays" && <small className={styles.infoTextBox}>{INFO_TEXT.availableTrainingDays}</small>}
-                <div className={styles.daysGrid}>
-                  {WEEK_DAY_NAMES.map((day) => {
-                    const active = goal.availableTrainingDays?.includes(day);
+              <div className={`${styles.formGrid} ${styles.secondarySetupBlock}`}>
+                <label>
+                  Andet jeg skal vide? (valgfrit)
+                  <textarea
+                    rows={2}
+                    className={styles.compactTextarea}
+                    value={runnerProfile.otherTraining ?? ""}
+                    onChange={(e) => setRunnerProfile((current) => ({ ...current, otherTraining: e.target.value }))}
+                    placeholder="Fx styrke, cykling eller en travl uge med lidt overskud"
+                  />
+                </label>
+              </div>
+              <div className={styles.formGrid}>
+                <label>
+                  Hvordan vil du helst bygge op?
+                </label>
+                <div className={styles.choiceGrid}>
+                  {AMBITION_OPTIONS.map((option) => {
+                    const active = onboardingSelections.ambition && planAmbition === option.value;
                     return (
-                      <button key={`day-${day}`} type="button" className={active ? styles.dayChipActive : styles.dayChip} onClick={() => toggleTrainingDay(day)}>
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={active ? styles.choiceCardActive : styles.choiceCard}
+                        onClick={() => {
+                          setPlanAmbition(option.value);
+                          setOnboardingSelections((current) => ({ ...current, ambition: true }));
+                        }}
+                      >
                         <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
-                        <span className={styles.choiceText}>{DAY_LABEL[day]}</span>
+                        <span className={styles.choiceText}>{option.label}</span>
                       </button>
                     );
                   })}
                 </div>
-                {(goal.availableTrainingDays?.length ?? 0) < requiredRunsPerWeek(goal.distance) && (
-                  <p className={styles.warningText}>Du har valgt færre træningsdage end programmet normalt kræver. Programmet kan blive mindre effektivt eller kræve en længere tidshorisont.</p>
-                )}
-                {(goal.availableTrainingDays?.length ?? 0) < trainingDayRecommendation.recommendedDays && (
-                  <p className={styles.warningText}>Du har valgt færre træningsdage end den aktuelle anbefaling. Programmet kan stadig fungere, men vil ofte kræve mere tid eller en roligere progression.</p>
-                )}
-                {!isValidIsoDate(goal.startDate) && <p className={styles.warningText}>Vælg en gyldig startdato for at gå videre.</p>}
-                {!derivedPlanWeeks && <p className={styles.warningText}>Startdato og måldato skal give en gyldig tidsramme.</p>}
+                <small className={styles.fieldHint}>
+                  {AMBITION_OPTIONS.find((option) => option.value === planAmbition)?.help}
+                </small>
               </div>
             </div>
           )}
 
-          {onboardingStep === 5 && (
+          {onboardingStep === 7 && (
             <div className={styles.sectionBlock}>
-              <h3>Dit aktuelle træningsudgangspunkt</h3>
+              <h3>Hensyn (valgfrit)</h3>
               <div className={styles.formGrid}>
                 <label>
-                  Løbeerfaring
-                  <select
-                    value={runnerProfile.runningExperience}
-                    onChange={(e) => setRunnerProfile((current) => ({ ...current, runningExperience: e.target.value as RunnerProfile["runningExperience"] }))}
-                  >
-                    <option value="nybegynder">Nybegynder</option>
-                    <option value="let_ovet">Lidt erfaren</option>
-                    <option value="ovet">Erfaren</option>
-                  </select>
-                </label>
-                <label>
-                  Aktuel løbemængde pr. uge (km)
-                  <input
-                    type="number"
-                    min={0}
-                    max={150}
-                    value={runnerProfile.currentWeeklyVolumeKm ?? 0}
-                    onChange={(e) => setRunnerProfile((current) => ({ ...current, currentWeeklyVolumeKm: clampInt(Number(e.target.value || 0), 0, 150) }))}
-                  />
-                </label>
-                <label>
-                  Aktuelle træningspas pr. uge
-                  <input
-                    type="number"
-                    min={0}
-                    max={7}
-                    value={runnerProfile.currentRunsPerWeek ?? 0}
-                    onChange={(e) => setRunnerProfile((current) => ({ ...current, currentRunsPerWeek: clampInt(Number(e.target.value || 0), 0, 7) }))}
-                  />
-                </label>
-                <label>
-                  Længste nuværende tur (min)
-                  <input
-                    type="number"
-                    min={0}
-                    max={240}
-                    value={runnerProfile.longestCurrentRunMin ?? 0}
-                    onChange={(e) => setRunnerProfile((current) => ({ ...current, longestCurrentRunMin: clampInt(Number(e.target.value || 0), 0, 240) }))}
-                  />
-                </label>
-                <label>
-                  Seneste relevante tid/PR (valgfrit)
-                  <div className={styles.pacePickerRow}>
-                    <select
-                      className={styles.pacePicker}
-                      value={recentRaceDraft.distance}
-                      onChange={(e) => {
-                        const distance = e.target.value as Goal["distance"] | "";
-                        const nextDraft = { ...recentRaceDraft, distance };
-                        setRecentRaceDraft(nextDraft);
-                        setRunnerProfile((current) => ({
-                          ...current,
-                          recentRaceTimes: nextDraft.distance && nextDraft.time ? [{ distance: nextDraft.distance, time: nextDraft.time }] : [],
-                        }));
-                      }}
-                    >
-                      <option value="">Distance</option>
-                      {GOAL_DISTANCE_OPTIONS.map((option) => (
-                        <option key={`recent-race-distance-${option.value}`} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      className={styles.pacePicker}
-                      value={recentRaceDraft.time}
-                      onChange={(e) => {
-                        const nextDraft = { ...recentRaceDraft, time: e.target.value };
-                        setRecentRaceDraft(nextDraft);
-                        setRunnerProfile((current) => ({
-                          ...current,
-                          recentRaceTimes: nextDraft.distance && nextDraft.time ? [{ distance: nextDraft.distance, time: nextDraft.time }] : [],
-                        }));
-                      }}
-                    >
-                      <option value="">Tid</option>
-                      {RECENT_RACE_TIME_OPTIONS.map((totalSeconds) => {
-                        const label = formatDurationOption(totalSeconds);
-                        return (
-                          <option key={`recent-race-time-${totalSeconds}`} value={label}>
-                            {label}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                  <small className={styles.fieldHint}>Vælg distance og en tid fra listen, hvis du har en nylig PR eller konkurrencetid.</small>
-                </label>
-                <label>
-                  Skader eller sårbare områder
+                  Noget kroppen er følsom over for?
                   <textarea
-                    rows={3}
+                    rows={2}
+                    className={styles.compactTextarea}
                     value={runnerProfile.injuryHistory ?? ""}
                     onChange={(e) => setRunnerProfile((current) => ({ ...current, injuryHistory: e.target.value }))}
-                    placeholder="Fx akillessene, knæ eller noget du er ekstra opmærksom på"
+                    placeholder="Fx akillessene, knæ eller noget du holder øje med"
                   />
                 </label>
                 <label>
-                  Anden træning
+                  Noget du helst vil styre uden om?
                   <textarea
-                    rows={3}
-                    value={runnerProfile.otherTraining ?? ""}
-                    onChange={(e) => setRunnerProfile((current) => ({ ...current, otherTraining: e.target.value }))}
-                    placeholder="Fx styrketræning, cykling, fodbold eller meget fysisk arbejde"
-                  />
-                </label>
-                <label>
-                  Noget du helst vil undgå?
-                  <textarea
-                    rows={3}
+                    rows={2}
+                    className={styles.compactTextarea}
                     value={runnerProfile.weakPoints ?? ""}
                     onChange={(e) => setRunnerProfile((current) => ({ ...current, weakPoints: e.target.value }))}
-                    placeholder="Fx for mange intervaller, for lange pas eller meget stive uger"
+                    placeholder="Fx for mange intervaller eller for stive uger"
                   />
                 </label>
-                <label>
-                  Højde (cm)
-                  <input
-                    type="number"
-                    value={profileDraft.heightCm}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setProfileDraft((d) => ({ ...d, heightCm: value }));
-                      if (value !== "") setRunnerProfile((p) => ({ ...p, heightCm: clampInt(Number(value), 1, 300) }));
-                    }}
-                    onBlur={() => {
-                      if (profileDraft.heightCm === "") setProfileDraft((d) => ({ ...d, heightCm: String(runnerProfile.heightCm) }));
-                    }}
-                  />
-                </label>
-                <label>
-                  Vægt (kg)
-                  <input
-                    type="number"
-                    value={profileDraft.weightKg}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setProfileDraft((d) => ({ ...d, weightKg: value }));
-                      if (value !== "") setRunnerProfile((p) => ({ ...p, weightKg: clampInt(Number(value), 1, 400) }));
-                    }}
-                    onBlur={() => {
-                      if (profileDraft.weightKg === "") setProfileDraft((d) => ({ ...d, weightKg: String(runnerProfile.weightKg) }));
-                    }}
-                  />
-                </label>
-                <label>
-                  Alder
-                  <input
-                    type="number"
-                    value={profileDraft.age}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setProfileDraft((d) => ({ ...d, age: value }));
-                      if (value !== "") setRunnerProfile((p) => ({ ...p, age: clampInt(Number(value), 1, 120) }));
-                    }}
-                    onBlur={() => {
-                      if (profileDraft.age === "") setProfileDraft((d) => ({ ...d, age: String(runnerProfile.age) }));
-                    }}
-                  />
-                </label>
+              </div>
+            </div>
+          )}
+
+          {onboardingStep === 8 && (
+            <div className={styles.sectionBlock}>
+              <h3>Finjustér planen (valgfrit)</h3>
+              <div className={styles.formGrid}>
+                <div className={styles.optionalSectionCard}>
+                  <div className={styles.optionalSectionHeader}>
+                    <div>
+                      <p className={styles.nextLabel}>Seneste relevante tid eller PR</p>
+                      <p className={styles.subtleInline}>
+                        {showRecentRaceFields
+                          ? "Brug kun den her, hvis du allerede har en tid, der er relevant at tage med."
+                          : "Kun relevant hvis du allerede har en tid, du vil lade planen læne sig lidt op ad."}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.secondaryBtnMuted}
+                      onClick={() => {
+                        if (showRecentRaceFields) {
+                          setShowRecentRaceFields(false);
+                          setRecentRaceDraft({ distance: "", time: "" });
+                          setRecentRaceTimeParts({ hours: 0, minutes: 0, seconds: 0 });
+                          setRunnerProfile((current) => ({ ...current, recentRaceTimes: [] }));
+                          return;
+                        }
+                        setShowRecentRaceFields(true);
+                      }}
+                    >
+                      {showRecentRaceFields ? "Fjern" : "Tilføj tid/PR"}
+                    </button>
+                  </div>
+                  {(recentRaceDraftSummary ?? recentRaceSummary) && (
+                    <div className={styles.optionalSavedState}>
+                      <span className={styles.optionalSavedChip}>Gemt</span>
+                      <strong>{recentRaceDraftSummary ?? recentRaceSummary}</strong>
+                      <span>Du kan stadig rette eller fjerne den.</span>
+                    </div>
+                  )}
+                  {showRecentRaceFields && (
+                    <div className={styles.optionalRaceEditor}>
+                      <div className={styles.choiceGrid}>
+                        {GOAL_DISTANCE_OPTIONS.map((option) => {
+                          const active = recentRaceDraft.distance === option.value;
+                          return (
+                            <button
+                              key={`recent-race-distance-${option.value}`}
+                              type="button"
+                              className={active ? styles.choiceCardActive : styles.choiceCard}
+                              onClick={() => {
+                                const nextDraft = { ...recentRaceDraft, distance: option.value };
+                                setRecentRaceDraft(nextDraft);
+                                setRunnerProfile((current) => ({
+                                  ...current,
+                                  recentRaceTimes: buildRecentRaceTimes(nextDraft.distance, nextDraft.time),
+                                }));
+                              }}
+                            >
+                              <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
+                              <span className={styles.choiceText}>{option.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className={styles.optionalInputLabel}>
+                        <span>Tid</span>
+                        <div className={styles.timePickerGrid}>
+                          <label className={styles.timePickerColumn}>
+                            <span>Timer</span>
+                            <select
+                              className={styles.timePickerSelect}
+                              value={String(recentRaceTimeParts.hours)}
+                              onChange={(e) => updateRecentRaceTimeParts("hours", Number(e.target.value))}
+                              aria-label="Timer"
+                            >
+                              {RECENT_RACE_HOUR_OPTIONS.map((value) => (
+                                <option key={`recent-race-hours-${value}`} value={value}>
+                                  {value}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className={styles.timePickerColumn}>
+                            <span>Min</span>
+                            <select
+                              className={styles.timePickerSelect}
+                              value={String(recentRaceTimeParts.minutes)}
+                              onChange={(e) => updateRecentRaceTimeParts("minutes", Number(e.target.value))}
+                              aria-label="Minutter"
+                            >
+                              {RECENT_RACE_MINUTE_OPTIONS.map((value) => (
+                                <option key={`recent-race-minutes-${value}`} value={value}>
+                                  {String(value).padStart(2, "0")}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className={styles.timePickerColumn}>
+                            <span>Sek</span>
+                            <select
+                              className={styles.timePickerSelect}
+                              value={String(recentRaceTimeParts.seconds)}
+                              onChange={(e) => updateRecentRaceTimeParts("seconds", Number(e.target.value))}
+                              aria-label="Sekunder"
+                            >
+                              {RECENT_RACE_SECOND_OPTIONS.map((value) => (
+                                <option key={`recent-race-seconds-${value}`} value={value}>
+                                  {String(value).padStart(2, "0")}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                        <small className={styles.fieldHint}>
+                          Jeg viser {recentRaceTimeParts.hours > 0 ? "t:mm:ss" : "mm:ss"} i resuméet.
+                        </small>
+                      </div>
+                    </div>
+                  )}
+                  {showRecentRaceFields && (!recentRaceDraft.distance || !recentRaceDraftSummary) && (
+                    <small className={styles.fieldHint}>Vælg både distance og tid, hvis du vil gemme en seneste relevant tid.</small>
+                  )}
+                </div>
+                <div className={`${styles.inlineFieldGrid} ${styles.secondarySetupBlock}`}>
+                  <p className={styles.subtleInline}>Resten er kun til finjustering. Du kan sagtens springe det over.</p>
+                  <label>
+                    Højde (cm)
+                    <input
+                      type="number"
+                      value={profileDraft.heightCm}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setProfileDraft((d) => ({ ...d, heightCm: value }));
+                        if (value !== "") setRunnerProfile((p) => ({ ...p, heightCm: clampInt(Number(value), 1, 300) }));
+                      }}
+                      onBlur={() => {
+                        if (profileDraft.heightCm === "") setProfileDraft((d) => ({ ...d, heightCm: String(runnerProfile.heightCm) }));
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Vægt (kg)
+                    <input
+                      type="number"
+                      value={profileDraft.weightKg}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setProfileDraft((d) => ({ ...d, weightKg: value }));
+                        if (value !== "") setRunnerProfile((p) => ({ ...p, weightKg: clampInt(Number(value), 1, 400) }));
+                      }}
+                      onBlur={() => {
+                        if (profileDraft.weightKg === "") setProfileDraft((d) => ({ ...d, weightKg: String(runnerProfile.weightKg) }));
+                      }}
+                    />
+                  </label>
+                  <label>
+                    Alder
+                    <input
+                      type="number"
+                      value={profileDraft.age}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setProfileDraft((d) => ({ ...d, age: value }));
+                        if (value !== "") setRunnerProfile((p) => ({ ...p, age: clampInt(Number(value), 1, 120) }));
+                      }}
+                      onBlur={() => {
+                        if (profileDraft.age === "") setProfileDraft((d) => ({ ...d, age: String(runnerProfile.age) }));
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
               <div className={styles.trainingDays}>
                 <p className={styles.daysLabel}>Køn (valgfrit)</p>
@@ -3057,74 +3773,104 @@ export default function Home() {
             </div>
           )}
 
-          <div className={styles.onboardingNav}>
-            <button className={styles.secondaryBtn} type="button" onClick={() => setOnboardingStep((step) => Math.max(1, step - 1))} disabled={onboardingStep === 1}>
-              Forrige
-            </button>
-            {onboardingStep < onboardingSteps ? (
-              <button className={styles.primaryBtn} type="button" onClick={() => setOnboardingStep((step) => Math.min(onboardingSteps, step + 1))} disabled={!isOnboardingStepValid}>
-                Næste
+          </div>
+          <div className={styles.onboardingStickyNav}>
+            <div className={styles.onboardingStickyNavInner}>
+              <button className={styles.secondaryBtn} type="button" onClick={() => setOnboardingStep((step) => Math.max(1, step - 1))} disabled={onboardingStep === 1}>
+                Forrige
               </button>
-            ) : (
-              <button className={styles.primaryBtn} onClick={generatePlan} disabled={isLoading}>
-                {isLoading ? "Genererer program..." : "Start mit program"}
-              </button>
-            )}
+              {onboardingStep < onboardingSteps ? (
+                <button className={styles.primaryBtn} type="button" onClick={() => setOnboardingStep((step) => Math.min(onboardingSteps, step + 1))} disabled={!isOnboardingStepValid}>
+                  {currentOnboardingStep.nextLabel}
+                </button>
+              ) : (
+                <div className={styles.onboardingNavActions}>
+                  <button className={styles.secondaryBtnMuted} type="button" onClick={requestPlanRecommendation} disabled={isLoading}>
+                    Spring over
+                  </button>
+                  <button className={styles.primaryBtn} onClick={requestPlanRecommendation} disabled={isLoading}>
+                    {isLoading ? "Henter plan..." : "Se min plan"}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </section>
       )}
 
-      {stage === "intermezzo" && (
+      {stage === "intermezzo" && planRecommendation && (
         <section className={`${styles.centerCard} ${styles.intermezzoCard}`}>
-          <p className={styles.nextLabel}>Jeg har forstået dit udgangspunkt sådan her</p>
-          <h2>{planIntermezzo.title}</h2>
-          {coachExplanationSummary.length > 0 ? (
-            <div className={styles.valueGrid}>
-              {coachExplanationSummary.slice(0, 2).map((line, index) => (
-                <p key={`coach-summary-${index}`} className={styles.subtle}>
-                  {line}
+          <p className={styles.nextLabel}>Min anbefaling</p>
+          <p className={styles.subtle}>{recommendationLeadCopy}</p>
+          <div className={styles.intermezzoGrid}>
+            <div className={styles.intermezzoItem}>
+              <p>Anbefalet varighed</p>
+              <strong>{recommendedRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks} uger</strong>
+            </div>
+            <div className={styles.intermezzoItem}>
+              <p>Realistisk spænd</p>
+              <strong>{planRecommendation.minDurationWeeks}–{planRecommendation.maxDurationWeeks} uger</strong>
+            </div>
+            <div className={styles.intermezzoItem}>
+              <p>Valgt vej</p>
+              <strong>{activeRecommendationOption?.label ?? "Anbefalet vej"}</strong>
+            </div>
+            <div className={styles.intermezzoItem}>
+              <p>Planens længde</p>
+              <strong>{activeRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks} uger</strong>
+            </div>
+            <div className={styles.intermezzoItem}>
+              <p>Træningsrytme</p>
+              <strong>{Math.max(2, (activeRecommendationOption?.sessionsPerWeek ?? planRecommendation.recommendedSessionsPerWeek) - 1)} → {activeRecommendationOption?.sessionsPerWeek ?? planRecommendation.recommendedSessionsPerWeek} pas/uge</strong>
+            </div>
+            <div className={styles.intermezzoItem}>
+              <p>Progressionstempo</p>
+              <strong>{recommendationProgressionLabel}</strong>
+            </div>
+            <div className={styles.intermezzoItem}>
+              <p>Planens niveau</p>
+              <strong>{activeRecommendationOption?.planLevelLabel ?? "Realistisk"}</strong>
+            </div>
+          </div>
+          {activeRecommendationOption?.wasAdjusted && activeRecommendationOption.adjustmentMessage && (
+            <div className={styles.intermezzoReason}>
+              <h3>Justering</h3>
+              <p className={styles.subtleInline}>{activeRecommendationOption.adjustmentMessage}</p>
+            </div>
+          )}
+          {recommendationWarnings.length > 0 && (
+            <div className={styles.intermezzoReason}>
+              <h3>Vigtigt at vide</h3>
+              {recommendationWarnings.map((warning, index) => (
+                <p key={`recommendation-warning-${index}`} className={styles.subtleInline}>
+                  {warning}
                 </p>
               ))}
             </div>
-          ) : (
-            <p className={styles.subtle}>{planIntermezzo.summary}</p>
           )}
 
-          <div className={styles.intermezzoReason}>
-            <h3>Derfor starter planen her</h3>
-            {coachExplanationSummary.length > 2 ? (
-              coachExplanationSummary.slice(2).map((line, index) => (
-                <p key={`coach-rationale-${index}`} className={styles.subtleInline}>
-                  {line}
-                </p>
-              ))
-            ) : (
-              <p className={styles.subtleInline}>{planIntermezzo.rationale}</p>
-            )}
-          </div>
-
-          <div className={styles.intermezzoGrid}>
-            {planIntermezzo.bullets.map((item) => (
-              <div key={item.label} className={styles.intermezzoItem}>
-                <p>{item.label}</p>
-                <strong>{item.value}</strong>
-              </div>
+          <div className={styles.topActions}>
+            {planRecommendation.options.map((option) => (
+              <button
+                key={option.mode}
+                className={
+                  planRecommendation.selectedPathVariant === option.mode
+                    ? styles.recommendationOptionBtnActive
+                    : styles.recommendationOptionBtn
+                }
+                onClick={() => selectRecommendationOption(option.mode)}
+                disabled={isLoading}
+              >
+                {option.label}
+              </button>
             ))}
           </div>
-
-          <p className={styles.subtleInline}>Jeg justerer løbende programmet ud fra din feedback, så progressionen bliver ved med at give mening.</p>
-
           <div className={styles.topActions}>
-            <button
-              className={styles.secondaryBtn}
-              onClick={() => {
-                setStage("profile");
-              }}
-            >
-              Ret min profil
+            <button className={`${styles.primaryBtn} ${styles.recommendationPrimaryBtn}`} onClick={() => generatePlan()} disabled={isLoading}>
+              {isLoading ? "Genererer..." : "Brug denne anbefaling"}
             </button>
-            <button className={styles.primaryBtn} onClick={openProgramFromIntermezzo}>
-              Se mit program
+            <button className={styles.secondaryBtn} onClick={() => setStage("profile")} disabled={isLoading}>
+              Ret mine svar
             </button>
           </div>
         </section>
@@ -3136,290 +3882,378 @@ export default function Home() {
             {plan && (
               <>
                 <div className={styles.programHeaderBlock}>
-                  <p className={styles.nextLabel}>Dit program</p>
-                  <h2>Uge {weekNumber} af {plan.weeks}</h2>
-                  <p className={styles.subtle}>{goal.distance} · {goalSummaryDate ?? "Måldag"}</p>
-                  <div className={styles.progressTrack}><div className={styles.progressFill} style={{ width: `${(weekNumber / plan.weeks) * 100}%` }} /></div>
-                  <p className={styles.subtleInline}>Du træner frem mod {goal.distance} {goalSummaryDate ? `· ${goalSummaryDate}` : ""}</p>
+                  <p className={styles.nextLabel}>Program</p>
+                  <h2>Dit næste skridt</h2>
+                  <p className={styles.subtle}>{programStatusLine}</p>
+                  {displayWeek !== weekNumber && <p className={styles.subtleInline}>Du kigger på uge {displayWeek} lige nu.</p>}
                   {isDemoMode && <p className={styles.demoBadge}>Demo-mode aktiv</p>}
                 </div>
                 {showProgramIntro && (
                   <div className={styles.programIntroBlock}>
-                    <p className={styles.subtleInline}>Her er dit program frem mod målet. Jeg justerer de næste uger, når din feedback viser, at noget skal bygges roligere op eller kan udvikles hurtigere.</p>
-                    {profileInsightSummary && <p className={styles.subtleInline}>{profileInsightSummary}</p>}
-                    {baselinePlan && <p className={styles.subtleInline}>Det her er dit udgangspunkt, ikke en statisk plan.</p>}
-                  </div>
-                )}
-                <div className={styles.goalCard}>
-                  <p className={styles.nextLabel}>{weekState.title}</p>
-                  <h3>Fokus i denne uge</h3>
-                  <p className={styles.subtleInline}>{weekRationale?.summary ?? weekState.tone}</p>
-                  <p className={styles.subtleInline}>{feedbackConfirmation?.adjustment ?? plan?.rationale?.adaptation?.reason ?? weekRationale?.focus ?? "Hold rytmen og lad ugen gøre sit arbejde."}</p>
-                  <p className={styles.subtleInline}>{feedbackConfirmation?.focus ?? plan?.rationale?.adaptation?.runnerFocus ?? weekState.tone}</p>
-                </div>
-                {planFeasibilityStatus === "feasible_with_adjustments" && planTradeoff && (
-                  <div className={styles.tradeoffCard}>
-                    <h3>Planen er tilpasset dine rammer</h3>
-                    <p className={styles.subtleInline}>{planTradeoff}</p>
+                    <p className={styles.subtleInline}>{profileInsightSummary ?? "Det vigtigste står øverst. Resten er kun baggrund."}</p>
                   </div>
                 )}
               </>
             )}
 
-            <div className={styles.todayCard}>
-              <p className={styles.todayGreeting}>{greeting}</p>
-              <p className={styles.nextLabel}>I dag skal du</p>
-              <h3 className={!todaySession ? styles.restDayTitle : undefined}>{todaySession ? shortSessionTitle(todaySession.title) : "Hviledag"}</h3>
-              {todaySession ? (
-                <>
-                  <p className={styles.todayMeta}>{todayDuration} min</p>
-                  <p className={styles.todayDescription}>{intervalSummary(todaySession)}</p>
-                  <p className={styles.todaySupport}>{sessionShortDescription(todaySession)}</p>
-                </>
-              ) : (
-                <>
-                  <p className={styles.restDayBadge}>Restitution</p>
-                  <p className={styles.todayDescription}>I dag er en restitutionsdag.</p>
-                  <p className={styles.todaySupport}>Ingen planlagt løbetræning. Brug dagen til restitution eller let bevægelse.</p>
-                </>
-              )}
-              {todaySession ? (
-                <button
-                  ref={todayPrimaryCtaRef}
-                  className={styles.primaryBtn}
-                  onClick={() => {
-                    openWorkoutSession(todaySession.id);
-                  }}
-                >
-                  Start dagens træningspas
-                </button>
-              ) : nextSession ? (
-                <button
-                  ref={todayPrimaryCtaRef}
-                  className={`${styles.secondaryBtn} ${styles.secondaryBtnMuted}`}
-                  onClick={() => {
-                    openWorkoutSession(nextSession.id);
-                  }}
-                >
-                  Se næste træningspas
-                </button>
-              ) : null}
-            </div>
-
-            {todaySession && nextSession && (
-              <div className={styles.nextCard}>
-                <p className={styles.nextLabel}>Næste træningspas</p>
-                <p className={styles.subtleInline}>{formatDanishDateWithWeekday(sessionDateFromPlan(goal.startDate, nextSession))}</p>
-                <h3>{shortSessionTitle(nextSession.title)} · {nextDuration} min</h3>
-                <p className={styles.subtleInline}>{intervalSummary(nextSession)}</p>
-                <p className={styles.subtle}>{sessionShortDescription(nextSession)}</p>
-                <button
-                  className={styles.primaryBtn}
-                  onClick={() => {
-                    openWorkoutSession(nextSession.id);
-                  }}
-                >
-                  Se næste træningspas
-                </button>
-              </div>
-            )}
-
-            {plan && (
-              <div className={styles.progressSummaryGrid}>
-                <div className={styles.valueCard}>
-                  <p>Ugens træningsload</p>
-                  <strong>{currentWeekLoad ? currentWeekLoad.load.toFixed(1).replace(".", ",") : "0,0"}</strong>
-                </div>
-                <div className={styles.valueCard}>
-                  <p>Længste sammenhængende løb</p>
-                  <strong>{formatMinutesLabel(longestRunNow)}</strong>
-                </div>
-                <div className={styles.valueCard}>
-                  <p>Måldag</p>
-                  <strong>{goalDestinationSession ? shortSessionTitle(goalDestinationSession.title) : "—"}</strong>
-                </div>
-              </div>
-            )}
-
-            {plan && currentWeeklyLoad.length > 0 && (
-              <div className={styles.chartCard}>
-                <div className={styles.labelRow}>
-                  <h3>Sådan udvikler programmet sig</h3>
-                  <button type="button" className={styles.infoBtn} onClick={() => setOpenInfoField((field) => (field === "graph" ? null : "graph"))}>
-                    i
-                  </button>
-                </div>
-                {openInfoField === "graph" && <p className={styles.infoText}>{INFO_TEXT.graph}</p>}
-                <div className={styles.chartMetaRow}>
-                  <span className={styles.chartActiveWeek}>Valgt uge: U{displayWeek}</span>
-                  <span className={styles.chartMetaHint}>Tryk på en uge for at åbne den i programmet</span>
-                </div>
-                <div className={styles.barRow}>
-                  {currentWeeklyLoad.map((point) => (
-                    <button
-                      key={`load-${point.week}`}
-                      type="button"
-                      className={point.week === displayWeek ? styles.barColActive : styles.barCol}
-                      onClick={() => setVisibleWeek(point.week, { scrollIntoView: true })}
-                      aria-pressed={point.week === displayWeek}
-                      aria-current={point.week === displayWeek ? "true" : undefined}
-                      aria-label={`Vis uge ${point.week}`}
-                      title={`Vis uge ${point.week}`}
-                    >
-                      <div className={styles.barTrackMini}>
-                        <div className={styles.barFillMini} style={{ height: `${(point.load / maxWeeklyLoad) * 100}%` }} />
-                      </div>
-                      <span className={point.week === displayWeek ? styles.barLabelActive : undefined}>U{point.week}</span>
-                    </button>
-                  ))}
-                </div>
-                <svg viewBox={`0 0 ${graphSeries.width} ${graphSeries.height}`} className={styles.lineChart} role="img" aria-label="Oprindelig og nuværende plan">
-                  <path d={graphSeries.baselinePath} className={styles.baselinePath} />
-                  <path d={graphSeries.currentPath} className={styles.currentPath} />
-                </svg>
-                <div className={styles.chartLegend}>
-                  <span className={styles.chartLegendItem}>
-                    <i className={styles.baselineDot} />
-                    <span>
-                      <strong className={styles.chartLegendLabel}>Oprindelig plan</strong>
-                      <small className={styles.chartLegendHint}>Programmet som det så ud fra start</small>
-                    </span>
-                  </span>
-                  <span className={styles.chartLegendItem}>
-                    <i className={styles.currentDot} />
-                    <span>
-                      <strong className={styles.chartLegendLabel}>Nuværende plan</strong>
-                      <small className={styles.chartLegendHint}>Planen efter dine justeringer</small>
-                    </span>
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {plan && (
-              <div ref={programWeekRef}>
-              <div className={styles.topActions}>
-                <button className={styles.secondaryBtn} onClick={() => setVisibleWeek(Math.max(1, displayWeek - 1))} disabled={displayWeek <= 1}>
-                  Forrige uge
-                </button>
-                <span className={styles.weekLabel}>Uge {displayWeek}</span>
-                <button className={styles.secondaryBtn} onClick={() => setVisibleWeek(Math.min(plan.weeks, displayWeek + 1))} disabled={displayWeek >= plan.weeks}>
-                  Næste uge
-                </button>
-              </div>
-              </div>
-            )}
-
-            <div className={styles.weekCalendar}>
-              {calendarWeekDates.map((date) => {
-                const daySession = sessionsByDate.get(date.toISOString().slice(0, 10));
-                const daySessionFeedback = daySession ? sessionFeedbackMap[daySession.id] ?? null : null;
-                const isToday = date.toDateString() === new Date().toDateString();
-                const isGoalDay = Boolean(daySession && /Måldag|test/i.test(daySession.title));
-                const cardStateClass = daySession
-                  ? daySessionFeedback
-                    ? styles.dayCardCompleted
-                    : styles.dayCardPlanned
-                  : styles.dayCardRest;
-                return (
+            <div className={styles.programHeroGrid}>
+              <div className={styles.todayCard}>
+                <p className={styles.nextLabel}>{todayActionState.label}</p>
+                <h3 className={!todaySession ? styles.restDayTitle : undefined}>{todaySession ? shortSessionTitle(todaySession.title) : todayActionState.emptyTitle}</h3>
+                {todaySession ? (
+                  <>
+                    <p className={styles.todayMeta}>{todayDuration} min · {formatDanishDateWithWeekday(new Date())}</p>
+                    <p className={styles.todayDescription}>{intervalSummary(todaySession)}</p>
+                    <p className={styles.todaySupport}>{sessionShortDescription(todaySession)}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className={styles.restDayBadge}>Ro</p>
+                    <p className={styles.todayDescription}>{todayActionState.description}</p>
+                    <p className={styles.todaySupport}>{todayActionState.support}</p>
+                  </>
+                )}
+                {todaySession ? (
                   <button
-                    key={date.toISOString()}
-                    className={`${isGoalDay ? styles.dayCardGoal : isToday ? styles.dayCardToday : styles.dayCard} ${cardStateClass}`}
+                    ref={todayPrimaryCtaRef}
+                    className={styles.primaryBtn}
                     onClick={() => {
-                      if (daySession) {
-                        setSelectedSessionId(daySession.id);
-                        openWorkoutSession(daySession.id);
-                      } else {
-                        setRestDayPrompt({ dateLabel: formatDanishDateWithWeekday(date), showIdeas: false });
-                      }
+                      openWorkoutSession(todaySession.id);
                     }}
                   >
-                    <strong>{formatDanishDateWithWeekday(date)}</strong>
-                    {daySession ? (
-                      <span>
-                        {daySession.title} · {daySessionFeedback ? savedFeedbackStatusLabel(daySessionFeedback.status) : intensityFromLoad(daySession.loadScore)}
-                        {` · ca. ${Math.round(sessionTotalDurationSec(daySession) / 60)} min`}
-                        {daySession.week % 4 === 0 ? " · Restitutionsuge" : ""}
-                        {/Måldag|test/i.test(daySession.title) ? " · Måldag" : ""}
-                      </span>
-                    ) : (
-                      <span>Hvile</span>
+                    {todayActionState.ctaLabel}
+                  </button>
+                ) : nextSession ? (
+                  <button
+                    ref={todayPrimaryCtaRef}
+                    className={`${styles.secondaryBtn} ${styles.secondaryBtnMuted}`}
+                    onClick={() => {
+                      revealWeekOverview({ focusNextWorkout: true });
+                    }}
+                  >
+                    {todayActionState.ctaLabel}
+                  </button>
+                ) : (
+                  <button
+                    ref={todayPrimaryCtaRef}
+                    className={`${styles.secondaryBtn} ${styles.secondaryBtnMuted}`}
+                    onClick={() => {
+                      revealWeekOverview();
+                    }}
+                  >
+                    {todayActionState.ctaLabel}
+                  </button>
+                )}
+              </div>
+              <div className={styles.programSecondaryStack}>
+                {nextWorkoutState.visible && (
+                  <div className={`${styles.goalCard} ${styles.goalCardSecondary} ${styles.programSecondaryCard}`}>
+                    <p className={styles.nextLabel}>Næste planlagte pas</p>
+                    <h3>{shortSessionTitle(nextWorkoutState.title)}</h3>
+                    {nextWorkoutState.meta && <p className={styles.subtleInline}>{nextWorkoutState.meta}</p>}
+                    <p className={styles.goalCardMeta}>
+                      {todaySession ? "Klar efter dagens pas." : "Det her er det næste pas i planen."}
+                    </p>
+                  </div>
+                )}
+
+                {plan && currentWeeklyLoad.length > 0 && (
+                  <div className={`${styles.chartCard} ${styles.chartCardCompact} ${styles.chartCardMinimal} ${styles.programProgressCard}`}>
+                    <p className={styles.nextLabel}>Fremdrift</p>
+                    {progressGraphState.visible && (
+                      <div className={styles.progressMiniChart}>
+                        <div className={styles.chartMetaRow}>
+                          <span className={styles.chartActiveWeek}>Valgt uge: U{displayWeek}</span>
+                          <span>Uge {progressGraphState.windowStartWeek}–{progressGraphState.windowEndWeek}</span>
+                          {(progressGraphState.hasHiddenBefore || progressGraphState.hasHiddenAfter) && (
+                            <span className={styles.chartMetaHint}>Tryk på en uge for at åbne den i programmet</span>
+                          )}
+                        </div>
+                        <div
+                          className={styles.barRow}
+                          style={{ ["--progress-columns" as never]: String(progressGraphState.bars.length) }}
+                        >
+                          {progressGraphState.bars.map((bar) => (
+                            <button
+                              type="button"
+                              key={`progress-bar-${bar.week}`}
+                              className={bar.isCurrent ? styles.barColActive : styles.barCol}
+                              onClick={() => {
+                                const action = buildProgressGraphWeekAction(bar.week);
+                                setVisibleWeek(action.targetWeek, { scrollIntoView: action.scrollIntoView });
+                              }}
+                              aria-pressed={bar.isCurrent}
+                              aria-current={bar.isCurrent ? "true" : undefined}
+                              aria-label={`Vis uge ${bar.week}`}
+                              title={`Vis uge ${bar.week}`}
+                            >
+                              <div className={styles.barTrackMini}>
+                                <div
+                                  className={styles.barFillMini}
+                                  style={{ height: `${bar.heightPct}%` }}
+                                />
+                              </div>
+                              <span className={bar.isCurrent ? styles.barLabelActive : undefined}>{bar.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <svg viewBox="0 0 120 28" preserveAspectRatio="none" className={styles.lineChart} role="img" aria-label="Oprindelig og nuværende plan">
+                          {progressGraphState.showBaselineSeries && <path d={progressGraphState.baselinePath} className={styles.baselinePath} />}
+                          <path d={progressGraphState.path} className={styles.currentPath} />
+                          {progressGraphState.points.map((point) => (
+                            <circle
+                              key={point.week}
+                              className={point.isCurrent ? styles.progressMiniChartPointActive : styles.progressMiniChartPoint}
+                              cx={point.x}
+                              cy={point.y}
+                              r={point.isCurrent ? 2.3 : 1.6}
+                            />
+                          ))}
+                        </svg>
+                        <div className={styles.chartLegend}>
+                          {progressGraphState.showBaselineSeries && (
+                            <span className={styles.chartLegendItem}>
+                              <i className={styles.baselineDot} />
+                              <span>
+                                <strong className={styles.chartLegendLabel}>Oprindelig plan</strong>
+                                <small className={styles.chartLegendHint}>Programmet som det så ud fra start</small>
+                              </span>
+                            </span>
+                          )}
+                          <span className={styles.chartLegendItem}>
+                            <i className={styles.currentDot} />
+                            <span>
+                              <strong className={styles.chartLegendLabel}>Nuværende plan</strong>
+                              <small className={styles.chartLegendHint}>Planen efter dine justeringer</small>
+                            </span>
+                          </span>
+                          <span className={styles.chartLegendItem}>
+                            <i className={styles.progressLegendCurrent} />
+                            <span>
+                              <strong className={styles.chartLegendLabel}>Aktuel uge</strong>
+                              <small className={styles.chartLegendHint}>Den uge du kigger på lige nu</small>
+                            </span>
+                          </span>
+                        </div>
+                      </div>
                     )}
-                  </button>
-                );
-              })}
+                    <div className={styles.progressSummaryGrid}>
+                      {progressOverviewSummary.map((item) => (
+                        <div key={item.label} className={styles.valueCard}>
+                          <p>{item.label}</p>
+                          <strong>{item.value}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {restDayPrompt && (
-              <div className={styles.tradeoffCard}>
-                <h3>Hviledag</h3>
-                <p className={styles.subtleInline}>I dag er planlagt som hviledag. Vil du have forslag til andre gode aktiviteter?</p>
-                <p className={styles.subtleInline}>{restDayPrompt.dateLabel}</p>
-                <div className={styles.topActions}>
-                  <button className={styles.secondaryBtn} type="button" onClick={() => setRestDayPrompt({ ...restDayPrompt, showIdeas: true })}>
-                    Ja
-                  </button>
-                  <button className={styles.secondaryBtn} type="button" onClick={() => setRestDayPrompt(null)}>
-                    Nej
-                  </button>
+            <div className={styles.programMoreSection}>
+              <button
+                type="button"
+                className={`${styles.programMoreToggle} ${styles.programMoreToggleMuted}`}
+                onClick={() => setShowProgramMore((value) => !value)}
+                aria-expanded={showProgramMore}
+              >
+                <span>
+                  <strong>Vis mere</strong>
+                  <small>Ugeoverblik, justeringer og noter</small>
+                </span>
+                <span>{showProgramMore ? "−" : "+"}</span>
+              </button>
+            </div>
+
+            {showProgramMore && (
+              <div className={styles.programDetailStack}>
+                <div className={`${styles.goalCard} ${styles.goalCardSecondary} ${styles.programDetailCard}`}>
+                  <p className={styles.nextLabel}>{weekState.title}</p>
+                  <h3>Fokus lige nu</h3>
+                  <p className={styles.subtleInline}>{weeklyFocusSummary}</p>
+                  {weeklyFocusSupport && weeklyFocusSupport !== weeklyFocusSummary && <p className={styles.goalCardMeta}>{weeklyFocusSupport}</p>}
+                  {planFeasibilityStatus === "feasible_with_adjustments" && planTradeoff && (
+                    <p className={styles.subtleInline}>{planTradeoff}</p>
+                  )}
                 </div>
-                {restDayPrompt.showIdeas && (
-                  <ul className={styles.bulletList}>
-                    <li>Gåtur</li>
-                    <li>Mobilitet</li>
-                    <li>Let styrketræning</li>
-                    <li>Rolig cykling</li>
-                  </ul>
+
+                <div className={`${styles.programSection} ${styles.programSectionMuted} ${styles.programDetailCard}`}>
+                  <div className={styles.programSectionHeader}>
+                    <div>
+                      <p className={styles.nextLabel}>Nuværende uge</p>
+                      <h3>Overblik over uge {displayWeek}</h3>
+                    </div>
+                  </div>
+                  {plan && (
+                    <div className={styles.progressSummaryGrid}>
+                      <div className={styles.valueCard}>
+                        <p>Ugens load</p>
+                        <strong>{currentWeekLoad ? currentWeekLoad.load.toFixed(1).replace(".", ",") : "0,0"}</strong>
+                      </div>
+                      <div className={styles.valueCard}>
+                        <p>Længste sammenhængende løb</p>
+                        <strong>{formatMinutesLabel(currentWeekLongestContinuousRunSec)}</strong>
+                      </div>
+                      <div className={styles.valueCard}>
+                        <p>Næste måldag</p>
+                        <strong>{goalDestinationSession ? shortSessionTitle(goalDestinationSession.title) : "—"}</strong>
+                      </div>
+                    </div>
+                  )}
+                  {plan && (
+                    <div ref={programWeekRef}>
+                      <div className={styles.topActions}>
+                        <button className={styles.secondaryBtn} onClick={() => setVisibleWeek(Math.max(1, displayWeek - 1))} disabled={displayWeek <= 1}>
+                          Forrige uge
+                        </button>
+                        <span className={styles.weekLabel}>Uge {displayWeek}</span>
+                        <button className={styles.secondaryBtn} onClick={() => setVisibleWeek(Math.min(plan.weeks, displayWeek + 1))} disabled={displayWeek >= plan.weeks}>
+                          Næste uge
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <div className={styles.weekCalendar}>
+                    {calendarWeekDates.map((date) => {
+                      const daySession = sessionsByDate.get(date.toISOString().slice(0, 10));
+                      const daySessionFeedback = daySession ? sessionFeedbackMap[daySession.id] ?? null : null;
+                      const isToday = date.toDateString() === new Date().toDateString();
+                      const isGoalDay = Boolean(daySession && /Måldag|test/i.test(daySession.title));
+                      const isNextWorkout = shouldHighlightNextWorkout(daySession, nextSession?.id ?? null);
+                      const visualState = getProgramDayVisualState(daySession, daySessionFeedback);
+                      const cardStateClass =
+                        visualState === "completed"
+                          ? styles.dayCardCompleted
+                          : visualState === "planned"
+                            ? styles.dayCardPlanned
+                            : styles.dayCardRest;
+                      return (
+                        <button
+                          key={date.toISOString()}
+                          ref={isNextWorkout ? nextWorkoutDayRef : undefined}
+                          className={`${isGoalDay ? styles.dayCardGoal : isToday ? styles.dayCardToday : styles.dayCard} ${cardStateClass} ${isNextWorkout ? styles.dayCardNext : ""}`}
+                          onClick={() => {
+                            if (daySession) {
+                              setSelectedSessionId(daySession.id);
+                              openWorkoutSession(daySession.id);
+                            } else {
+                              setRestDayPrompt({ dateLabel: formatDanishDateWithWeekday(date), showIdeas: false });
+                            }
+                          }}
+                        >
+                          <strong>{formatDanishDateWithWeekday(date)}</strong>
+                          {daySession ? (
+                            <span>
+                              {daySession.title}
+                              {` · ca. ${Math.round(sessionTotalDurationSec(daySession) / 60)} min`}
+                              {daySessionFeedback ? ` · ${savedFeedbackStatusLabel(daySessionFeedback.status)}` : ""}
+                              {isNextWorkout ? " · Næste pas" : ""}
+                              {/Måldag|test/i.test(daySession.title) ? " · Måldag" : ""}
+                            </span>
+                          ) : (
+                            <span>Hvile, let bevægelse og plads til at lande ugen.</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {restDayPrompt && (
+                    <div className={styles.restPromptCard}>
+                      <h3>Restitutionsdag</h3>
+                      <p className={styles.subtleInline}>{restDayPrompt.dateLabel}</p>
+                      <p className={styles.subtleInline}>Ingen planlagt løbetræning. Vil du have et par lette forslag i stedet?</p>
+                      <div className={styles.topActions}>
+                        <button className={styles.secondaryBtn} type="button" onClick={() => setRestDayPrompt({ ...restDayPrompt, showIdeas: true })}>
+                          Vis forslag
+                        </button>
+                        <button className={styles.secondaryBtnMuted} type="button" onClick={() => setRestDayPrompt(null)}>
+                          Luk
+                        </button>
+                      </div>
+                      {restDayPrompt.showIdeas && (
+                        <ul className={styles.bulletList}>
+                          <li>20-30 min gåtur</li>
+                          <li>10 min mobilitet</li>
+                          <li>Let styrke eller core</li>
+                          <li>Rolig cykling uden at presse</li>
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {(planWarnings.length > 0 || programAdjustments.length > 0 || savedAdaptations.length > 0 || (!isDemoMode && profileId)) && (
+                  <div className={`${styles.safetyCard} ${programAdjustmentState.kind === "none" ? styles.safetyCardMuted : ""} ${styles.programDetailCard}`}>
+                    <div className={styles.programSectionHeader}>
+                      <div>
+                        <p className={styles.nextLabel}>Programjusteringer</p>
+                        <h3>{programAdjustmentState.headline}</h3>
+                      </div>
+                      <span className={`${styles.sectionTonePill} ${styles[`sectionTonePill${programAdjustmentToneAppearance[0].toUpperCase()}${programAdjustmentToneAppearance.slice(1)}`]}`}>{programAdjustmentState.toneLabel}</span>
+                    </div>
+                    <p className={styles.subtleInline}>{programAdjustmentState.summary}</p>
+                    {visibleAdjustmentHighlights.length > 0 && (
+                      <ul className={styles.bulletList}>
+                        {visibleAdjustmentHighlights.map((item, index) => (
+                          <li key={`adjustment-highlight-${index}`}>{coachAdjustmentCopy(item)}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {hasMoreSafetyAdjustments && (
+                      <button className={styles.textBtn} type="button" onClick={() => setShowAllSafety((value) => !value)}>
+                        {showAllSafety ? "Vis mindre" : "Se alle justeringer"}
+                      </button>
+                    )}
+                    {!isDemoMode && profileId && (
+                      <div className={styles.savedFeedbackCard}>
+                        <h3>Egne noter</h3>
+                        <p className={styles.subtleInline}>Gem korte noter om søvn, belastning eller noget du vil huske til næste uge.</p>
+                        <label>
+                          <textarea
+                            value={noteDraft}
+                            onChange={(event) => setNoteDraft(event.target.value)}
+                            placeholder="Fx: lidt tunge ben efter uge 4, men søvnen var også dårlig."
+                            rows={3}
+                          />
+                        </label>
+                        <div className={styles.topActions}>
+                          <button className={styles.secondaryBtn} type="button" onClick={saveProfileNote} disabled={!noteDraft.trim() || noteSaveState === "saving"}>
+                            {noteSaveState === "saving" ? "Gemmer..." : noteSaveState === "saved" ? "Gemt" : "Gem note"}
+                          </button>
+                        </div>
+                        {savedNotes.length > 0 && (
+                          <ul className={styles.bulletList}>
+                            {savedNotes.slice(0, 3).map((note) => (
+                              <li key={note.id}>
+                                {new Date(note.createdAt).toLocaleDateString("da-DK")} · {note.text}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
+
+                <div className={`${styles.insightCard} ${programInsightState.isEmpty ? styles.insightCardMuted : ""} ${styles.programDetailCard}`}>
+                  <p className={styles.nextLabel}>Træningsindsigter</p>
+                  <h3>{programInsightState.title}</h3>
+                  <p className={styles.subtleInline}>{programInsightState.summary}</p>
+                  {programInsightState.isEmpty ? (
+                    <>
+                      <p className={styles.subtleInline}>{programInsightState.body}</p>
+                      {programInsightState.cta && <p className={styles.insightPrompt}>{programInsightState.cta}</p>}
+                    </>
+                  ) : (
+                    <ul className={styles.bulletList}>
+                      {programInsightState.bullets.map((line, index) => (
+                        <li key={`learned-insight-${index}`}>{line}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             )}
-
-            {(planWarnings.length > 0 || programAdjustments.length > 0) && (
-              <div className={styles.safetyCard}>
-                <h3>Programjusteringer</h3>
-                <p className={styles.subtleInline}>Her kan du se de vigtigste ændringer, der er lavet i dit program.</p>
-                {programAdjustments.length > 0 && (
-                  <p className={styles.subtleInline}>
-                    {programAdjustments.length} justering{programAdjustments.length === 1 ? "" : "er"} er lavet undervejs.
-                  </p>
-                )}
-                {planWarnings.length > 0 && (
-                  <ul className={styles.bulletList}>
-                    {planWarnings.map((warning, index) => (
-                      <li key={`warning-${index}`}>{warning}</li>
-                    ))}
-                  </ul>
-                )}
-                {visibleSafetyAdjustments.length > 0 && (
-                  <ul className={styles.bulletList}>
-                    {visibleSafetyAdjustments.map((item, index) => (
-                      <li key={`safety-${index}`}>{coachAdjustmentCopy(item)}</li>
-                    ))}
-                  </ul>
-                )}
-                {hasMoreSafetyAdjustments && (
-                  <button className={styles.textBtn} type="button" onClick={() => setShowAllSafety((value) => !value)}>
-                    {showAllSafety ? "Vis mindre" : "Vis mere"}
-                  </button>
-                )}
-              </div>
-            )}
-
-            <div className={styles.insightCard}>
-              <h3>Det har jeg lært om din træning</h3>
-              {learnedInsights.length > 0 ? (
-                <ul className={styles.bulletList}>
-                  {learnedInsights.map((line, index) => (
-                    <li key={`learned-insight-${index}`}>{line}</li>
-                  ))}
-                </ul>
-              ) : (
-                <>
-                  <p className={styles.subtleInline}>Jeg bruger din feedback over tid til at lære, hvordan du reagerer på progression, kvalitet og længere ture.</p>
-                  <p className={styles.subtleInline}>Når jeg har lidt mere historik, viser jeg korte træningsindsigter her.</p>
-                </>
-              )}
-            </div>
           </article>
 
           {stickyProgramCtaLabel && (
@@ -3455,8 +4289,8 @@ export default function Home() {
             {activeSession && currentStep && !workoutCompleted && (
               <>
                 <div className={styles.workoutTopBar}>
-                  <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label="Tilbage til program">
-                    Tilbage
+                  <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label="Luk træningspas">
+                    {workoutActionState.closeLabel}
                   </button>
                   <div className={styles.workoutHeaderCenter}>
                     <p className={styles.workoutWeekContext}>Uge {activeSession.week}</p>
@@ -3464,8 +4298,8 @@ export default function Home() {
                   </div>
                   <p className={styles.workoutDurationBadge}>Ca. {activeSessionDuration} min</p>
                 </div>
-                <div className={styles.workoutPurposeCard}>
-                  <p className={styles.nextLabel}>Formål med træningspasset</p>
+                <div className={`${styles.workoutPurposeCard} ${styles.workoutPurposeCardMuted}`}>
+                  <p className={styles.workoutMiniLabel}>Pas i dag</p>
                   <p className={styles.subtleInline}>{activeWorkoutPurpose}</p>
                 </div>
                 {activeSessionFeedback && (
@@ -3485,9 +4319,32 @@ export default function Home() {
                     <p className={styles.subtleInline}>Gemt {formatSubmittedAt(activeSessionFeedback.submittedAt)}</p>
                   </div>
                 )}
-                <p className={styles.ttsStatus}>
-                  {audioMode === "off" ? "Tale-cues er slået fra." : ttsSupported ? "Tale-cues aktive." : "Tale-cues ikke tilgængelige. Viser tekst-cues."}
-                </p>
+                {workoutAudioStatus && <p className={styles.ttsStatus}>{workoutAudioStatus}</p>}
+                {workoutInterruptionNotice && <p className={styles.workoutStatusNotice}>{workoutInterruptionNotice}</p>}
+                <div className={styles.liveWorkoutCard}>
+                  <div className={styles.liveWorkoutMeta}>
+                    <p className={styles.phaseLabel}>{phaseName(currentStep).toUpperCase()}</p>
+                    <p className={styles.subtleStrong}>
+                      {stepIndex + 1} / {activeSession.steps.length}
+                      {isLastWorkoutStep && <span className={styles.finalStepTag}>Sidste interval</span>}
+                    </p>
+                  </div>
+                  <div className={styles.timerBig}>{formatClock(remainingSec)}</div>
+                  <p className={styles.instruction}>{coachingHint(currentStep)}</p>
+                  {currentStepHeartRateGuidance && <p className={styles.heartRateHint}>{currentStepHeartRateGuidance}</p>}
+                  <div className={styles.progressTrack}>
+                    <div className={styles.progressFill} style={{ width: `${stepProgress}%` }} />
+                  </div>
+                  {stepNotice && <p className={styles.stepNotice}>{stepNotice}</p>}
+                </div>
+
+                <div className={`${styles.nextCueCard} ${workoutCueState.tone === "muted" ? styles.nextCueCardMuted : ""}`}>
+                  <p className={styles.workoutMiniLabel}>{workoutCueState.label}</p>
+                  <h3>{workoutCueState.title}</h3>
+                  <p className={workoutCueState.tone === "active" ? styles.cueFallback : styles.subtleInline}>{workoutCueState.detail}</p>
+                  {workoutCueState.secondaryDetail && <p className={styles.heartRateHintSecondary}>{workoutCueState.secondaryDetail}</p>}
+                </div>
+
                 <div className={styles.workoutPrimaryAction}>
                   <button
                     className={styles.primaryBtn}
@@ -3503,71 +4360,81 @@ export default function Home() {
                         if (audioMode === "off") {
                           setSpeechEnabled(false);
                         }
+                        if (next) {
+                          setWorkoutInterruptionNotice(null);
+                          lastTickAtRef.current = Date.now();
+                        }
                         return next;
                       });
                     }}
                   >
-                    {isRunning ? "Pause" : "Start"}
+                    {workoutActionState.primaryLabel}
                   </button>
-                </div>
-                <p className={styles.phaseLabel}>{phaseName(currentStep).toUpperCase()}</p>
-                <div className={styles.timerBig}>{formatClock(remainingSec)}</div>
-                <p className={styles.instruction}>{coachingHint(currentStep)}</p>
-                {audioMode !== "off" && cueFallbackText && (!ttsSupported || !speechEnabled) && <p className={styles.cueFallback}>{cueFallbackText}</p>}
-
-                <div className={styles.progressTrack}>
-                  <div className={styles.progressFill} style={{ width: `${stepProgress}%` }} />
-                </div>
-                <p className={styles.subtleStrong}>
-                  Interval {stepIndex + 1} / {activeSession.steps.length}
-                  {isLastWorkoutStep && <span className={styles.finalStepTag}>Sidste interval</span>}
-                </p>
-                {stepNotice && <p className={styles.stepNotice}>{stepNotice}</p>}
-
-                <ul className={styles.stepOverview}>
-                  {activeSession.steps.map((step, index) => {
-                    const done = completedSteps.includes(index);
-                    const marker = done ? "✓" : index === stepIndex ? "●" : "○";
-                    return (
-                      <li
-                        key={`${step.label}-${index}`}
-                        className={done ? styles.stepDone : index === stepIndex ? styles.stepCurrent : ""}
-                      >
-                        <button
-                          type="button"
-                          className={styles.stepJumpBtn}
-                          onClick={() => goToStep(index)}
-                          aria-label={`Gå til interval ${index + 1}`}
-                          aria-current={index === stepIndex ? "step" : undefined}
-                        >
-                          <span>{marker}</span>
-                          <span>{phaseName(step)}</span>
-                          <span>{formatClock(step.durationSec)}</span>
-                          <span>{index === stepIndex ? "Aktiv" : done ? "Udført" : "Kommende"}</span>
+                  <div className={styles.workoutManualControls}>
+                    <p className={styles.workoutMiniLabel}>{workoutActionState.manualLabel}</p>
+                    <div className={`${styles.workoutSecondaryControls} ${stepIndex === 0 ? styles.workoutSecondaryControlsSingle : ""}`}>
+                      {stepIndex > 0 && (
+                        <button className={styles.secondaryBtnMuted} onClick={previousStep} type="button">
+                          {workoutActionState.previousLabel}
                         </button>
-                      </li>
-                    );
-                  })}
-                </ul>
+                      )}
+                      <button
+                        className={isLastWorkoutStep ? styles.completeWorkoutBtn : styles.secondaryBtnMuted}
+                        onClick={nextStep}
+                        type="button"
+                      >
+                        {workoutActionState.advanceLabel}
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-                <div className={styles.topActions}>
-                  <button className={styles.secondaryBtn} onClick={previousStep} disabled={stepIndex === 0}>
-                    Forrige interval
-                  </button>
-                  <button
-                    className={isLastWorkoutStep ? styles.completeWorkoutBtn : styles.secondaryBtn}
-                    onClick={nextStep}
-                  >
-                    {nextStepLabel}
-                  </button>
+                <div className={`${styles.workoutStructureCard} ${styles.workoutStructureCardMuted}`}>
+                  <div className={styles.programSectionHeader}>
+                    <div>
+                      <p className={styles.workoutMiniLabel}>Overblik</p>
+                      <h3>{showFullWorkoutStructure ? "Alle dele" : "Resten af passet"}</h3>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.secondaryBtnMuted}
+                      onClick={() => setShowFullWorkoutStructure((current) => !current)}
+                    >
+                      {showFullWorkoutStructure ? "Vis mindre" : "Vis alle"}
+                    </button>
+                  </div>
+                  <ul className={styles.stepOverviewCompact}>
+                    {visibleWorkoutSteps.map(({ step, index, status }) => {
+                      const marker = status === "done" ? "✓" : status === "current" ? "●" : "○";
+                      return (
+                        <li
+                          key={`${step.label}-${index}`}
+                          className={status === "done" ? styles.stepDone : status === "current" ? styles.stepCurrent : status === "next" ? styles.stepNext : ""}
+                        >
+                          <button
+                            type="button"
+                            className={styles.stepJumpBtn}
+                            onClick={() => goToStep(index)}
+                            aria-label={`Gå til interval ${index + 1}`}
+                            aria-current={status === "current" ? "step" : undefined}
+                          >
+                            <span>{marker}</span>
+                            <span>{phaseName(step)}</span>
+                            <span>{formatClock(step.durationSec)}</span>
+                            <span>{status === "current" ? "Nu" : status === "done" ? "Færdig" : status === "next" ? "Næste" : "Senere"}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
               </>
             )}
             {activeSession && workoutCompleted && (
               <div className={styles.completedWorkoutCard}>
                 <div className={styles.workoutTopBar}>
-                  <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label="Tilbage til program">
-                    Tilbage
+                  <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label="Luk træningspas">
+                    {workoutActionState.closeLabel}
                   </button>
                   <div className={styles.workoutHeaderCenter}>
                     <p className={styles.workoutWeekContext}>Uge {activeSession.week}</p>
@@ -3593,9 +4460,9 @@ export default function Home() {
           {workoutCompleted && (
             <article className={styles.card}>
               <p className={styles.confirmationBadge}>{feedbackSubmitted ? "Coach-respons" : "Din feedback"}</p>
-              <h2>{feedbackSubmitted ? feedbackConfirmation?.title ?? "Tak for din feedback." : "Hvordan føltes træningspasset?"}</h2>
+              <h2>{feedbackSubmitted ? feedbackConfirmation?.title ?? "Tak for din feedback." : workoutCheckInState.title}</h2>
               <p className={styles.subtle}>
-                {feedbackSubmitted ? "Jeg har set din feedback og justeret det næste skridt i planen." : "Det skal være hurtigt: fortæl bare om du gennemførte træningspasset, hvordan det føltes, din energi og eventuel smerte."}
+                {feedbackSubmitted ? "Jeg har set din feedback og justeret det næste skridt i planen." : workoutCheckInState.summary}
               </p>
               {feedbackConfirmation && (
                 <div className={styles.confirmationCard}>
@@ -3684,209 +4551,237 @@ export default function Home() {
               )}
 
               {!feedbackSubmitted && (
-              <>
-              <p className={styles.nextLabel}>1. Gennemførte du træningspasset?</p>
-              <div className={styles.quickFeedbackGrid}>
-                {COMPLETION_OPTIONS.map((option) => {
-                  const active = feedback.completionPct === option.value;
-                  return (
+                <div className={styles.feedbackFlow}>
+                  <div className={styles.feedbackQuickSection}>
+                    <div className={styles.feedbackSectionHeader}>
+                      <p className={styles.nextLabel}>1. Gik passet som planlagt?</p>
+                      <p className={styles.feedbackSectionHint}>Vælg den, der passer bedst.</p>
+                    </div>
+                    <div className={styles.quickFeedbackGrid}>
+                      {COMPLETION_OPTIONS.map((option) => {
+                        const active = feedback.completionPct === option.value;
+                        return (
+                          <button
+                            key={`completion-${option.value}`}
+                            type="button"
+                            className={active ? styles.quickFeedbackCardActive : styles.quickFeedbackCard}
+                            onClick={() => {
+                              setFeedback((current) => ({ ...current, completionPct: option.value }));
+                              setFeedbackDraft((draft) => ({ ...draft, completionPct: String(option.value) }));
+                            }}
+                          >
+                            <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
+                            <span className={styles.choiceText}>{option.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className={styles.feedbackQuickSection}>
+                    <div className={styles.feedbackSectionHeader}>
+                      <p className={styles.nextLabel}>2. Hvordan føltes det?</p>
+                    </div>
+                    <div className={styles.quickFeedbackGrid}>
+                      {QUICK_FEEDBACK_OPTIONS.map((option) => {
+                        const active = feedback.quickFeedback === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={active ? styles.quickFeedbackCardActive : styles.quickFeedbackCard}
+                            onClick={() => {
+                              const preset = quickFeedbackPreset(option.value);
+                              setFeedback((current) => ({
+                                ...current,
+                                quickFeedback: option.value,
+                                ...preset,
+                              }));
+                              setFeedbackDraft((draft) => ({
+                                ...draft,
+                                effort: String(preset.effort),
+                                completionPct: String(preset.completionPct),
+                                energy: String(preset.energy),
+                                painLevel: String(preset.painLevel),
+                              }));
+                            }}
+                          >
+                            <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
+                            <span className={styles.choiceText}>{option.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className={styles.feedbackQuickSection}>
+                    <div className={styles.feedbackSectionHeader}>
+                      <p className={styles.nextLabel}>3. Hurtige signaler</p>
+                      <p className={styles.feedbackSectionHint}>Kun energi og smerte. Resten er valgfrit.</p>
+                    </div>
+                  <div className={styles.feedbackSignalGrid}>
+                    <div className={styles.feedbackMiniSection}>
+                      <p className={styles.nextLabel}>Energi</p>
+                      <div className={styles.quickFeedbackGridCompact}>
+                        {ENERGY_OPTIONS.map((option) => {
+                          const active = feedback.energy === option.value;
+                          return (
+                            <button
+                              key={`energy-${option.value}`}
+                              type="button"
+                              className={active ? styles.quickFeedbackCardActive : styles.quickFeedbackCard}
+                              onClick={() => {
+                                setFeedback((current) => ({ ...current, energy: option.value }));
+                                setFeedbackDraft((draft) => ({ ...draft, energy: String(option.value) }));
+                              }}
+                            >
+                              <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
+                              <span className={styles.choiceText}>{option.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className={styles.feedbackMiniSection}>
+                      <p className={styles.nextLabel}>Smerte</p>
+                      <div className={styles.quickFeedbackGridCompact}>
+                        {PAIN_OPTIONS.map((option) => {
+                          const active = feedback.painLevel === option.value;
+                          return (
+                            <button
+                              key={`pain-${option.value}`}
+                              type="button"
+                              className={active ? styles.quickFeedbackCardActive : styles.quickFeedbackCard}
+                              onClick={() => {
+                                setFeedback((current) => ({ ...current, painLevel: option.value }));
+                                setFeedbackDraft((draft) => ({ ...draft, painLevel: String(option.value) }));
+                              }}
+                            >
+                              <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
+                              <span className={styles.choiceText}>{option.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                  </div>
+
+                  <div className={styles.feedbackOptionalBlock}>
                     <button
-                      key={`completion-${option.value}`}
                       type="button"
-                      className={active ? styles.quickFeedbackCardActive : styles.quickFeedbackCard}
+                      className={styles.textBtn}
                       onClick={() => {
-                        setFeedback((current) => ({ ...current, completionPct: option.value }));
-                        setFeedbackDraft((draft) => ({ ...draft, completionPct: String(option.value) }));
+                        setShowDetailedFeedback((current) => !current);
                       }}
                     >
-                      <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
-                      <span className={styles.choiceText}>{option.label}</span>
+                      {workoutCheckInState.optionalLabel}
                     </button>
-                  );
-                })}
-              </div>
+                    <p className={styles.feedbackOptionalHint}>{workoutCheckInState.optionalHint}</p>
+                  </div>
 
-              <p className={styles.nextLabel}>2. Hvordan føltes det?</p>
-              <div className={styles.quickFeedbackGrid}>
-                {QUICK_FEEDBACK_OPTIONS.map((option) => {
-                  const active = feedback.quickFeedback === option.value;
-                  return (
+                  {showDetailedFeedback && (
+                    <div className={styles.feedbackOptionalPanel}>
+                      <div className={styles.formGrid}>
+                        <label>
+                          Oplevet belastning (1–10)
+                          <input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={feedbackDraft.effort}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setFeedbackDraft((d) => ({ ...d, effort: value }));
+                              if (value !== "") setFeedback((f) => ({ ...f, effort: clampInt(Number(value), 1, 10) }));
+                            }}
+                            onBlur={() => {
+                              if (feedbackDraft.effort === "") setFeedbackDraft((d) => ({ ...d, effort: String(feedback.effort) }));
+                            }}
+                          />
+                        </label>
+                        <label>
+                          Gennemført %
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={feedbackDraft.completionPct}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setFeedbackDraft((d) => ({ ...d, completionPct: value }));
+                              if (value !== "") setFeedback((f) => ({ ...f, completionPct: clampInt(Number(value), 0, 100) }));
+                            }}
+                            onBlur={() => {
+                              if (feedbackDraft.completionPct === "") setFeedbackDraft((d) => ({ ...d, completionPct: String(feedback.completionPct) }));
+                            }}
+                          />
+                        </label>
+                        <label>
+                          Energi (1–5)
+                          <input
+                            type="number"
+                            min={1}
+                            max={5}
+                            value={feedbackDraft.energy}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setFeedbackDraft((d) => ({ ...d, energy: value }));
+                              if (value !== "") setFeedback((f) => ({ ...f, energy: clampInt(Number(value), 1, 5) }));
+                            }}
+                            onBlur={() => {
+                              if (feedbackDraft.energy === "") setFeedbackDraft((d) => ({ ...d, energy: String(feedback.energy) }));
+                            }}
+                          />
+                        </label>
+                        <label>
+                          Smerte (1–10)
+                          <input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={feedbackDraft.painLevel}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setFeedbackDraft((d) => ({ ...d, painLevel: value }));
+                              if (value !== "") setFeedback((f) => ({ ...f, painLevel: clampInt(Number(value), 1, 10) }));
+                            }}
+                            onBlur={() => {
+                              if (feedbackDraft.painLevel === "") setFeedbackDraft((d) => ({ ...d, painLevel: String(feedback.painLevel) }));
+                            }}
+                          />
+                        </label>
+                        <label className={styles.feedbackNotesField}>
+                          Kort note
+                          <input
+                            type="text"
+                            value={feedback.notes}
+                            onChange={(e) => {
+                              setFeedback((f) => ({ ...f, notes: e.target.value }));
+                            }}
+                            placeholder="Noget særligt jeg skal vide?"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={styles.feedbackSubmitBar}>
                     <button
-                      key={option.value}
-                      type="button"
-                      className={active ? styles.quickFeedbackCardActive : styles.quickFeedbackCard}
-                      onClick={() => {
-                        const preset = quickFeedbackPreset(option.value);
-                        setFeedback((current) => ({
-                          ...current,
-                          quickFeedback: option.value,
-                          ...preset,
-                        }));
-                        setFeedbackDraft((draft) => ({
-                          ...draft,
-                          effort: String(preset.effort),
-                          completionPct: String(preset.completionPct),
-                          energy: String(preset.energy),
-                          painLevel: String(preset.painLevel),
-                        }));
-                      }}
+                      className={styles.primaryBtn}
+                      onClick={submitFeedback}
+                      disabled={!activeSession || !workoutCompleted || feedbackSubmitState === "submitting" || !hasRequiredWorkoutFeedback(feedback)}
                     >
-                      <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
-                      <span className={styles.choiceText}>{option.label}</span>
+                      {feedbackSubmitState === "submitting" && <span className={styles.buttonSpinner} aria-hidden="true" />}
+                      {feedbackSubmitState === "submitting"
+                        ? "Gemmer..."
+                        : feedbackSubmitState === "success"
+                          ? "Feedback gemt ✓"
+                          : workoutCheckInState.submitLabel}
                     </button>
-                  );
-                })}
-              </div>
-
-              <p className={styles.nextLabel}>3. Hurtige signaler</p>
-              <div className={styles.quickFeedbackGrid}>
-                {ENERGY_OPTIONS.map((option) => {
-                  const active = feedback.energy === option.value;
-                  return (
-                    <button
-                      key={`energy-${option.value}`}
-                      type="button"
-                      className={active ? styles.quickFeedbackCardActive : styles.quickFeedbackCard}
-                      onClick={() => {
-                        setFeedback((current) => ({ ...current, energy: option.value }));
-                        setFeedbackDraft((draft) => ({ ...draft, energy: String(option.value) }));
-                      }}
-                    >
-                      <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
-                      <span className={styles.choiceText}>{option.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className={styles.quickFeedbackGrid}>
-                {PAIN_OPTIONS.map((option) => {
-                  const active = feedback.painLevel === option.value;
-                  return (
-                    <button
-                      key={`pain-${option.value}`}
-                      type="button"
-                      className={active ? styles.quickFeedbackCardActive : styles.quickFeedbackCard}
-                      onClick={() => {
-                        setFeedback((current) => ({ ...current, painLevel: option.value }));
-                        setFeedbackDraft((draft) => ({ ...draft, painLevel: String(option.value) }));
-                      }}
-                    >
-                      <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
-                      <span className={styles.choiceText}>{option.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                type="button"
-                className={styles.textBtn}
-                onClick={() => {
-                  setShowDetailedFeedback((current) => !current);
-                }}
-              >
-                {showDetailedFeedback ? "Skjul ekstra detaljer" : "Tilføj note eller finjuster tal"}
-              </button>
-
-              {showDetailedFeedback && (
-              <div className={styles.formGrid}>
-              <label>
-                Oplevet belastning (1–10)
-                <input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={feedbackDraft.effort}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFeedbackDraft((d) => ({ ...d, effort: value }));
-                    if (value !== "") setFeedback((f) => ({ ...f, effort: clampInt(Number(value), 1, 10) }));
-                  }}
-                  onBlur={() => {
-                    if (feedbackDraft.effort === "") setFeedbackDraft((d) => ({ ...d, effort: String(feedback.effort) }));
-                  }}
-                />
-              </label>
-              <label>
-                Gennemført %
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={feedbackDraft.completionPct}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFeedbackDraft((d) => ({ ...d, completionPct: value }));
-                    if (value !== "") setFeedback((f) => ({ ...f, completionPct: clampInt(Number(value), 0, 100) }));
-                  }}
-                  onBlur={() => {
-                    if (feedbackDraft.completionPct === "") setFeedbackDraft((d) => ({ ...d, completionPct: String(feedback.completionPct) }));
-                  }}
-                />
-              </label>
-              <label>
-                Energi (1–5)
-                <input
-                  type="number"
-                  min={1}
-                  max={5}
-                  value={feedbackDraft.energy}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFeedbackDraft((d) => ({ ...d, energy: value }));
-                    if (value !== "") setFeedback((f) => ({ ...f, energy: clampInt(Number(value), 1, 5) }));
-                  }}
-                  onBlur={() => {
-                    if (feedbackDraft.energy === "") setFeedbackDraft((d) => ({ ...d, energy: String(feedback.energy) }));
-                  }}
-                />
-              </label>
-              <label>
-                Smerte (1–10)
-                <input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={feedbackDraft.painLevel}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFeedbackDraft((d) => ({ ...d, painLevel: value }));
-                    if (value !== "") setFeedback((f) => ({ ...f, painLevel: clampInt(Number(value), 1, 10) }));
-                  }}
-                  onBlur={() => {
-                    if (feedbackDraft.painLevel === "") setFeedbackDraft((d) => ({ ...d, painLevel: String(feedback.painLevel) }));
-                  }}
-                />
-              </label>
-              <label>
-                Noter
-                <input
-                  type="text"
-                  value={feedback.notes}
-                  onChange={(e) => {
-                    setFeedback((f) => ({ ...f, notes: e.target.value }));
-                  }}
-                  placeholder="Kort note om træningspasset"
-                />
-              </label>
-              </div>
-              )}
-
-              <div className={styles.topActions}>
-                <button
-                  className={styles.primaryBtn}
-                  onClick={submitFeedback}
-                  disabled={!activeSession || !workoutCompleted || feedbackSubmitState === "submitting" || !feedback.quickFeedback}
-                >
-                  {feedbackSubmitState === "submitting" && <span className={styles.buttonSpinner} aria-hidden="true" />}
-                  {feedbackSubmitState === "submitting"
-                    ? "Gemmer..."
-                    : feedbackSubmitState === "success"
-                      ? "Feedback gemt ✓"
-                      : "Gem feedback"}
-                </button>
-              </div>
-              </>
+                    <p className={styles.feedbackSubmitHint}>Du kan være færdig på få tryk.</p>
+                  </div>
+                </div>
               )}
             </article>
           )}
