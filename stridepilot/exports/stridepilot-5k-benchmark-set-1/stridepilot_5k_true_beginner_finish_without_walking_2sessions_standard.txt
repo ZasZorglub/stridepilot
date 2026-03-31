@@ -1,0 +1,114 @@
+StridePilot 5K Benchmark Export
+
+Case: benchmark 03 true beginner 5k finish two days
+
+Runner profile
+- runner type: true_beginner
+- current level: true_beginner
+- sessions per week: 2 -> 2 -> 3 -> 3 -> 3 -> 3 -> 3 -> 3 -> 3 -> 3 -> 3 -> 3 -> 3 -> 2 -> 2
+- goal: 5K finish without walking
+- ambition: standard
+- timeline weeks: 14
+- Current continuous ability: 2 min
+- Longest recent run: 14 min
+- Available days: Wednesday, Sunday
+- Preferred long run day: Sunday
+
+Program structure
+- number of weeks: 15
+- phases: W1-5 Base | W6-10 Build | W11-12 Specific | W13-14 Taper | W15-15 Race week
+- step-back weeks: 4, 7, 10
+- taper weeks: 13, 14
+- race week: 15
+
+Weekly progression
+- week 1: phase=Base, sessions=2, total=40 min, long_run=20 min, interval_type=none, interval_total=0 min, easy_total=20 min
+- week 2: phase=Base, sessions=2, total=40 min, long_run=20 min, interval_type=none, interval_total=0 min, easy_total=20 min
+- week 3: phase=Base, sessions=2, total=40 min, long_run=20 min, interval_type=none, interval_total=0 min, easy_total=20 min
+- week 4: phase=Base, sessions=2, total=40 min, long_run=20 min, interval_type=none, interval_total=0 min, easy_total=20 min
+- week 5: phase=Base, sessions=2, total=40 min, long_run=20 min, interval_type=none, interval_total=0 min, easy_total=20 min
+- week 6: phase=Build, sessions=2, total=48 min, long_run=22,5 min, interval_type=none, interval_total=0 min, easy_total=25,5 min
+- week 7: phase=Build, sessions=2, total=45,5 min, long_run=20 min, interval_type=none, interval_total=0 min, easy_total=25,5 min
+- week 8: phase=Build, sessions=2, total=48 min, long_run=22,5 min, interval_type=none, interval_total=0 min, easy_total=25,5 min
+- week 9: phase=Build, sessions=2, total=54,5 min, long_run=29 min, interval_type=none, interval_total=0 min, easy_total=25,5 min
+- week 10: phase=Build, sessions=2, total=48 min, long_run=22,5 min, interval_type=none, interval_total=0 min, easy_total=25,5 min
+- week 11: phase=Specific, sessions=2, total=56,5 min, long_run=31 min, interval_type=none, interval_total=0 min, easy_total=25,5 min
+- week 12: phase=Specific, sessions=2, total=58,5 min, long_run=33 min, interval_type=none, interval_total=0 min, easy_total=25,5 min
+- week 13: phase=Taper, sessions=2, total=63 min, long_run=34 min, interval_type=none, interval_total=0 min, easy_total=29 min
+- week 14: phase=Taper, sessions=2, total=46 min, long_run=23 min, interval_type=none, interval_total=0 min, easy_total=23 min
+- week 15: phase=Race week, sessions=2, total=58 min, long_run=0 min, interval_type=none, interval_total=0 min, easy_total=58 min
+
+Progression metrics
+- longest continuous run progression: 2, 4.5, 4.5, 2.5, 5, 7.5, 5.5, 8, 10.5, 8.5, 8.5, 11, 12, 16, 11
+- long run progression: 14.5, 16, 17.5, 15.5, 17, 19, 16.5, 18, 20, 19, 21, 23, 31, 24.5, 22.5
+- weekly volume progression: 39, 40.5, 44, 41, 42.5, 46, 41.5, 45, 48.5, 46, 50, 54, 74, 59, 54
+- interval progression: 1, 1, 1, 1, 1, 3, 3, 3, 4, 4, 5, 5, 2, 2, 3
+
+Safety metrics
+- biggest weekly volume increase: 37%
+- biggest long run increase: 34,8%
+- number of step-back weeks: 3
+- taper length: 2 weeks
+- starting load vs peak load: 39 min -> 74 min
+
+Full program
+
+Week 1 · Base
+- Wednesday · Run/walk-udvikling · 20 min · role=easy · family=run_walk_progression
+- Sunday · Run/walk-udvikling · 20 min · role=long_run · family=run_walk_progression
+
+Week 2 · Base
+- Wednesday · Run/walk-udvikling · 20 min · role=easy · family=run_walk_progression
+- Sunday · Run/walk-udvikling · 20 min · role=long_run · family=run_walk_progression
+
+Week 3 · Base
+- Wednesday · Run/walk-udvikling · 20 min · role=easy · family=run_walk_progression
+- Sunday · Run/walk-udvikling · 20 min · role=long_run · family=run_walk_progression
+
+Week 4 · Base
+- Wednesday · Run/walk-udvikling · 20 min · role=easy · family=run_walk_progression
+- Sunday · Run/walk-udvikling · 20 min · role=long_run · family=run_walk_progression
+
+Week 5 · Base
+- Wednesday · Run/walk-udvikling · 20 min · role=easy · family=run_walk_progression
+- Sunday · Run/walk-udvikling · 20 min · role=long_run · family=run_walk_progression
+
+Week 6 · Build
+- Wednesday · Udviklingspas · 25,5 min · role=aerobic_support · family=development_run
+- Sunday · Run/walk-udvikling · 22,5 min · role=long_run · family=run_walk_progression
+
+Week 7 · Build
+- Wednesday · Udviklingspas · 25,5 min · role=aerobic_support · family=development_run
+- Sunday · Run/walk-udvikling · 20 min · role=long_run · family=run_walk_progression
+
+Week 8 · Build
+- Wednesday · Udviklingspas · 25,5 min · role=aerobic_support · family=development_run
+- Sunday · Run/walk-udvikling · 22,5 min · role=long_run · family=run_walk_progression
+
+Week 9 · Build
+- Wednesday · Udviklingspas · 25,5 min · role=aerobic_support · family=development_run
+- Sunday · Run/walk-udvikling · 29 min · role=long_run · family=run_walk_progression
+
+Week 10 · Build
+- Wednesday · Udviklingspas · 25,5 min · role=aerobic_support · family=development_run
+- Sunday · Run/walk-udvikling · 22,5 min · role=long_run · family=run_walk_progression
+
+Week 11 · Specific
+- Wednesday · Udviklingspas · 25,5 min · role=aerobic_support · family=development_run
+- Sunday · Lang tur · 31 min · role=long_run · family=long_run
+
+Week 12 · Specific
+- Wednesday · Udviklingspas · 25,5 min · role=aerobic_support · family=development_run
+- Sunday · Lang tur · 33 min · role=long_run · family=long_run
+
+Week 13 · Taper
+- Wednesday · Run/walk-udvikling · 29 min · role=easy · family=run_walk_progression
+- Sunday · Run/walk-udvikling · 34 min · role=long_run · family=run_walk_progression
+
+Week 14 · Taper
+- Wednesday · Run/walk-udvikling · 23 min · role=easy · family=run_walk_progression
+- Sunday · Run/walk-udvikling · 23 min · role=long_run · family=run_walk_progression
+
+Week 15 · Race week
+- Wednesday · Run/walk-udvikling · 29 min · role=easy · family=run_walk_progression
+- Sunday · Run/walk-udvikling · 29 min · role=easy · family=run_walk_progression

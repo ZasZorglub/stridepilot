@@ -1,0 +1,633 @@
+StridePilot programeksport
+
+Benchmark 11 – Experienced – Marathon finish
+
+Løberprofil
+- Kan løbe 90 minutter sammenhængende
+- Længste nylige tur: 100-110 min
+- Træner nu: 4 gange om ugen
+- Tilgængelige dage: Tirsdag, Torsdag, Lørdag, Søndag
+- Foretrukken dag til lang tur: Søndag
+- Ambition: Standard
+- Klassifikation: intermediate
+- Primær løbertype: intermediate
+- Modifiers: high_consistency
+
+Mål
+- Gennemføre marathon
+- Goal type: finish
+
+Tidslinje
+- Anbefalet varighed: 16 uger
+- Valgt varighed: 16 uger
+- Realistisk spænd: 16-19 uger
+- Progressionstempo: Standard
+- Pas pr. uge: 3 -> 4
+
+Engine-resume
+- Backbone-type: Langturs-backbone
+- Peak lang tur: 161 min
+- Peak sammenhængende løb: 90 min
+- Step-back-uger: 4, 8, 12
+- Taper-uger: 15, 16
+- Antal pas i alt: 65
+- Samlet træningstid: 5476 min
+
+Sammenhængende løb pr. uge
+Uge 1: 90 min
+Uge 2: 90 min
+Uge 3: 90 min
+Uge 4: 90 min
+Uge 5: 90 min
+Uge 6: 90 min
+Uge 7: 90 min
+Uge 8: 90 min
+Uge 9: 90 min
+Uge 10: 90 min
+Uge 11: 90 min
+Uge 12: 90 min
+Uge 13: 90 min
+Uge 14: 90 min
+Uge 15: 90 min
+Uge 16: 90 min
+Uge 17: 90 min
+
+Lang tur pr. uge
+Uge 1: 121,5 min
+Uge 2: 126,5 min
+Uge 3: 129,5 min
+Uge 4: 116 min
+Uge 5: 124 min
+Uge 6: 132,5 min
+Uge 7: 140 min
+Uge 8: 126,5 min
+Uge 9: 135,5 min
+Uge 10: 145 min
+Uge 11: 153,5 min
+Uge 12: 140,5 min
+Uge 13: 150,5 min
+Uge 14: 161 min
+Uge 15: 137,5 min
+Uge 16: 109 min
+Uge 17: 102 min
+
+Ugestruktur
+Uge 1: Kvalitet / Støttepas / Recovery / Lang tur
+Uge 2: Kvalitet / Støttepas / Recovery / Lang tur
+Uge 3: Kvalitet / Støttepas / Recovery / Lang tur
+Uge 4: Kvalitet / Støttepas / Recovery / Lang tur · Step-back-uge
+Uge 5: Kvalitet / Støttepas / Recovery / Lang tur
+Uge 6: Kvalitet / Støttepas / Recovery / Lang tur
+Uge 7: Kvalitet / Støttepas / Recovery / Lang tur
+Uge 8: Kvalitet / Støttepas / Recovery / Lang tur · Step-back-uge
+Uge 9: Kvalitet / Støttepas / Recovery / Lang tur
+Uge 10: Kvalitet / Støttepas / Recovery / Lang tur
+Uge 11: Kvalitet / Støttepas / Recovery / Lang tur
+Uge 12: Kvalitet / Støttepas / Recovery / Lang tur · Step-back-uge
+Uge 13: Kvalitet / Støttepas / Recovery / Lang tur
+Uge 14: Kvalitet / Støttepas / Recovery / Lang tur
+Uge 15: Kvalitet / Roligt pas / Lang tur
+Uge 16: Kvalitet / Roligt pas / Lang tur
+Uge 17: Kvalitet / Roligt pas / Lang tur
+
+Fuldt program
+
+Uge 1 · Base
+Fokus: stabilisere base og skabe rytme
+Ugens mål: lang tur 121,5 min · kontinuitet 90 min · volumen 341 min
+- Tirsdag (tirsdag den 31. marts 2026) – Steady-pas – 67 min
+  Rolle: Kvalitet
+  Pas-type: Steady-pas
+  Formål: Skabe stærkere aerob rytme uden at gøre passet til et hårdt tempoløb.
+  Resume: Steady-pas med steady-blok
+  Struktur: Let jog (8 min) | Steady-blok (54 min) | Let jog ned (5 min)
+  Coaching cues: Steady-delen skal føles fokuseret, men kontrolleret. / Du må ikke drive ind i threshold eller race effort. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 2. april 2026) – Roligt løb – 86,5 min
+  Rolle: Støttepas
+  Pas-type: Roligt løb
+  Formål: Vedligeholde aerob base med lav stress og god bevægelsesrytme.
+  Resume: Roligt løb med roligt løb
+  Struktur: Let jog (6 min) | Roligt løb (75,5 min) | Let jog ned (5 min)
+  Coaching cues: Hold tempoet afslappet og kontrolleret. / Løbet skal føles bæredygtigt fra start til slut. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 4. april 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 5. april 2026) – Lang tur – 132,5 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (121,5 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 2 · Base
+Fokus: stabilisere base og skabe rytme
+Ugens mål: lang tur 126,5 min · kontinuitet 90 min · volumen 346 min
+- Tirsdag (tirsdag den 7. april 2026) – Steady-pas – 67 min
+  Rolle: Kvalitet
+  Pas-type: Steady-pas
+  Formål: Skabe stærkere aerob rytme uden at gøre passet til et hårdt tempoløb.
+  Resume: Steady-pas med steady-blok
+  Struktur: Let jog (8 min) | Steady-blok (54 min) | Let jog ned (5 min)
+  Coaching cues: Steady-delen skal føles fokuseret, men kontrolleret. / Du må ikke drive ind i threshold eller race effort. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 9. april 2026) – Roligt løb – 86,5 min
+  Rolle: Støttepas
+  Pas-type: Roligt løb
+  Formål: Vedligeholde aerob base med lav stress og god bevægelsesrytme.
+  Resume: Roligt løb med roligt løb
+  Struktur: Let jog (6 min) | Roligt løb (75,5 min) | Let jog ned (5 min)
+  Coaching cues: Hold tempoet afslappet og kontrolleret. / Løbet skal føles bæredygtigt fra start til slut. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 11. april 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 12. april 2026) – Lang tur – 137,5 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (126,5 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 3 · Base
+Fokus: stabilisere base og skabe rytme
+Ugens mål: lang tur 129,5 min · kontinuitet 90 min · volumen 351 min
+- Tirsdag (tirsdag den 14. april 2026) – Steady-pas – 67 min
+  Rolle: Kvalitet
+  Pas-type: Steady-pas
+  Formål: Skabe stærkere aerob rytme uden at gøre passet til et hårdt tempoløb.
+  Resume: Steady-pas med steady-blok
+  Struktur: Let jog (8 min) | Steady-blok (54 min) | Let jog ned (5 min)
+  Coaching cues: Steady-delen skal føles fokuseret, men kontrolleret. / Du må ikke drive ind i threshold eller race effort. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 16. april 2026) – Udviklingspas – 68 min
+  Rolle: Støttepas
+  Pas-type: Udviklingspas
+  Formål: Bygge tolerance for længere sammenhængende løb med en enkel struktur, der stadig føles overkommelig.
+  Resume: Udviklingspas med rolig kontinuitetsblok + kort reset + ny rolig blok
+  Struktur: Let jog (6 min) | Rolig kontinuitetsblok (34 min) | Kort reset (1,5 min) | Ny rolig blok (21,5 min) | Let jog ned (5 min)
+  Coaching cues: Første blok skal sætte en rolig rytme. / Brug den korte reset til at samle dig, ikke til at starte forfra. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 18. april 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 19. april 2026) – Lang tur – 140,5 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (129,5 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 4 · Base · Step-back-uge
+Fokus: stabilisering og absorption
+Ugens mål: lang tur 116 min · kontinuitet 90 min · volumen 306 min
+- Tirsdag (tirsdag den 21. april 2026) – Steady-pas – 67 min
+  Rolle: Kvalitet
+  Pas-type: Steady-pas
+  Formål: Skabe stærkere aerob rytme uden at gøre passet til et hårdt tempoløb.
+  Resume: Steady-pas med steady-blok
+  Struktur: Let jog (8 min) | Steady-blok (54 min) | Let jog ned (5 min)
+  Coaching cues: Steady-delen skal føles fokuseret, men kontrolleret. / Du må ikke drive ind i threshold eller race effort. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 23. april 2026) – Roligt løb – 76 min
+  Rolle: Støttepas
+  Pas-type: Roligt løb
+  Formål: Vedligeholde aerob base med lav stress og god bevægelsesrytme.
+  Resume: Roligt løb med roligt løb
+  Struktur: Let jog (6 min) | Roligt løb (65 min) | Let jog ned (5 min)
+  Coaching cues: Hold tempoet afslappet og kontrolleret. / Løbet skal føles bæredygtigt fra start til slut. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 25. april 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 26. april 2026) – Lang tur – 127 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (116 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 5 · Base
+Fokus: stabilisere base og skabe rytme
+Ugens mål: lang tur 124 min · kontinuitet 90 min · volumen 318 min
+- Tirsdag (tirsdag den 28. april 2026) – Steady-pas – 67 min
+  Rolle: Kvalitet
+  Pas-type: Steady-pas
+  Formål: Skabe stærkere aerob rytme uden at gøre passet til et hårdt tempoløb.
+  Resume: Steady-pas med steady-blok
+  Struktur: Let jog (8 min) | Steady-blok (54 min) | Let jog ned (5 min)
+  Coaching cues: Steady-delen skal føles fokuseret, men kontrolleret. / Du må ikke drive ind i threshold eller race effort. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 30. april 2026) – Udviklingspas – 68 min
+  Rolle: Støttepas
+  Pas-type: Udviklingspas
+  Formål: Bygge tolerance for længere sammenhængende løb med en enkel struktur, der stadig føles overkommelig.
+  Resume: Udviklingspas med rolig kontinuitetsblok + kort reset + ny rolig blok
+  Struktur: Let jog (6 min) | Rolig kontinuitetsblok (34 min) | Kort reset (1,5 min) | Ny rolig blok (21,5 min) | Let jog ned (5 min)
+  Coaching cues: Første blok skal sætte en rolig rytme. / Brug den korte reset til at samle dig, ikke til at starte forfra. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 2. maj 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 3. maj 2026) – Lang tur – 135 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (124 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 6 · Build
+Fokus: bygge volumen og udholdenhed
+Ugens mål: lang tur 132,5 min · kontinuitet 90 min · volumen 331,5 min
+- Tirsdag (tirsdag den 5. maj 2026) – Steady-pas – 67 min
+  Rolle: Kvalitet
+  Pas-type: Steady-pas
+  Formål: Skabe stærkere aerob rytme uden at gøre passet til et hårdt tempoløb.
+  Resume: Steady-pas med steady-blok
+  Struktur: Let jog (8 min) | Steady-blok (54 min) | Let jog ned (5 min)
+  Coaching cues: Steady-delen skal føles fokuseret, men kontrolleret. / Du må ikke drive ind i threshold eller race effort. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 7. maj 2026) – Udviklingspas – 68 min
+  Rolle: Støttepas
+  Pas-type: Udviklingspas
+  Formål: Bygge tolerance for længere sammenhængende løb med en enkel struktur, der stadig føles overkommelig.
+  Resume: Udviklingspas med rolig kontinuitetsblok + kort reset + ny rolig blok
+  Struktur: Let jog (6 min) | Rolig kontinuitetsblok (34 min) | Kort reset (1,5 min) | Ny rolig blok (21,5 min) | Let jog ned (5 min)
+  Coaching cues: Første blok skal sætte en rolig rytme. / Brug den korte reset til at samle dig, ikke til at starte forfra. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 9. maj 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 10. maj 2026) – Lang tur – 143,5 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (132,5 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 7 · Build
+Fokus: bygge volumen og udholdenhed
+Ugens mål: lang tur 140 min · kontinuitet 90 min · volumen 350 min
+- Tirsdag (tirsdag den 12. maj 2026) – Steady-pas – 67 min
+  Rolle: Kvalitet
+  Pas-type: Steady-pas
+  Formål: Skabe stærkere aerob rytme uden at gøre passet til et hårdt tempoløb.
+  Resume: Steady-pas med steady-blok
+  Struktur: Let jog (8 min) | Steady-blok (54 min) | Let jog ned (5 min)
+  Coaching cues: Steady-delen skal føles fokuseret, men kontrolleret. / Du må ikke drive ind i threshold eller race effort. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 14. maj 2026) – Udviklingspas – 68 min
+  Rolle: Støttepas
+  Pas-type: Udviklingspas
+  Formål: Bygge tolerance for længere sammenhængende løb med en enkel struktur, der stadig føles overkommelig.
+  Resume: Udviklingspas med rolig kontinuitetsblok + kort reset + ny rolig blok
+  Struktur: Let jog (6 min) | Rolig kontinuitetsblok (34 min) | Kort reset (1,5 min) | Ny rolig blok (21,5 min) | Let jog ned (5 min)
+  Coaching cues: Første blok skal sætte en rolig rytme. / Brug den korte reset til at samle dig, ikke til at starte forfra. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 16. maj 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 17. maj 2026) – Lang tur – 151 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (140 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 8 · Build · Step-back-uge
+Fokus: stabilisering og absorption
+Ugens mål: lang tur 126,5 min · kontinuitet 90 min · volumen 326,5 min
+- Tirsdag (tirsdag den 19. maj 2026) – Udviklingspas – 88,5 min
+  Rolle: Kvalitet
+  Pas-type: Udviklingspas
+  Formål: Udvide rolig kapacitet og gøre sammenhængende løb mere naturligt.
+  Resume: Udviklingspas med roligt løb
+  Struktur: Let jog (8 min) | Roligt løb (75,5 min) | Let jog ned (5 min)
+  Coaching cues: Byg roligt gennem passet uden at jagte fart. / Tænk kontinuitet frem for præstation. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 21. maj 2026) – Roligt løb – 76 min
+  Rolle: Støttepas
+  Pas-type: Roligt løb
+  Formål: Vedligeholde aerob base med lav stress og god bevægelsesrytme.
+  Resume: Roligt løb med roligt løb
+  Struktur: Let jog (6 min) | Roligt løb (65 min) | Let jog ned (5 min)
+  Coaching cues: Hold tempoet afslappet og kontrolleret. / Løbet skal føles bæredygtigt fra start til slut. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 23. maj 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 24. maj 2026) – Lang tur – 137,5 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (126,5 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 9 · Build
+Fokus: bygge volumen og udholdenhed
+Ugens mål: lang tur 135,5 min · kontinuitet 90 min · volumen 339,5 min
+- Tirsdag (tirsdag den 26. maj 2026) – Steady-pas – 67 min
+  Rolle: Kvalitet
+  Pas-type: Steady-pas
+  Formål: Skabe stærkere aerob rytme uden at gøre passet til et hårdt tempoløb.
+  Resume: Steady-pas med steady-blok
+  Struktur: Let jog (8 min) | Steady-blok (54 min) | Let jog ned (5 min)
+  Coaching cues: Steady-delen skal føles fokuseret, men kontrolleret. / Du må ikke drive ind i threshold eller race effort. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 28. maj 2026) – Udviklingspas – 68 min
+  Rolle: Støttepas
+  Pas-type: Udviklingspas
+  Formål: Bygge tolerance for længere sammenhængende løb med en enkel struktur, der stadig føles overkommelig.
+  Resume: Udviklingspas med rolig kontinuitetsblok + kort reset + ny rolig blok
+  Struktur: Let jog (6 min) | Rolig kontinuitetsblok (34 min) | Kort reset (1,5 min) | Ny rolig blok (21,5 min) | Let jog ned (5 min)
+  Coaching cues: Første blok skal sætte en rolig rytme. / Brug den korte reset til at samle dig, ikke til at starte forfra. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 30. maj 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 31. maj 2026) – Lang tur – 146,5 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (135,5 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 10 · Build
+Fokus: bygge volumen og udholdenhed
+Ugens mål: lang tur 145 min · kontinuitet 90 min · volumen 362,5 min
+- Tirsdag (tirsdag den 2. juni 2026) – Steady-pas – 67 min
+  Rolle: Kvalitet
+  Pas-type: Steady-pas
+  Formål: Skabe stærkere aerob rytme uden at gøre passet til et hårdt tempoløb.
+  Resume: Steady-pas med steady-blok
+  Struktur: Let jog (8 min) | Steady-blok (54 min) | Let jog ned (5 min)
+  Coaching cues: Steady-delen skal føles fokuseret, men kontrolleret. / Du må ikke drive ind i threshold eller race effort. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 4. juni 2026) – Udviklingspas – 68 min
+  Rolle: Støttepas
+  Pas-type: Udviklingspas
+  Formål: Bygge tolerance for længere sammenhængende løb med en enkel struktur, der stadig føles overkommelig.
+  Resume: Udviklingspas med rolig kontinuitetsblok + kort reset + ny rolig blok
+  Struktur: Let jog (6 min) | Rolig kontinuitetsblok (34 min) | Kort reset (1,5 min) | Ny rolig blok (21,5 min) | Let jog ned (5 min)
+  Coaching cues: Første blok skal sætte en rolig rytme. / Brug den korte reset til at samle dig, ikke til at starte forfra. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 6. juni 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 7. juni 2026) – Lang tur – 156 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (145 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 11 · Specifik
+Fokus: mere målrettet race-relevant arbejde
+Ugens mål: lang tur 153,5 min · kontinuitet 90 min · volumen 384 min
+- Tirsdag (tirsdag den 9. juni 2026) – Steady-pas – 67 min
+  Rolle: Kvalitet
+  Pas-type: Steady-pas
+  Formål: Skabe stærkere aerob rytme uden at gøre passet til et hårdt tempoløb.
+  Resume: Steady-pas med steady-blok
+  Struktur: Let jog (8 min) | Steady-blok (54 min) | Let jog ned (5 min)
+  Coaching cues: Steady-delen skal føles fokuseret, men kontrolleret. / Du må ikke drive ind i threshold eller race effort. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 11. juni 2026) – Udviklingspas – 68 min
+  Rolle: Støttepas
+  Pas-type: Udviklingspas
+  Formål: Bygge tolerance for længere sammenhængende løb med en enkel struktur, der stadig føles overkommelig.
+  Resume: Udviklingspas med rolig kontinuitetsblok + kort reset + ny rolig blok
+  Struktur: Let jog (6 min) | Rolig kontinuitetsblok (34 min) | Kort reset (1,5 min) | Ny rolig blok (21,5 min) | Let jog ned (5 min)
+  Coaching cues: Første blok skal sætte en rolig rytme. / Brug den korte reset til at samle dig, ikke til at starte forfra. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 13. juni 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 14. juni 2026) – Lang tur – 164,5 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (153,5 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 12 · Specifik · Step-back-uge
+Fokus: stabilisering og absorption
+Ugens mål: lang tur 140,5 min · kontinuitet 90 min · volumen 351,5 min
+- Tirsdag (tirsdag den 16. juni 2026) – Udviklingspas – 88,5 min
+  Rolle: Kvalitet
+  Pas-type: Udviklingspas
+  Formål: Udvide rolig kapacitet og gøre sammenhængende løb mere naturligt.
+  Resume: Udviklingspas med roligt løb
+  Struktur: Let jog (8 min) | Roligt løb (75,5 min) | Let jog ned (5 min)
+  Coaching cues: Byg roligt gennem passet uden at jagte fart. / Tænk kontinuitet frem for præstation. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 18. juni 2026) – Roligt løb – 76 min
+  Rolle: Støttepas
+  Pas-type: Roligt løb
+  Formål: Vedligeholde aerob base med lav stress og god bevægelsesrytme.
+  Resume: Roligt løb med roligt løb
+  Struktur: Let jog (6 min) | Roligt løb (65 min) | Let jog ned (5 min)
+  Coaching cues: Hold tempoet afslappet og kontrolleret. / Løbet skal føles bæredygtigt fra start til slut. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 20. juni 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 21. juni 2026) – Lang tur – 151,5 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (140,5 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 13 · Specifik
+Fokus: mere målrettet race-relevant arbejde
+Ugens mål: lang tur 150,5 min · kontinuitet 90 min · volumen 376,5 min
+- Tirsdag (tirsdag den 23. juni 2026) – Steady-pas – 67 min
+  Rolle: Kvalitet
+  Pas-type: Steady-pas
+  Formål: Skabe stærkere aerob rytme uden at gøre passet til et hårdt tempoløb.
+  Resume: Steady-pas med steady-blok
+  Struktur: Let jog (8 min) | Steady-blok (54 min) | Let jog ned (5 min)
+  Coaching cues: Steady-delen skal føles fokuseret, men kontrolleret. / Du må ikke drive ind i threshold eller race effort. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 25. juni 2026) – Udviklingspas – 68 min
+  Rolle: Støttepas
+  Pas-type: Udviklingspas
+  Formål: Bygge tolerance for længere sammenhængende løb med en enkel struktur, der stadig føles overkommelig.
+  Resume: Udviklingspas med rolig kontinuitetsblok + kort reset + ny rolig blok
+  Struktur: Let jog (6 min) | Rolig kontinuitetsblok (34 min) | Kort reset (1,5 min) | Ny rolig blok (21,5 min) | Let jog ned (5 min)
+  Coaching cues: Første blok skal sætte en rolig rytme. / Brug den korte reset til at samle dig, ikke til at starte forfra. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 27. juni 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 28. juni 2026) – Lang tur – 161,5 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (150,5 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 14 · Peak
+Fokus: planens skarpeste og mest specifikke uger
+Ugens mål: lang tur 161 min · kontinuitet 90 min · volumen 402,5 min
+- Tirsdag (tirsdag den 30. juni 2026) – Progressionspas – 76 min
+  Rolle: Kvalitet
+  Pas-type: Progressionspas
+  Formål: Lære kroppen at åbne under kontrol og afslutte stærkere uden at miste rytme.
+  Resume: Progressionspas med progressionsblok
+  Struktur: Let jog (8 min) | Progressionsblok (63 min) | Let jog ned (5 min)
+  Coaching cues: Første del skal føles tilbageholdt. / Sidste del må være fokuseret, men stadig ren i formen. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Torsdag (torsdag den 2. juli 2026) – Udviklingspas – 68 min
+  Rolle: Støttepas
+  Pas-type: Udviklingspas
+  Formål: Bygge tolerance for længere sammenhængende løb med en enkel struktur, der stadig føles overkommelig.
+  Resume: Udviklingspas med rolig kontinuitetsblok + kort reset + ny rolig blok
+  Struktur: Let jog (6 min) | Rolig kontinuitetsblok (34 min) | Kort reset (1,5 min) | Ny rolig blok (21,5 min) | Let jog ned (5 min)
+  Coaching cues: Første blok skal sætte en rolig rytme. / Brug den korte reset til at samle dig, ikke til at starte forfra. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+  Noter: This support day should complement the long run, not turn into a second long effort.
+- Lørdag (lørdag den 4. juli 2026) – Recovery-løb – 56 min
+  Rolle: Recovery
+  Pas-type: Recovery-løb
+  Formål: Giv kroppen et meget let pas, som hjælper restitution og rytme uden at lægge nyt pres på ugen.
+  Resume: Recovery-løb med meget roligt løb
+  Struktur: Let jog (6 min) | Meget roligt løb (45 min) | Let jog ned (5 min)
+  Coaching cues: Dette skal føles markant lettere end ugens nøglepas. / Afslut med mere overskud, end du startede med. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+- Søndag (søndag den 5. juli 2026) – Lang tur – 172 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (161 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Lad passet passe til ugens rolle, ikke til dagsformen alene.
+
+Uge 15 · Taper
+Fokus: friskhed og rytme frem mod målet
+Ugens mål: lang tur 137,5 min · kontinuitet 90 min · volumen 361 min
+- Tirsdag (tirsdag den 7. juli 2026) – Udviklingspas – 55,5 min
+  Rolle: Kvalitet
+  Pas-type: Udviklingspas
+  Formål: Bygge tolerance for længere sammenhængende løb med en enkel struktur, der stadig føles overkommelig.
+  Resume: Udviklingspas med rolig kontinuitetsblok + kort reset + ny rolig blok
+  Struktur: Let jog (8 min) | Rolig kontinuitetsblok (25 min) | Kort reset (1,5 min) | Ny rolig blok (16 min) | Let jog ned (5 min)
+  Coaching cues: Første blok skal sætte en rolig rytme. / Brug den korte reset til at samle dig, ikke til at starte forfra. / Kom ud med friske ben, ikke træthed.
+  Noter: Keep this quality touch compact and rhythm-focused.
+- Torsdag (torsdag den 9. juli 2026) – Roligt løb – 49 min
+  Rolle: Roligt pas
+  Pas-type: Roligt løb
+  Formål: Vedligeholde aerob base med lav stress og god bevægelsesrytme.
+  Resume: Roligt løb med roligt løb
+  Struktur: Let jog (6 min) | Roligt løb (38 min) | Let jog ned (5 min)
+  Coaching cues: Hold tempoet afslappet og kontrolleret. / Løbet skal føles bæredygtigt fra start til slut. / Kom ud med friske ben, ikke træthed.
+- Søndag (søndag den 12. juli 2026) – Lang tur – 124 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (113 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Kom ud med friske ben, ikke træthed.
+
+Uge 16 · Taper
+Fokus: friskhed og rytme frem mod målet
+Ugens mål: lang tur 109 min · kontinuitet 90 min · volumen 281,5 min
+- Tirsdag (tirsdag den 14. juli 2026) – Udviklingspas – 55,5 min
+  Rolle: Kvalitet
+  Pas-type: Udviklingspas
+  Formål: Bygge tolerance for længere sammenhængende løb med en enkel struktur, der stadig føles overkommelig.
+  Resume: Udviklingspas med rolig kontinuitetsblok + kort reset + ny rolig blok
+  Struktur: Let jog (8 min) | Rolig kontinuitetsblok (25 min) | Kort reset (1,5 min) | Ny rolig blok (16 min) | Let jog ned (5 min)
+  Coaching cues: Første blok skal sætte en rolig rytme. / Brug den korte reset til at samle dig, ikke til at starte forfra. / Kom ud med friske ben, ikke træthed.
+  Noter: Keep this quality touch compact and rhythm-focused.
+- Torsdag (torsdag den 16. juli 2026) – Roligt løb – 49 min
+  Rolle: Roligt pas
+  Pas-type: Roligt løb
+  Formål: Vedligeholde aerob base med lav stress og god bevægelsesrytme.
+  Resume: Roligt løb med roligt løb
+  Struktur: Let jog (6 min) | Roligt løb (38 min) | Let jog ned (5 min)
+  Coaching cues: Hold tempoet afslappet og kontrolleret. / Løbet skal føles bæredygtigt fra start til slut. / Kom ud med friske ben, ikke træthed.
+- Søndag (søndag den 19. juli 2026) – Lang tur – 100,5 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (89,5 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Kom ud med friske ben, ikke træthed.
+
+Uge 17 · Taper
+Fokus: måluge med friskhed, rytme og klarhed frem mod løbet
+Ugens mål: lang tur 102 min · kontinuitet 90 min · volumen 293 min
+- Tirsdag (tirsdag den 21. juli 2026) – Udviklingspas – 55,5 min
+  Rolle: Kvalitet
+  Pas-type: Udviklingspas
+  Formål: Bygge tolerance for længere sammenhængende løb med en enkel struktur, der stadig føles overkommelig.
+  Resume: Udviklingspas med rolig kontinuitetsblok + kort reset + ny rolig blok
+  Struktur: Let jog (8 min) | Rolig kontinuitetsblok (25 min) | Kort reset (1,5 min) | Ny rolig blok (16 min) | Let jog ned (5 min)
+  Coaching cues: Første blok skal sætte en rolig rytme. / Brug den korte reset til at samle dig, ikke til at starte forfra. / Kom ud med friske ben, ikke træthed.
+  Noter: Keep this quality touch compact and rhythm-focused.
+- Torsdag (torsdag den 23. juli 2026) – Roligt løb – 49 min
+  Rolle: Roligt pas
+  Pas-type: Roligt løb
+  Formål: Vedligeholde aerob base med lav stress og god bevægelsesrytme.
+  Resume: Roligt løb med roligt løb
+  Struktur: Let jog (6 min) | Roligt løb (38 min) | Let jog ned (5 min)
+  Coaching cues: Hold tempoet afslappet og kontrolleret. / Løbet skal føles bæredygtigt fra start til slut. / Kom ud med friske ben, ikke træthed.
+- Søndag (søndag den 26. juli 2026) – Lang tur – 94,5 min
+  Rolle: Lang tur
+  Pas-type: Lang tur
+  Formål: Bygge udholdenhed og gøre den samlede plan mere robust.
+  Resume: Lang tur med lang rolig blok
+  Struktur: Let jog (6 min) | Lang rolig blok (83,5 min) | Let jog ned (5 min)
+  Coaching cues: Det skal føles bæredygtigt, ikke heroisk. / Hold fokus på tid på benene. / Kom ud med friske ben, ikke træthed.

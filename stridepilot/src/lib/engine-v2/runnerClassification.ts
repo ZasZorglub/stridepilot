@@ -75,17 +75,17 @@ function injuryRiskScore(input: RunnerInput, consistency: number): number {
 
 function deriveRunnerLevel(input: RunnerInput, capability: number, consistency: number): RunnerLevel {
   if (
-    input.currentContinuousRunMin < 1 &&
-    input.currentWeeklyRuns === 0 &&
-    input.currentWeeklyVolumeKm === 0 &&
-    input.longestRecentRunMin === 0
+    input.currentContinuousRunMin <= 3 &&
+    input.currentWeeklyRuns <= 1 &&
+    input.currentWeeklyVolumeKm <= 5 &&
+    input.longestRecentRunMin <= 15
   ) {
     return "true_beginner";
   }
-  if (capability < 0.22 || input.currentContinuousRunMin < 12 || input.longestRecentRunMin < 20 || input.currentWeeklyRuns <= 1) {
+  if (capability < 0.28 || input.currentContinuousRunMin < 18 || input.longestRecentRunMin < 28 || input.currentWeeklyRuns <= 1) {
     return "beginner_plus";
   }
-  if (capability < 0.5 || input.currentWeeklyRuns < 4 || consistency < 0.72) {
+  if (capability < 0.56 || input.currentWeeklyRuns < 4 || consistency < 0.72) {
     return "recreational";
   }
   if (capability < 0.8 || input.currentWeeklyVolumeKm < 50) {
@@ -125,12 +125,16 @@ function modifiers(
   primaryType: PrimaryRunnerType,
 ): RunnerModifier[] {
   const result = new Set<RunnerModifier>();
+  const inferredPerformanceBias =
+    (input.goalType === "improve_time" || input.goalType === "target_time") &&
+    consistency >= 0.75 &&
+    (primaryType === "performance_oriented" || primaryType === "advanced_recreational" || primaryType === "intermediate");
   if (injury >= 0.45) result.add("injury_sensitive");
   if (confidence === "fragile" || confidence === "cautious") result.add("low_confidence");
   if (consistency >= 0.78) result.add("high_consistency");
   if (schedule === "high") result.add("low_availability");
   if (input.externalTrainingLoad === "high" || input.externalTrainingLoad === "moderate") result.add("high_external_load");
-  if (input.trainingStylePreference === "performance") result.add("performance_bias");
+  if (input.trainingStylePreference === "performance" || inferredPerformanceBias) result.add("performance_bias");
   if (input.trainingStylePreference === "conservative") result.add("conservative_bias");
   if (hasReturnFlag(input)) result.add("return_from_break");
   if (input.goalType === "build_consistency" || primaryType === "consistency_builder") result.add("consistency_first");
@@ -177,7 +181,8 @@ function deriveTraitScores(
       performanceBonus -
       injury * 0.22 -
       conservativePenalty -
-      schedulePenalty,
+      schedulePenalty -
+      (runnerLevel === "true_beginner" ? 0.18 : runnerLevel === "beginner_plus" ? 0.08 : 0),
     0,
     1,
   );
@@ -203,7 +208,8 @@ function deriveTraitScores(
       clamp(input.currentContinuousRunMin / 50, 0, 1),
     ]) -
       injury * 0.18 -
-      schedulePenalty * 0.3,
+      schedulePenalty * 0.3 -
+      (runnerLevel === "true_beginner" ? 0.14 : runnerLevel === "beginner_plus" ? 0.06 : 0),
     0,
     1,
   );

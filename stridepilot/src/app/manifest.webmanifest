@@ -1,7 +1,7 @@
 {
   "name": "StridePilot",
   "short_name": "StridePilot",
-  "description": "AI-baseret løbeprogram med interval-timer og kalenderintegration.",
+  "description": "Adaptivt løbeprogram med interval-timer og kalenderintegration.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b0f14",

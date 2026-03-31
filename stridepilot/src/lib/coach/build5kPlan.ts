@@ -954,6 +954,7 @@ function buildSharedGoalPlan(profile: RunnerProfile, goalConfig: GoalConfig): Tr
       weekState.canHandleDoubleQuality,
     );
 
+    const isGoalWeek = weekNumber === totalWeeks;
     let sessions = types.map((type, index) =>
       buildSessionByType(type, {
         weekNumber,
@@ -968,6 +969,7 @@ function buildSharedGoalPlan(profile: RunnerProfile, goalConfig: GoalConfig): Tr
         intervalRunMin: weekState.intervalRunMin,
         walkBreakMin: weekState.walkBreakMin,
         repeats: weekState.repeats,
+        isGoalSession: isGoalWeek && index === types.length - 1,
       }),
     );
 

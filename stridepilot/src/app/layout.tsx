@@ -4,7 +4,7 @@ import { APP_NAME } from "@/lib/app-config";
 
 export const metadata: Metadata = {
   title: APP_NAME,
-  description: "AI-baseret løbeprogram med interval-timer og kalenderintegration.",
+  description: "Adaptivt løbeprogram med interval-timer og kalenderintegration.",
   applicationName: APP_NAME,
   manifest: "/manifest.webmanifest",
   appleWebApp: {
@@ -17,11 +17,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#eef3f7" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b0f14" },
-  ],
+  themeColor: "#0b0f14",
 };
 
 export default function RootLayout({
@@ -30,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="da">
+    <html lang="da" data-theme="dark">
       <body>{children}</body>
     </html>
   );

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { enforceAvailableTrainingDays } from "@/lib/plan";
 import { prisma } from "@/lib/db";
-import { FeedbackInsights, Goal, RunnerProfile, TrainingPlan } from "@/lib/types";
+import { FeedbackInsights, Goal, PlanRecommendationOption, RunnerProfile, TrainingPlan } from "@/lib/types";
 import { getCurrentSession } from "@/lib/auth/session";
 import { applyAdaptiveGuardrails, buildAdaptationPayload, FeedbackSignal } from "@/lib/adaptation";
 import { applyPlanSafety, validatePlanFeasibility } from "@/lib/plan-safety";
@@ -15,6 +16,7 @@ import {
   mapCoachProfileToRunnerProfileInsights,
 } from "@/lib/coach";
 import { buildProfileExplanationSummary } from "@/lib/profile-interpretation";
+import { handleVNextPlanGenerationRequest } from "@/lib/engine-vnext/app/routeHandlers";
 
 function parseReminderTime(reminderTime?: string): { reminderHour: number; reminderMin: number } {
   const fallback = { reminderHour: 13, reminderMin: 0 };
@@ -24,6 +26,11 @@ function parseReminderTime(reminderTime?: string): { reminderHour: number; remin
   if (!Number.isFinite(h) || !Number.isFinite(m)) return fallback;
   if (h < 0 || h > 23 || m < 0 || m > 59) return fallback;
   return { reminderHour: h, reminderMin: m };
+}
+
+function toJsonValue<T>(value: T | undefined): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput | undefined {
+  if (typeof value === "undefined") return undefined;
+  return value as Prisma.InputJsonValue;
 }
 
 function addDaysToIsoDate(value: string, days: number): string {
@@ -116,6 +123,10 @@ function toCoachGoalConfig(goal: Goal, requestedRunsPerWeek: number): CoachGoalC
     startDate,
     targetTime: goal.targetTime,
     preferredTrainingDays: mapPreferredDays(goal.availableTrainingDays),
+    preferredLongRunDay:
+      goal.preferredLongRunDay === "both" || goal.preferredLongRunDay === "flexible" || !goal.preferredLongRunDay
+        ? "flexible"
+        : goal.preferredLongRunDay,
   };
 }
 
@@ -167,8 +178,9 @@ async function persistPlan(params: {
   goal: Goal;
   plan: TrainingPlan;
   source: "openai" | "fallback";
+  recommendationSelection?: PlanRecommendationOption;
 }) {
-  const { profileId, userId, runnerProfile, goal, plan, source } = params;
+  const { profileId, userId, runnerProfile, goal, plan, source, recommendationSelection } = params;
   const reminder = parseReminderTime(goal.reminderTime);
 
   let profile;
@@ -177,18 +189,46 @@ async function persistPlan(params: {
     profile = await prisma.runnerProfile.upsert({
       where: { userId },
       update: {
+        firstName: runnerProfile.firstName,
         heightCm: runnerProfile.heightCm,
         weightKg: runnerProfile.weightKg,
         age: runnerProfile.age,
         activityLevel: runnerProfile.activityLevel,
         runningExperience: runnerProfile.runningExperience,
+        currentRunningAbility: runnerProfile.currentRunningAbility,
+        gender: runnerProfile.gender,
+        userTrainingContext: runnerProfile.userTrainingContext,
+        currentWeeklyVolumeKm: runnerProfile.currentWeeklyVolumeKm,
+        currentRunsPerWeek: runnerProfile.currentRunsPerWeek,
+        longestCurrentRunMin: runnerProfile.longestCurrentRunMin,
+        recentRaceTimesJson: toJsonValue(runnerProfile.recentRaceTimes),
+        injuryHistory: runnerProfile.injuryHistory,
+        weakPoints: runnerProfile.weakPoints,
+        realisticTrainingDaysPerWeek: runnerProfile.realisticTrainingDaysPerWeek,
+        typicalWorkoutMinutes: runnerProfile.typicalWorkoutMinutes,
+        otherTraining: runnerProfile.otherTraining,
+        preferredGuidance: runnerProfile.preferredGuidance,
       },
       create: {
+        firstName: runnerProfile.firstName,
         heightCm: runnerProfile.heightCm,
         weightKg: runnerProfile.weightKg,
         age: runnerProfile.age,
         activityLevel: runnerProfile.activityLevel,
         runningExperience: runnerProfile.runningExperience,
+        currentRunningAbility: runnerProfile.currentRunningAbility,
+        gender: runnerProfile.gender,
+        userTrainingContext: runnerProfile.userTrainingContext,
+        currentWeeklyVolumeKm: runnerProfile.currentWeeklyVolumeKm,
+        currentRunsPerWeek: runnerProfile.currentRunsPerWeek,
+        longestCurrentRunMin: runnerProfile.longestCurrentRunMin,
+        recentRaceTimesJson: toJsonValue(runnerProfile.recentRaceTimes),
+        injuryHistory: runnerProfile.injuryHistory,
+        weakPoints: runnerProfile.weakPoints,
+        realisticTrainingDaysPerWeek: runnerProfile.realisticTrainingDaysPerWeek,
+        typicalWorkoutMinutes: runnerProfile.typicalWorkoutMinutes,
+        otherTraining: runnerProfile.otherTraining,
+        preferredGuidance: runnerProfile.preferredGuidance,
         userId,
       },
     });
@@ -196,29 +236,71 @@ async function persistPlan(params: {
     profile = await prisma.runnerProfile.upsert({
       where: { id: profileId },
       update: {
+        firstName: runnerProfile.firstName,
         heightCm: runnerProfile.heightCm,
         weightKg: runnerProfile.weightKg,
         age: runnerProfile.age,
         activityLevel: runnerProfile.activityLevel,
         runningExperience: runnerProfile.runningExperience,
+        currentRunningAbility: runnerProfile.currentRunningAbility,
+        gender: runnerProfile.gender,
+        userTrainingContext: runnerProfile.userTrainingContext,
+        currentWeeklyVolumeKm: runnerProfile.currentWeeklyVolumeKm,
+        currentRunsPerWeek: runnerProfile.currentRunsPerWeek,
+        longestCurrentRunMin: runnerProfile.longestCurrentRunMin,
+        recentRaceTimesJson: toJsonValue(runnerProfile.recentRaceTimes),
+        injuryHistory: runnerProfile.injuryHistory,
+        weakPoints: runnerProfile.weakPoints,
+        realisticTrainingDaysPerWeek: runnerProfile.realisticTrainingDaysPerWeek,
+        typicalWorkoutMinutes: runnerProfile.typicalWorkoutMinutes,
+        otherTraining: runnerProfile.otherTraining,
+        preferredGuidance: runnerProfile.preferredGuidance,
       },
       create: {
         id: profileId,
+        firstName: runnerProfile.firstName,
         heightCm: runnerProfile.heightCm,
         weightKg: runnerProfile.weightKg,
         age: runnerProfile.age,
         activityLevel: runnerProfile.activityLevel,
         runningExperience: runnerProfile.runningExperience,
+        currentRunningAbility: runnerProfile.currentRunningAbility,
+        gender: runnerProfile.gender,
+        userTrainingContext: runnerProfile.userTrainingContext,
+        currentWeeklyVolumeKm: runnerProfile.currentWeeklyVolumeKm,
+        currentRunsPerWeek: runnerProfile.currentRunsPerWeek,
+        longestCurrentRunMin: runnerProfile.longestCurrentRunMin,
+        recentRaceTimesJson: toJsonValue(runnerProfile.recentRaceTimes),
+        injuryHistory: runnerProfile.injuryHistory,
+        weakPoints: runnerProfile.weakPoints,
+        realisticTrainingDaysPerWeek: runnerProfile.realisticTrainingDaysPerWeek,
+        typicalWorkoutMinutes: runnerProfile.typicalWorkoutMinutes,
+        otherTraining: runnerProfile.otherTraining,
+        preferredGuidance: runnerProfile.preferredGuidance,
       },
     });
   } else {
     profile = await prisma.runnerProfile.create({
       data: {
+        firstName: runnerProfile.firstName,
         heightCm: runnerProfile.heightCm,
         weightKg: runnerProfile.weightKg,
         age: runnerProfile.age,
         activityLevel: runnerProfile.activityLevel,
         runningExperience: runnerProfile.runningExperience,
+        currentRunningAbility: runnerProfile.currentRunningAbility,
+        gender: runnerProfile.gender,
+        userTrainingContext: runnerProfile.userTrainingContext,
+        currentWeeklyVolumeKm: runnerProfile.currentWeeklyVolumeKm,
+        currentRunsPerWeek: runnerProfile.currentRunsPerWeek,
+        longestCurrentRunMin: runnerProfile.longestCurrentRunMin,
+        recentRaceTimesJson: toJsonValue(runnerProfile.recentRaceTimes),
+        injuryHistory: runnerProfile.injuryHistory,
+        weakPoints: runnerProfile.weakPoints,
+        realisticTrainingDaysPerWeek: runnerProfile.realisticTrainingDaysPerWeek,
+        typicalWorkoutMinutes: runnerProfile.typicalWorkoutMinutes,
+        otherTraining: runnerProfile.otherTraining,
+        preferredGuidance: runnerProfile.preferredGuidance,
       },
     });
   }
@@ -227,9 +309,15 @@ async function persistPlan(params: {
     data: {
       profileId: profile.id,
       distance: goal.distance,
+      goalType: goal.goalType,
       weeks: goal.weeks,
       startDate: new Date(goal.startDate),
       endDate: goal.endDate ? new Date(goal.endDate) : null,
+      targetTime: goal.targetTime,
+      targetPaceSecPerKm: goal.targetPaceSecPerKm,
+      availableTrainingDays: goal.availableTrainingDays ?? [],
+      preferredLongRunDay: goal.preferredLongRunDay,
+      ambition: recommendationSelection?.mode,
       reminderHour: reminder.reminderHour,
       reminderMin: reminder.reminderMin,
     },
@@ -243,6 +331,8 @@ async function persistPlan(params: {
       weeks: plan.weeks,
       sessionsPerWeek: plan.sessionsPerWeek,
       source,
+      currentWeek: 1,
+      rationaleJson: plan.rationale,
       sessions: {
         create: plan.sessions.map((session, sessionOrder) => ({
           title: session.title,
@@ -288,19 +378,35 @@ export async function POST(req: Request) {
     const demoModeEnabled =
       process.env.NODE_ENV !== "production" || process.env.ENABLE_DEMO_MODE === "true" || process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true";
     const body = (await req.json()) as {
+      engineVersion?: "vnext";
       runnerProfile: RunnerProfile;
       goal: Goal;
       profileId?: string;
       runsPerWeek?: number;
       demoMode?: boolean;
+      recommendationSelection?: PlanRecommendationOption;
     };
+    if (body.engineVersion === "vnext") {
+      const result = await handleVNextPlanGenerationRequest(body, {
+        persist: true,
+        userId: session?.userId ?? null,
+      });
+      return NextResponse.json(result.body, { status: result.status });
+    }
     const { runnerProfile, goal, profileId } = body;
     const demoMode = Boolean(body.demoMode && demoModeEnabled);
+    if (body.recommendationSelection?.goalDate) {
+      goal.endDate = body.recommendationSelection.goalDate;
+      goal.weeks = body.recommendationSelection.durationWeeks;
+    }
+
     const derivedWeeks = deriveWeeksFromDates(goal.startDate, goal.endDate);
     goal.weeks = derivedWeeks;
 
     const requestedRunsPerWeek =
-      typeof body.runsPerWeek === "number"
+      typeof body.recommendationSelection?.sessionsPerWeek === "number"
+        ? body.recommendationSelection.sessionsPerWeek
+        : typeof body.runsPerWeek === "number"
         ? body.runsPerWeek
         : goal.availableTrainingDays?.length
           ? goal.availableTrainingDays.length
@@ -421,6 +527,7 @@ export async function POST(req: Request) {
         goal,
         plan,
         source,
+        recommendationSelection: body.recommendationSelection,
       });
       return NextResponse.json({
         source,

@@ -20,17 +20,33 @@ model RunnerProfile {
   id                String             @id @default(cuid())
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+  firstName         String?
   heightCm          Int
   weightKg          Int
   age               Int
   activityLevel     String
   runningExperience String
+  currentRunningAbility String?
+  gender            String?
+  userTrainingContext String?
+  currentWeeklyVolumeKm Int?
+  currentRunsPerWeek Int?
+  longestCurrentRunMin Int?
+  recentRaceTimesJson Json?
+  injuryHistory     String?
+  weakPoints        String?
+  realisticTrainingDaysPerWeek Int?
+  typicalWorkoutMinutes Int?
+  otherTraining     String?
+  preferredGuidance String?
   userId            String?            @unique
   user              AppUser?           @relation(fields: [userId], references: [id], onDelete: SetNull)
   goals             Goal[]
   plans             TrainingPlan[]
+  vNextPlans        VNextPlanState[]
   pushSubscriptions PushSubscription[]
   feedbackEntries   WorkoutFeedback[]
+  notes             ProfileNote[]
 }
 
 model Goal {
@@ -38,15 +54,22 @@ model Goal {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   distance     String
+  goalType     String?
   weeks        Int
   startDate    DateTime
   endDate      DateTime?
+  targetTime   String?
+  targetPaceSecPerKm Int?
+  availableTrainingDays String[]
+  preferredLongRunDay String?
+  ambition     String?
   reminderHour Int            @default(7)
   reminderMin  Int            @default(0)
 
   profileId String
   profile   RunnerProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   plans     TrainingPlan[]
+  vNextPlans VNextPlanState[]
 
   @@index([profileId])
 }
@@ -59,6 +82,8 @@ model TrainingPlan {
   weeks           Int
   sessionsPerWeek Int
   source          String
+  currentWeek     Int              @default(1)
+  rationaleJson   Json?
 
   profileId String
   profile   RunnerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
@@ -67,6 +92,7 @@ model TrainingPlan {
   goal   Goal? @relation(fields: [goalId], references: [id], onDelete: SetNull)
 
   sessions WorkoutSession[]
+  adaptations TrainingPlanAdaptation[]
 
   @@index([profileId])
   @@index([goalId])
@@ -159,4 +185,95 @@ model WorkoutFeedback {
 
   @@index([profileId])
   @@index([workoutSessionId])
+}
+
+model TrainingPlanAdaptation {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  mode             String
+  reason           String
+  runnerFocus      String?
+  changeSummaryJson Json?
+  weekNumber       Int?
+  triggeredBySessionId String?
+
+  planId String
+  plan   TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId])
+}
+
+model VNextPlanState {
+  id                   String   @id @default(cuid())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  logicalPlanId        String
+  engineVersion        String   @default("vnext")
+  currentVersionNumber Int      @default(1)
+  latestHistoryEntryId String?
+
+  profileId String
+  profile   RunnerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  goalId String?
+  goal   Goal? @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  versions VNextPlanVersion[]
+  history  VNextPlanHistory[]
+
+  @@unique([profileId, logicalPlanId])
+  @@index([profileId, updatedAt])
+  @@index([goalId])
+}
+
+model VNextPlanVersion {
+  id                     String   @id @default(cuid())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  versionNumber          Int
+  derivedFromVersionNumber Int?
+  isCurrent              Boolean  @default(false)
+  snapshotJson           Json
+  validationJson         Json?
+  versionMetadataJson    Json?
+  mutationHistoryJson    Json?
+
+  planStateId String
+  planState   VNextPlanState @relation(fields: [planStateId], references: [id], onDelete: Cascade)
+
+  @@unique([planStateId, versionNumber])
+  @@index([planStateId, isCurrent])
+}
+
+model VNextPlanHistory {
+  id                     String   @id @default(cuid())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  entryId                String   @unique
+  sourceVersionNumber    Int
+  resultingVersionNumber Int
+  feedbackJson           Json?
+  decisionJson           Json?
+  mutationJson           Json?
+  validationJson         Json?
+  applied                Boolean
+  fallback               Boolean
+
+  planStateId String
+  planState   VNextPlanState @relation(fields: [planStateId], references: [id], onDelete: Cascade)
+
+  @@index([planStateId, createdAt])
+}
+
+model ProfileNote {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  text      String
+
+  profileId String
+  profile   RunnerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
 }

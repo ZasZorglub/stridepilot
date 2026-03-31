@@ -1,0 +1,42 @@
+StridePilot Engine V2 Calibrated Benchmark Export
+
+Engine V2 09 – Intermediate – Half marathon target time
+
+Profile
+- runnerLevel: intermediate
+- goalDistance: half_marathon
+- goalType: target_time
+- timelineWeeks: 16
+- sessionsPerWeek: 4
+- currentContinuousMin: 75
+- longestRecentRunMin: 95
+- preferredLongRunDay: sunday
+
+Engine summary
+- backboneType: long_run
+- phases: base[1-4] | build[5-8] | specific[9-12] | peak[13-14] | taper[15-15] | race_week[16-16]
+- stepBackWeeks: 4, 7, 10, 13
+- taperWeeks: 15
+- peakWeeklyVolume: 273 min
+- peakLongRun: 101.5 min
+- peakContinuousRun: 87.5 min
+- maxWeeklyVolumeIncreasePct: 9.7%
+- maxLongRunIncreasePct: 8.2%
+
+Weekly progression metrics
+- W1: phase=base, volume=231.5 min, longRun=89 min, intervalVolume=6 min, continuous=76 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:42 | intervals:32.5 | recovery:43.5 | long:113.5
+- W2: phase=base, volume=237.5 min, longRun=91.5 min, intervalVolume=6 min, continuous=77 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:43 | intervals:33.5 | recovery:45 | long:116
+- W3: phase=base, volume=244 min, longRun=94 min, intervalVolume=6 min, continuous=78.5 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:44 | intervals:34 | recovery:46 | long:120
+- W4: phase=base, volume=223 min, longRun=86.5 min, intervalVolume=4.5 min, continuous=77.5 min, sessions=4, stepBack=true, taper=false, race=false, workouts=easy:40.5 | intervals:31 | recovery:42 | long:109.5
+- W5: phase=build, volume=234 min, longRun=90 min, intervalVolume=6 min, continuous=79 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:42.5 | intervals:33 | recovery:44 | long:114.5
+- W6: phase=build, volume=245.5 min, longRun=93.5 min, intervalVolume=8 min, continuous=80.5 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:44 | intervals:34.5 | recovery:46 | long:121
+- W7: phase=build, volume=225 min, longRun=86.5 min, intervalVolume=6 min, continuous=79.5 min, sessions=4, stepBack=true, taper=false, race=false, workouts=easy:40.5 | intervals:31.5 | recovery:42.5 | long:110.5
+- W8: phase=build, volume=240.5 min, longRun=91.5 min, intervalVolume=8 min, continuous=81.5 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:43 | intervals:33.5 | recovery:45 | long:119
+- W9: phase=specific, volume=256 min, longRun=96.5 min, intervalVolume=10.5 min, continuous=83.5 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:45.5 | race_pace:36 | recovery:47.5 | long:127
+- W10: phase=specific, volume=229 min, longRun=87 min, intervalVolume=8 min, continuous=82.5 min, sessions=4, stepBack=true, taper=false, race=false, workouts=easy:41 | race_pace:32 | recovery:43 | long:113
+- W11: phase=specific, volume=250 min, longRun=94 min, intervalVolume=10.5 min, continuous=84.5 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:44.5 | race_pace:35 | recovery:46.5 | long:124
+- W12: phase=specific, volume=273 min, longRun=101.5 min, intervalVolume=13.5 min, continuous=86.5 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:48.5 | race_pace:38 | recovery:50.5 | long:136
+- W13: phase=peak, volume=243.5 min, longRun=91.5 min, intervalVolume=10.5 min, continuous=85.5 min, sessions=4, stepBack=true, taper=false, race=false, workouts=easy:43 | race_pace:34 | recovery:45.5 | long:121
+- W14: phase=peak, volume=267 min, longRun=99 min, intervalVolume=13.5 min, continuous=87.5 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:47.5 | race_pace:37.5 | recovery:49.5 | long:132.5
+- W15: phase=taper, volume=195.5 min, longRun=73.5 min, intervalVolume=8 min, continuous=79 min, sessions=4, stepBack=false, taper=true, race=false, workouts=easy:35 | intervals:27.5 | recovery:36.5 | long:96.5
+- W16: phase=race_week, volume=119 min, longRun=45.5 min, intervalVolume=3.5 min, continuous=75 min, sessions=3, stepBack=false, taper=false, race=true, workouts=easy:16 | recovery:16 | race_pace:51

@@ -1,0 +1,110 @@
+StridePilot 5K Benchmark Export
+
+Case: benchmark 07 beginner 5k improve ambitious
+
+Runner profile
+- runner type: beginner
+- current level: beginner
+- sessions per week: 3 -> 3 -> 3 -> 3 -> 3 -> 3 -> 3 -> 3 -> 3 -> 3 -> 3 -> 3
+- goal: 5K improve
+- ambition: ambitious
+- timeline weeks: 11
+- Current continuous ability: 18 min
+- Longest recent run: 25 min
+- Available days: Monday, Wednesday, Sunday
+- Preferred long run day: Sunday
+
+Program structure
+- number of weeks: 12
+- phases: W1-4 Base | W5-7 Build | W8-10 Specific | W11-11 Taper | W12-12 Race week
+- step-back weeks: 3, 6, 9
+- taper weeks: 11
+- race week: 12
+
+Weekly progression
+- week 1: phase=Base, sessions=3, total=92 min, long_run=36,5 min, interval_type=none, interval_total=0 min, easy_total=55,5 min
+- week 2: phase=Base, sessions=3, total=93 min, long_run=37,5 min, interval_type=none, interval_total=0 min, easy_total=55,5 min
+- week 3: phase=Base, sessions=3, total=95 min, long_run=38 min, interval_type=none, interval_total=0 min, easy_total=57 min
+- week 4: phase=Base, sessions=3, total=106 min, long_run=39 min, interval_type=none, interval_total=0 min, easy_total=67 min
+- week 5: phase=Build, sessions=3, total=109 min, long_run=41 min, interval_type=tempo_run, interval_total=20 min, easy_total=36 min
+- week 6: phase=Build, sessions=3, total=109,5 min, long_run=42,5 min, interval_type=tempo_run, interval_total=20 min, easy_total=32,5 min
+- week 7: phase=Build, sessions=3, total=112,5 min, long_run=44,5 min, interval_type=tempo_run, interval_total=20 min, easy_total=36 min
+- week 8: phase=Specific, sessions=3, total=120 min, long_run=50 min, interval_type=intervals, interval_total=34 min, easy_total=36 min
+- week 9: phase=Specific, sessions=3, total=117 min, long_run=50,5 min, interval_type=intervals, interval_total=34 min, easy_total=32,5 min
+- week 10: phase=Specific, sessions=3, total=129,5 min, long_run=53,5 min, interval_type=intervals, interval_total=40 min, easy_total=36 min
+- week 11: phase=Taper, sessions=2, total=57 min, long_run=0 min, interval_type=race_specific, interval_total=0 min, easy_total=23 min
+- week 12: phase=Race week, sessions=3, total=77 min, long_run=0 min, interval_type=race_specific, interval_total=0 min, easy_total=46 min
+
+Progression metrics
+- longest continuous run progression: 18, 20, 25, 30, 30, 30, 30, 30, 30, 30, 29, 23.5
+- long run progression: 25.5, 26.5, 27, 28, 30, 31, 33.5, 36, 36.5, 39.5, 32, 25.5
+- weekly volume progression: 84, 87.5, 84, 87.5, 91, 84, 90.5, 97, 98.5, 106.5, 86.5, 69
+- interval progression: 1, 1, 1, 1, 3, 3, 5, 6, 6, 8, 2, 3
+
+Safety metrics
+- biggest weekly volume increase: 8,1%
+- biggest long run increase: 8,2%
+- number of step-back weeks: 3
+- taper length: 1 weeks
+- starting load vs peak load: 84 min -> 106,5 min
+
+Full program
+
+Week 1 · Base
+- Monday · Roligt løb · 29 min · role=easy · family=easy_run
+- Wednesday · Udviklingspas · 26,5 min · role=aerobic_support · family=development_run
+- Sunday · Lang tur · 36,5 min · role=long_run · family=long_run
+
+Week 2 · Base
+- Monday · Roligt løb · 29 min · role=easy · family=easy_run
+- Wednesday · Udviklingspas · 26,5 min · role=aerobic_support · family=development_run
+- Sunday · Lang tur · 37,5 min · role=long_run · family=long_run
+
+Week 3 · Base
+- Monday · Roligt løb · 29 min · role=easy · family=easy_run
+- Wednesday · Udviklingspas · 28 min · role=aerobic_support · family=development_run
+- Sunday · Lang tur · 38 min · role=long_run · family=long_run
+
+Week 4 · Base
+- Monday · Roligt løb · 36 min · role=easy · family=easy_run
+- Wednesday · Udviklingspas · 31 min · role=aerobic_support · family=development_run
+- Sunday · Lang tur · 39 min · role=long_run · family=long_run
+
+Week 5 · Build
+- Monday · Roligt løb · 36 min · role=easy · family=easy_run
+- Wednesday · Tempopas · 32 min · role=quality · family=tempo_run
+- Sunday · Lang tur · 41 min · role=long_run · family=long_run
+
+Week 6 · Build
+- Monday · Roligt løb · 32,5 min · role=easy · family=easy_run
+- Wednesday · Tempopas · 34,5 min · role=quality · family=tempo_run
+- Sunday · Lang tur · 42,5 min · role=long_run · family=long_run
+
+Week 7 · Build
+- Monday · Roligt løb · 36 min · role=easy · family=easy_run
+- Wednesday · Tempopas · 32 min · role=quality · family=tempo_run
+- Sunday · Lang tur · 44,5 min · role=long_run · family=long_run
+
+Week 8 · Specific
+- Monday · Intervalpas · 34 min · role=quality · family=intervals
+- Wednesday · Roligt løb · 36 min · role=easy · family=easy_run
+- Sunday · Lang tur · 50 min · role=long_run · family=long_run
+
+Week 9 · Specific
+- Monday · Intervalpas · 34 min · role=quality · family=intervals
+- Wednesday · Roligt løb · 32,5 min · role=easy · family=easy_run
+- Sunday · Lang tur · 50,5 min · role=long_run · family=long_run
+
+Week 10 · Specific
+- Monday · Intervalpas · 40 min · role=quality · family=intervals
+- Wednesday · Roligt løb · 36 min · role=easy · family=easy_run
+- Sunday · Lang tur · 53,5 min · role=long_run · family=long_run
+
+Week 11 · Taper
+- Monday · Roligt løb · 23 min · role=easy · family=easy_run
+- Sunday · Målspecifikt pas · 34 min · role=quality · family=race_specific
+
+Week 12 · Race week
+- Monday · Roligt løb · 23 min · role=easy · family=easy_run
+- Wednesday · Målspecifikt pas · 31 min · role=quality · family=race_specific
+- Sunday · Roligt løb · 23 min · role=easy · family=easy_run

@@ -319,6 +319,7 @@ export function buildTenKDistancePlan(profile: RunnerProfile, goal: GoalConfig):
           intervalRunMin: roundHalf(clamp(minutes.quality * 0.22, 3, 8)),
           walkBreakMin: 2,
           repeats: minutes.repeats,
+          isGoalSession: curveWeek.weekNumber === totalWeeks && index === types.length - 1,
         }),
       ];
     });

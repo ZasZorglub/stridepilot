@@ -1,0 +1,4833 @@
+{
+  "profileId": "profile-09",
+  "profileName": "Half marathon finish, 4x/week",
+  "profileSummary": {
+    "goalDistance": "Halvmaraton",
+    "goalType": "complete",
+    "daysPerWeek": 4,
+    "currentLevel": "30+ min sammenhaengende",
+    "archetype": "motivated_novice",
+    "notes": "Ingen ekstra noter."
+  },
+  "planSummary": {
+    "totalWeeks": 18,
+    "phaseSequence": [
+      "introduction",
+      "continuous_running",
+      "capacity",
+      "race_preparation"
+    ],
+    "weeklySessionCounts": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "longestWorkoutMin": 116,
+    "hasIntervals": true
+  },
+  "qualityDiagnostics": {
+    "goalWeek": 18,
+    "destinationSessionSummary": "halvmaraton måldag — Warmup 7 min / Run 74 min / Cooldown 3 min / Walk 2 min",
+    "finalWeekSessionSummaries": [
+      "Roligt løb (easy) — Warmup 7 min / Run 53 min / Cooldown 3 min / Walk 2 min",
+      "Recovery-pas (recovery) — Warmup 7 min / Run 34.5 min / Cooldown 3 min / Walk 2 min",
+      "Roligt løb (easy) — Warmup 7 min / Run 53 min / Cooldown 3 min / Walk 2 min",
+      "halvmaraton måldag (benchmark) — Warmup 7 min / Run 74 min / Cooldown 3 min / Walk 2 min"
+    ],
+    "longestPriorRunMin": 114,
+    "longestPriorKeyRunMin": 114,
+    "goalDayRunMin": 84,
+    "goalDaySessionType": "benchmark"
+  },
+  "warnings": [],
+  "weeks": [
+    {
+      "weekIndex": 1,
+      "phase": "introduction",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 57,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 45 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 2700,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 2700,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 41.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 29.3 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 1755,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 1755,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 57,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 45 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 2700,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 2700,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 73.5,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 61.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 3690,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 3690,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 2,
+      "phase": "introduction",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 64.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 52.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3150,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3150,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 46,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 34.1 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2048,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2048,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 64.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 52.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3150,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3150,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 78,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 66 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 3960,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 3960,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 3,
+      "phase": "introduction",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 72.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 60.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3630,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3630,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 51.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 39.3 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2360,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2360,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 72.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 60.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3630,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3630,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 82.5,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 70.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 4230,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 4230,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 4,
+      "phase": "continuous_running",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 53.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 41.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 2490,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 2490,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 39,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 27 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 1619,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 1619,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 53.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 41.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 2490,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 2490,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 77,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 65 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 3900,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 3900,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 5,
+      "phase": "continuous_running",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 60.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 48.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 2910,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 2910,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 43.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 31.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 1892,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 1892,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 60.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 48.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 2910,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 2910,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 89.5,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 77.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 4650,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 4650,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 6,
+      "phase": "continuous_running",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 63.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 51.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3090,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3090,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 45.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 33.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2009,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2009,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 63.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 51.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3090,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3090,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 93,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 81 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 4860,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 4860,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 7,
+      "phase": "continuous_running",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 67,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 55 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3300,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3300,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 48,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 35.8 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2145,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2145,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 67,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 55 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3300,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3300,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 97,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 85 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 5100,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 5100,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 8,
+      "phase": "continuous_running",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 65.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 53.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3210,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3210,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 47,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 34.8 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2087,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2087,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 65.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 53.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3210,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3210,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 90,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 78 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 4680,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 4680,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 9,
+      "phase": "continuous_running",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 73.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 61.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3690,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3690,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 52,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 40 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2399,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2399,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 73.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 61.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3690,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3690,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 104,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 92 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 5520,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 5520,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 10,
+      "phase": "continuous_running",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 76.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 64.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3870,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3870,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 54,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 41.9 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2516,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2516,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 76.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 64.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3870,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3870,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 108,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 96 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 5760,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 5760,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 11,
+      "phase": "capacity",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 66.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 54.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3270,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3270,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 47.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 35.4 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2126,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2126,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 66.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 54.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3270,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3270,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 102.5,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 90.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 5430,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 5430,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 12,
+      "phase": "capacity",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 64,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 52 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3120,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3120,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 46,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 33.8 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2028,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2028,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 64,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 52 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3120,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3120,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 94.5,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 82.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 4950,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 4950,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 13,
+      "phase": "capacity",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 71,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 59 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3540,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3540,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 50.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 38.4 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2301,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2301,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 71,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 59 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3540,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3540,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 109,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 97 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 5820,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 5820,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 14,
+      "phase": "capacity",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 73,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 61 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3660,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3660,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 51.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 39.7 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2379,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2379,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 73,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 61 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3660,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3660,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 112.5,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 100.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 6030,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 6030,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 15,
+      "phase": "capacity",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 75,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 63 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3780,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3780,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 53,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 41 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2457,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2457,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 75,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 63 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3780,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3780,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 116,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 104 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 6240,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 6240,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 16,
+      "phase": "race_preparation",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "tempo",
+          "sessionLabel": "Tempopas",
+          "durationMin": 58,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 22 min / Walk 2 min / Run 22 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold det roligt i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Tempoblok 1",
+              "durationSec": 1320,
+              "cue": "Løb i fast, kontrolleret tempo.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 3",
+                "summary": "Arbejd op mod zone 3 med kontrol."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Pause",
+              "durationSec": 120,
+              "cue": "Brug pausen til at falde til ro igen."
+            },
+            {
+              "type": "run",
+              "label": "Tempoblok 2",
+              "durationSec": 1320,
+              "cue": "Løb i fast, kontrolleret tempo.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 3",
+                "summary": "Arbejd op mod zone 3 med kontrol."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold det roligt i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": true,
+            "workBlocks": [
+              {
+                "label": "Tempoblok 1",
+                "durationSec": 1320,
+                "zoneLabel": "Zone 3"
+              },
+              {
+                "label": "Tempoblok 2",
+                "durationSec": 1320,
+                "zoneLabel": "Zone 3"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Pause",
+                "durationSec": 120
+              },
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 52,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 40 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2399,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2399,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 73.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 61.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3690,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3690,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 109,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 97 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 5820,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 5820,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 17,
+      "phase": "race_preparation",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "tempo",
+          "sessionLabel": "Tempopas",
+          "durationMin": 58,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 22 min / Walk 2 min / Run 22 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold det roligt i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Tempoblok 1",
+              "durationSec": 1320,
+              "cue": "Løb i fast, kontrolleret tempo.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 3",
+                "summary": "Arbejd op mod zone 3 med kontrol."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Pause",
+              "durationSec": 120,
+              "cue": "Brug pausen til at falde til ro igen."
+            },
+            {
+              "type": "run",
+              "label": "Tempoblok 2",
+              "durationSec": 1320,
+              "cue": "Løb i fast, kontrolleret tempo.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 3",
+                "summary": "Arbejd op mod zone 3 med kontrol."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold det roligt i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": true,
+            "workBlocks": [
+              {
+                "label": "Tempoblok 1",
+                "durationSec": 1320,
+                "zoneLabel": "Zone 3"
+              },
+              {
+                "label": "Tempoblok 2",
+                "durationSec": 1320,
+                "zoneLabel": "Zone 3"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Pause",
+                "durationSec": 120
+              },
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 52,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 40 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2399,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2399,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 73.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 61.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3690,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3690,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "long",
+          "sessionLabel": "Langt roligt pas",
+          "durationMin": 109,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 97 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Lang rolig blok",
+              "durationSec": 5820,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Lang rolig blok",
+                "durationSec": 5820,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "weekIndex": 18,
+      "phase": "race_preparation",
+      "sessions": [
+        {
+          "sessionIndex": 1,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 65,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 53 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3180,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3180,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 2,
+          "sessionType": "recovery",
+          "sessionLabel": "Recovery-pas",
+          "durationMin": 46.5,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 34.5 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Meget let bevægelse",
+              "durationSec": 2067,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 1-2",
+                "summary": "Hold det meget roligt i zone 1-2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Meget let bevægelse",
+                "durationSec": 2067,
+                "zoneLabel": "Zone 1-2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 3,
+          "sessionType": "easy",
+          "sessionLabel": "Roligt løb",
+          "durationMin": 65,
+          "isKeyWorkout": false,
+          "structureSummary": "Warmup 7 min / Run 53 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "Roligt løb",
+              "durationSec": 3180,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Sigt efter ovre zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": false,
+            "workBlocks": [
+              {
+                "label": "Roligt løb",
+                "durationSec": 3180,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        },
+        {
+          "sessionIndex": 4,
+          "sessionType": "benchmark",
+          "sessionLabel": "halvmaraton måldag",
+          "durationMin": 86,
+          "isKeyWorkout": true,
+          "structureSummary": "Warmup 7 min / Run 74 min / Cooldown 3 min / Walk 2 min",
+          "steps": [
+            {
+              "type": "warmup",
+              "label": "Let jog opvarmning",
+              "durationSec": 420,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold det roligt i zone 2."
+              }
+            },
+            {
+              "type": "run",
+              "label": "halvmaraton måldag",
+              "durationSec": 4440,
+              "cue": "Løb roligt og kontrolleret.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold dig i zone 2."
+              }
+            },
+            {
+              "type": "cooldown",
+              "label": "Let jog ned",
+              "durationSec": 180,
+              "cue": "Hold det meget let fra start til slut.",
+              "heartRateGuidance": {
+                "zoneLabel": "Zone 2",
+                "summary": "Hold det roligt i zone 2."
+              }
+            },
+            {
+              "type": "walk",
+              "label": "Rolig afslutning",
+              "durationSec": 120,
+              "cue": "Gå roligt og få vejret tilbage."
+            }
+          ],
+          "intervalAnalysis": {
+            "isIntervalSession": true,
+            "workBlocks": [
+              {
+                "label": "halvmaraton måldag",
+                "durationSec": 4440,
+                "zoneLabel": "Zone 2"
+              }
+            ],
+            "recoveryBlocks": [
+              {
+                "label": "Rolig afslutning",
+                "durationSec": 120
+              }
+            ],
+            "hasCoachingMismatch": false,
+            "notes": []
+          }
+        }
+      ]
+    }
+  ],
+  "flags": {
+    "hasOddAdjacentIdenticalBlocks": false,
+    "hasVeryShortWorkIntervals": false,
+    "hasVeryShortRecoveries": false,
+    "hasCoachingMismatch": false,
+    "hasSuspiciousSessionShapes": false
+  }
+}

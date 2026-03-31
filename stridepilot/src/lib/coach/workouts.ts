@@ -81,6 +81,7 @@ export interface WorkoutBuildContext {
   intervalRunMin: number;
   walkBreakMin: number;
   repeats: number;
+  isGoalSession?: boolean;
 }
 
 function runnerCategory(profile: RunnerProfile) {
@@ -140,6 +141,21 @@ function readinessBand(profile: RunnerProfile): "low" | "moderate" | "high" {
   return "low";
 }
 
+function isConservativeGoalDayProfile(context: WorkoutBuildContext): boolean {
+  const category = runnerCategory(context.profile);
+  const readiness = readinessBand(context.profile);
+  return (
+    readiness === "low" ||
+    category === "true_beginner" ||
+    category === "run_walk_beginner" ||
+    category === "continuous_beginner" ||
+    context.profile.archetype === "nervous_beginner" ||
+    context.profile.archetype === "returning_runner" ||
+    context.profile.currentRunsPerWeek <= 2 ||
+    context.profile.injurySensitivity >= 4
+  );
+}
+
 function intervalRunCap(context: WorkoutBuildContext): number {
   const readiness = readinessBand(context.profile);
   if (context.goal.goalDistance === "5K") return readiness === "high" ? 32 : readiness === "moderate" ? 26 : 20;
@@ -161,6 +177,32 @@ function benchmarkRunCap(context: WorkoutBuildContext): number {
   if (context.goal.goalDistance === "10K") return 35;
   if (context.goal.goalDistance === "Halvmaraton") return 45;
   return 60;
+}
+
+function goalDayRunTarget(context: WorkoutBuildContext): number {
+  const longRunBase = context.longRunMin;
+  const continuousBase = context.continuousRunMin;
+  const conservative5k10k = isConservativeGoalDayProfile(context);
+
+  if (context.goal.goalDistance === "5K") {
+    if (conservative5k10k) {
+      return roundToHalf(Math.max(25, Math.min(40, Math.max(continuousBase * 1.02, longRunBase * 0.74))));
+    }
+    return roundToHalf(Math.max(20, Math.min(38, Math.max(continuousBase * 0.92, longRunBase * 0.68))));
+  }
+  if (context.goal.goalDistance === "10K") {
+    if (conservative5k10k) {
+      return roundToHalf(Math.max(42, Math.min(78, Math.max(continuousBase * 1.08, longRunBase * 0.9))));
+    }
+    if (context.goal.goalIntent === "finish" || context.goal.goalIntent === "finish_comfortably") {
+      return roundToHalf(Math.max(39, Math.min(74, Math.max(continuousBase * 1.02, longRunBase * 0.86))));
+    }
+    return roundToHalf(Math.max(38, Math.min(72, Math.max(continuousBase, longRunBase * 0.84))));
+  }
+  if (context.goal.goalDistance === "Halvmaraton") {
+    return roundToHalf(Math.max(74, Math.min(145, Math.max(continuousBase * 1.24, longRunBase * 0.88))));
+  }
+  return roundToHalf(Math.max(126, Math.min(225, Math.max(continuousBase * 1.48, longRunBase * 0.94))));
 }
 
 function roundToHalf(value: number): number {
@@ -220,6 +262,25 @@ function baseSession(
     effortGuidance,
     estimatedLoad: estimateSessionLoad(durationMin, type, context.profile),
   };
+}
+
+function buildGoalDayWorkout(context: WorkoutBuildContext, type: WorkoutType): WorkoutSession {
+  const targetRun = goalDayRunTarget(context);
+  const structure: WorkoutStructureSegment[] = [
+    ...warmupSegments(context, false),
+    { type: "run", label: `${distanceLabel(context.goal)} måldag`, durationMin: targetRun },
+    ...cooldownSegments(context),
+  ];
+
+  return baseSession(
+    context,
+    type,
+    `${distanceLabel(context.goal)} måldag`,
+    "Selve måldagen, hvor planen kulminerer i en samlet indsats, der matcher distancen og den opbygning du har lavet.",
+    `Lade måldagen være en troværdig kulmination mod ${distanceLabel(context.goal)} frem for bare endnu et kort taper-pas.`,
+    "Start kontrolleret, find rytmen tidligt, og lad indsatsen udvikle sig roligt gennem dagen.",
+    structure,
+  );
 }
 
 export function buildRunWalkWorkout(context: WorkoutBuildContext): WorkoutSession {
@@ -428,6 +489,7 @@ export function buildProgressionWorkout(context: WorkoutBuildContext): WorkoutSe
 }
 
 export function buildRaceSpecificWorkout(context: WorkoutBuildContext): WorkoutSession {
+  if (context.isGoalSession) return buildGoalDayWorkout(context, "race-specific");
   const blockDuration = roundToHalf(Math.min(Math.max(8, context.intervalRunMin * 1.5), tempoRunCap(context) * 0.6));
   const structure: WorkoutStructureSegment[] = [
     ...warmupSegments(context, true),
@@ -465,6 +527,7 @@ export function buildRecoveryWorkout(context: WorkoutBuildContext): WorkoutSessi
 }
 
 export function buildBenchmarkWorkout(context: WorkoutBuildContext): WorkoutSession {
+  if (context.isGoalSession) return buildGoalDayWorkout(context, "benchmark");
   const benchmarkDuration = Math.min(Math.max(12, context.continuousRunMin), benchmarkRunCap(context));
   const structure: WorkoutStructureSegment[] = [
     ...warmupSegments(context, true),

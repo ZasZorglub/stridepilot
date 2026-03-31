@@ -1,0 +1,537 @@
+{
+  "caseId": "engine-v2-09-intermediate-half-target",
+  "name": "Engine V2 09 – Intermediate – Half marathon target time",
+  "profile": {
+    "runnerLevel": "intermediate",
+    "goalDistance": "half_marathon",
+    "goalType": "target_time",
+    "timelineWeeks": 16,
+    "sessionsPerWeek": 4,
+    "currentContinuousMin": 75,
+    "longestRecentRunMin": 95,
+    "availableTrainingDays": [
+      "monday",
+      "wednesday",
+      "friday",
+      "sunday"
+    ],
+    "preferredLongRunDay": "sunday"
+  },
+  "summary": {
+    "backboneType": "long_run",
+    "totalWeeks": 16,
+    "phases": [
+      {
+        "phase": "base",
+        "startWeek": 1,
+        "endWeek": 4
+      },
+      {
+        "phase": "build",
+        "startWeek": 5,
+        "endWeek": 8
+      },
+      {
+        "phase": "specific",
+        "startWeek": 9,
+        "endWeek": 12
+      },
+      {
+        "phase": "peak",
+        "startWeek": 13,
+        "endWeek": 14
+      },
+      {
+        "phase": "taper",
+        "startWeek": 15,
+        "endWeek": 15
+      },
+      {
+        "phase": "race_week",
+        "startWeek": 16,
+        "endWeek": 16
+      }
+    ],
+    "stepBackWeeks": [
+      4,
+      7,
+      10,
+      13
+    ],
+    "taperWeeks": [
+      15
+    ],
+    "peakWeeklyVolume": 273,
+    "peakLongRun": 101.5,
+    "peakContinuousRun": 87.5,
+    "maxWeeklyVolumeIncreasePct": 9.7,
+    "maxLongRunIncreasePct": 8.2,
+    "workoutTypeCounts": {
+      "easy": 16,
+      "long": 15,
+      "recovery": 16,
+      "intervals": 9,
+      "tempo": 0,
+      "racePace": 7,
+      "runWalk": 0
+    }
+  },
+  "curves": {
+    "continuousCurve": [
+      76,
+      77,
+      78.5,
+      77.5,
+      79,
+      80.5,
+      79.5,
+      81.5,
+      83.5,
+      82.5,
+      84.5,
+      86.5,
+      85.5,
+      87.5,
+      79,
+      75
+    ],
+    "longRunCurve": [
+      89,
+      91.5,
+      94,
+      86.5,
+      90,
+      93.5,
+      86.5,
+      91.5,
+      96.5,
+      87,
+      94,
+      101.5,
+      91.5,
+      99,
+      73.5,
+      45.5
+    ],
+    "weeklyVolumeCurve": [
+      231.5,
+      237.5,
+      244,
+      223,
+      234,
+      245.5,
+      225,
+      240.5,
+      256,
+      229,
+      250,
+      273,
+      243.5,
+      267,
+      195.5,
+      119
+    ],
+    "intervalVolumeCurve": [
+      6,
+      6,
+      6,
+      4.5,
+      6,
+      8,
+      6,
+      8,
+      10.5,
+      8,
+      10.5,
+      13.5,
+      10.5,
+      13.5,
+      8,
+      3.5
+    ]
+  },
+  "weeklyMetrics": [
+    {
+      "weekNumber": 1,
+      "phase": "base",
+      "weeklyVolume": 231.5,
+      "longRun": 89,
+      "intervalVolume": 6,
+      "continuousTarget": 76,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": false,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "intervals",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        42,
+        32.5,
+        43.5,
+        113.5
+      ]
+    },
+    {
+      "weekNumber": 2,
+      "phase": "base",
+      "weeklyVolume": 237.5,
+      "longRun": 91.5,
+      "intervalVolume": 6,
+      "continuousTarget": 77,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": false,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "intervals",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        43,
+        33.5,
+        45,
+        116
+      ]
+    },
+    {
+      "weekNumber": 3,
+      "phase": "base",
+      "weeklyVolume": 244,
+      "longRun": 94,
+      "intervalVolume": 6,
+      "continuousTarget": 78.5,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": false,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "intervals",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        44,
+        34,
+        46,
+        120
+      ]
+    },
+    {
+      "weekNumber": 4,
+      "phase": "base",
+      "weeklyVolume": 223,
+      "longRun": 86.5,
+      "intervalVolume": 4.5,
+      "continuousTarget": 77.5,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": true,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "intervals",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        40.5,
+        31,
+        42,
+        109.5
+      ]
+    },
+    {
+      "weekNumber": 5,
+      "phase": "build",
+      "weeklyVolume": 234,
+      "longRun": 90,
+      "intervalVolume": 6,
+      "continuousTarget": 79,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": false,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "intervals",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        42.5,
+        33,
+        44,
+        114.5
+      ]
+    },
+    {
+      "weekNumber": 6,
+      "phase": "build",
+      "weeklyVolume": 245.5,
+      "longRun": 93.5,
+      "intervalVolume": 8,
+      "continuousTarget": 80.5,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": false,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "intervals",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        44,
+        34.5,
+        46,
+        121
+      ]
+    },
+    {
+      "weekNumber": 7,
+      "phase": "build",
+      "weeklyVolume": 225,
+      "longRun": 86.5,
+      "intervalVolume": 6,
+      "continuousTarget": 79.5,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": true,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "intervals",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        40.5,
+        31.5,
+        42.5,
+        110.5
+      ]
+    },
+    {
+      "weekNumber": 8,
+      "phase": "build",
+      "weeklyVolume": 240.5,
+      "longRun": 91.5,
+      "intervalVolume": 8,
+      "continuousTarget": 81.5,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": false,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "intervals",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        43,
+        33.5,
+        45,
+        119
+      ]
+    },
+    {
+      "weekNumber": 9,
+      "phase": "specific",
+      "weeklyVolume": 256,
+      "longRun": 96.5,
+      "intervalVolume": 10.5,
+      "continuousTarget": 83.5,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": false,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "race_pace",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        45.5,
+        36,
+        47.5,
+        127
+      ]
+    },
+    {
+      "weekNumber": 10,
+      "phase": "specific",
+      "weeklyVolume": 229,
+      "longRun": 87,
+      "intervalVolume": 8,
+      "continuousTarget": 82.5,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": true,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "race_pace",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        41,
+        32,
+        43,
+        113
+      ]
+    },
+    {
+      "weekNumber": 11,
+      "phase": "specific",
+      "weeklyVolume": 250,
+      "longRun": 94,
+      "intervalVolume": 10.5,
+      "continuousTarget": 84.5,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": false,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "race_pace",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        44.5,
+        35,
+        46.5,
+        124
+      ]
+    },
+    {
+      "weekNumber": 12,
+      "phase": "specific",
+      "weeklyVolume": 273,
+      "longRun": 101.5,
+      "intervalVolume": 13.5,
+      "continuousTarget": 86.5,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": false,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "race_pace",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        48.5,
+        38,
+        50.5,
+        136
+      ]
+    },
+    {
+      "weekNumber": 13,
+      "phase": "peak",
+      "weeklyVolume": 243.5,
+      "longRun": 91.5,
+      "intervalVolume": 10.5,
+      "continuousTarget": 85.5,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": true,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "race_pace",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        43,
+        34,
+        45.5,
+        121
+      ]
+    },
+    {
+      "weekNumber": 14,
+      "phase": "peak",
+      "weeklyVolume": 267,
+      "longRun": 99,
+      "intervalVolume": 13.5,
+      "continuousTarget": 87.5,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": false,
+      "isTaperWeek": false,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "race_pace",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        47.5,
+        37.5,
+        49.5,
+        132.5
+      ]
+    },
+    {
+      "weekNumber": 15,
+      "phase": "taper",
+      "weeklyVolume": 195.5,
+      "longRun": 73.5,
+      "intervalVolume": 8,
+      "continuousTarget": 79,
+      "sessionsPerWeek": 4,
+      "isStepBackWeek": false,
+      "isTaperWeek": true,
+      "isRaceWeek": false,
+      "workoutTypes": [
+        "easy",
+        "intervals",
+        "recovery",
+        "long"
+      ],
+      "workoutDurations": [
+        35,
+        27.5,
+        36.5,
+        96.5
+      ]
+    },
+    {
+      "weekNumber": 16,
+      "phase": "race_week",
+      "weeklyVolume": 119,
+      "longRun": 45.5,
+      "intervalVolume": 3.5,
+      "continuousTarget": 75,
+      "sessionsPerWeek": 3,
+      "isStepBackWeek": false,
+      "isTaperWeek": false,
+      "isRaceWeek": true,
+      "workoutTypes": [
+        "easy",
+        "recovery",
+        "race_pace"
+      ],
+      "workoutDurations": [
+        16,
+        16,
+        51
+      ]
+    }
+  ]
+}

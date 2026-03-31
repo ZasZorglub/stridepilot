@@ -1,9 +1,21 @@
 import type { ProgressionCurves, RunnerClassification, ValidationIssue, WeeklyStructure } from "./models";
 
+const DAY_ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
+
 function maxIncrease(values: number[]): number {
   let max = 0;
   for (let i = 1; i < values.length; i += 1) {
     max = Math.max(max, values[i] - values[i - 1]);
+  }
+  return max;
+}
+
+function maxIncreaseRatio(values: number[]): number {
+  let max = 0;
+  for (let i = 1; i < values.length; i += 1) {
+    const previous = values[i - 1];
+    if (previous <= 0) continue;
+    max = Math.max(max, (values[i] - previous) / previous);
   }
   return max;
 }
@@ -35,8 +47,8 @@ export function validateProgressionCurves(curves: ProgressionCurves, classificat
     issues.push({ severity: "important", area: "progression", message: "Long run curve jumps too aggressively between weeks." });
   }
 
-  if (maxIncrease(curves.weeklyVolumeCurve) > 35) {
-    issues.push({ severity: "important", area: "progression", message: "Weekly volume curve jumps too aggressively between weeks." });
+  if (maxIncreaseRatio(curves.weeklyVolumeCurve) > 0.085) {
+    issues.push({ severity: "important", area: "progression", message: "Weekly volume curve jumps more than the engine's safe progression band." });
   }
 
   return issues;
@@ -55,6 +67,15 @@ export function validateWeeklyStructures(structures: WeeklyStructure[], classifi
     }
     if ((classification.traits.runnerLevel === "true_beginner" || classification.traits.runnerLevel === "beginner_plus") && structure.intensityTarget > 0.35 && structure.phase === "base") {
       issues.push({ severity: "important", area: "safety", message: `Beginner-oriented week ${structure.weekIndex} carries too much early intensity.` });
+    }
+    const recoverySlot = structure.slots.find((slot) => slot.role === "recovery");
+    const longRunSlot = structure.slots.find((slot) => slot.role === "long_run");
+    if (recoverySlot && longRunSlot) {
+      const recoveryDay = DAY_ORDER.indexOf(recoverySlot.day);
+      const longRunDay = DAY_ORDER.indexOf(longRunSlot.day);
+      if (recoveryDay > longRunDay) {
+        issues.push({ severity: "important", area: "structure", message: `Week ${structure.weekIndex} places recovery after the long run instead of before it.` });
+      }
     }
     if (structure.longRunTargetMin >= structure.weeklyVolumeTargetMin * 0.72) {
       issues.push({ severity: "minor", area: "structure", message: `Week ${structure.weekIndex} is too dominated by the long run relative to total weekly volume.` });

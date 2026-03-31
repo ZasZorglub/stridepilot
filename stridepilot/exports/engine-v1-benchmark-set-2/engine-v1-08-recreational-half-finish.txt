@@ -1,0 +1,42 @@
+StridePilot Engine V1 Benchmark Export
+
+Engine V1 08 – Recreational – Half marathon finish
+
+Profile
+- runnerLevel: recreational
+- goalDistance: half_marathon
+- goalType: finish
+- timelineWeeks: 16
+- sessionsPerWeek: 4
+- currentContinuousMin: 60
+- longestRecentRunMin: 80
+- preferredLongRunDay: sunday
+
+Engine summary
+- backboneType: long_run
+- phases: base[1-4] | build[5-8] | specific[9-11] | peak[12-13] | taper[14-15] | race_week[16-16]
+- stepBackWeeks: 4, 7, 10, 13
+- taperWeeks: 14, 15
+- peakWeeklyVolume: 254.5 min
+- peakLongRun: 88.5 min
+- peakContinuousRun: 79 min
+- maxWeeklyVolumeIncreasePct: 10.3%
+- maxLongRunIncreasePct: 10.3%
+
+Weekly progression metrics
+- W1: phase=base, volume=238.5 min, longRun=74.5 min, intervalVolume=6 min, continuous=62.5 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:12 | easy:60.5 | recovery:31.5 | long:140.5
+- W2: phase=base, volume=246.5 min, longRun=77 min, intervalVolume=6.5 min, continuous=65 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:12 | easy:62 | recovery:32.5 | long:145.5
+- W3: phase=base, volume=254.5 min, longRun=79.5 min, intervalVolume=6.5 min, continuous=67.5 min, sessions=4, stepBack=false, taper=false, race=false, workouts=easy:12 | easy:64.5 | recovery:33.5 | long:150
+- W4: phase=base, volume=230.5 min, longRun=72 min, intervalVolume=6 min, continuous=65.5 min, sessions=4, stepBack=true, taper=false, race=false, workouts=easy:12 | easy:58 | recovery:30.5 | long:136
+- W5: phase=build, volume=226.5 min, longRun=75.5 min, intervalVolume=11.5 min, continuous=68 min, sessions=4, stepBack=false, taper=false, race=false, workouts=intervals:12 | easy:50 | recovery:28 | long:137
+- W6: phase=build, volume=237 min, longRun=79 min, intervalVolume=12 min, continuous=71 min, sessions=4, stepBack=false, taper=false, race=false, workouts=intervals:12 | easy:52.5 | recovery:29 | long:143.5
+- W7: phase=build, volume=216 min, longRun=72 min, intervalVolume=11 min, continuous=69 min, sessions=4, stepBack=true, taper=false, race=false, workouts=intervals:12 | easy:48 | recovery:26.5 | long:130.5
+- W8: phase=build, volume=232.5 min, longRun=77.5 min, intervalVolume=12 min, continuous=72 min, sessions=4, stepBack=false, taper=false, race=false, workouts=intervals:12 | easy:51.5 | recovery:28.5 | long:140.5
+- W9: phase=specific, volume=232.5 min, longRun=81.5 min, intervalVolume=18.5 min, continuous=75 min, sessions=4, stepBack=false, taper=false, race=false, workouts=intervals:18.5 | easy:44 | recovery:26.5 | long:143.5
+- W10: phase=specific, volume=204.5 min, longRun=71.5 min, intervalVolume=16.5 min, continuous=73 min, sessions=4, stepBack=true, taper=false, race=false, workouts=intervals:16.5 | easy:38.5 | recovery:23.5 | long:126
+- W11: phase=specific, volume=225 min, longRun=78.5 min, intervalVolume=18 min, continuous=76 min, sessions=4, stepBack=false, taper=false, race=false, workouts=intervals:18 | easy:42.5 | recovery:25.5 | long:139.5
+- W12: phase=peak, volume=247.5 min, longRun=86.5 min, intervalVolume=17.5 min, continuous=79 min, sessions=4, stepBack=false, taper=false, race=false, workouts=intervals:17.5 | easy:49 | recovery:28.5 | long:153
+- W13: phase=peak, volume=218.5 min, longRun=76.5 min, intervalVolume=15.5 min, continuous=77 min, sessions=4, stepBack=true, taper=false, race=false, workouts=intervals:15.5 | easy:43 | recovery:25.5 | long:134.5
+- W14: phase=taper, volume=182 min, longRun=63.5 min, intervalVolume=7.5 min, continuous=67 min, sessions=4, stepBack=false, taper=true, race=false, workouts=intervals:12 | easy:41 | recovery:22 | long:111.5
+- W15: phase=taper, volume=182 min, longRun=63.5 min, intervalVolume=7.5 min, continuous=60 min, sessions=4, stepBack=false, taper=true, race=false, workouts=intervals:12 | easy:41 | recovery:22 | long:111.5
+- W16: phase=race_week, volume=136 min, longRun=47.5 min, intervalVolume=0 min, continuous=60 min, sessions=3, stepBack=false, taper=false, race=true, workouts=easy:24 | race_pace:33.5 | recovery:29

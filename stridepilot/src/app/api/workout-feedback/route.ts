@@ -7,8 +7,13 @@ import { adaptPlanFromFeedback, CapabilityState, createInitialCapabilityState, s
 import { WorkoutFeedback as CoachWorkoutFeedback } from "@/lib/coach/capability";
 import { buildFeedbackResponseCopy } from "@/lib/coach/explanations";
 import { TrainingPlan } from "@/lib/types";
+import { handleVNextAdaptivePassRequest } from "@/lib/engine-vnext/app/routeHandlers";
 
 interface FeedbackBody {
+  engineVersion?: "vnext";
+  plan?: import("@/lib/engine-v2/models").EnginePlan;
+  feedback?: import("@/lib/engine-v2/models").VNextAdaptationFeedback;
+  persistedPlanId?: string;
   profileId?: string;
   workoutSessionId?: string;
   quickFeedback?: "very_easy" | "good" | "hard" | "too_hard";
@@ -171,6 +176,13 @@ export async function POST(req: Request) {
     const demoModeEnabled =
       process.env.NODE_ENV !== "production" || process.env.ENABLE_DEMO_MODE === "true" || process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true";
     const body = (await req.json()) as FeedbackBody;
+    if (body.engineVersion === "vnext") {
+      const result = await handleVNextAdaptivePassRequest(body, {
+        persist: true,
+        userId: session?.userId ?? null,
+      });
+      return NextResponse.json(result.body, { status: result.status });
+    }
     const demoMode = Boolean(body.demoMode && demoModeEnabled);
 
     if (!body.profileId || !body.workoutSessionId) {
@@ -372,6 +384,29 @@ export async function POST(req: Request) {
       currentSessionId: workoutSession.id,
       sessionStepIds: stepIdsBySession,
     });
+
+    const nextCurrentWeek = Math.min(workoutSession.plan.weeks, Math.max(workoutSession.week, workoutSession.week + (completionPct >= 80 ? 1 : 0)));
+
+    await prisma.$transaction([
+      prisma.trainingPlan.update({
+        where: { id: workoutSession.planId },
+        data: {
+          currentWeek: nextCurrentWeek,
+          rationaleJson: mergedPlan.rationale,
+        },
+      }),
+      prisma.trainingPlanAdaptation.create({
+        data: {
+          planId: workoutSession.planId,
+          mode: adapted.capability.lastAdaptationMode ?? "hold",
+          reason: adapted.capability.lastAdaptationReason ?? adapted.rationale.reason,
+          runnerFocus: adapted.rationale.runnerFocus,
+          changeSummaryJson: adapted.rationale.changeSummary,
+          weekNumber: workoutSession.week,
+          triggeredBySessionId: workoutSession.id,
+        },
+      }),
+    ]);
 
     return NextResponse.json({
       saved: true,

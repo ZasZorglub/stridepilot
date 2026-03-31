@@ -3,12 +3,6 @@
 :root {
   --font-sans: "Raleway", "Avenir Next", "Segoe UI", sans-serif;
   --font-mono: "Menlo", "Consolas", monospace;
-  --background: #ffffff;
-  --foreground: #111111;
-  --muted: #4b5563;
-}
-
-.dark {
   --background: #222222;
   --foreground: #ffffff;
   --muted: #9ca3af;
@@ -22,26 +16,24 @@
 
 html,
 body {
+  min-height: 100%;
   max-width: 100vw;
   overflow-x: hidden;
+  background: #0b0f14;
 }
 
 html {
   background: #0b0f14;
+  color-scheme: dark;
+  overscroll-behavior-y: none;
 }
 
 body {
   min-height: 100dvh;
   font-family: var(--font-sans);
   line-height: 1.45;
-  background: var(--background);
+  background: #0b0f14;
   color: var(--foreground);
-}
-
-@media (prefers-color-scheme: light) {
-  html {
-    background: #eef3f7;
-  }
 }
 
 code {

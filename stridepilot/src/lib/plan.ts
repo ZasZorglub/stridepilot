@@ -59,6 +59,10 @@ function toCoachGoalConfig(goal: Goal, profile: RunnerProfile): CoachGoalConfig 
     startDate: goal.startDate,
     targetTime: goal.targetTime,
     preferredTrainingDays: mapPreferredDays(goal.availableTrainingDays),
+    preferredLongRunDay:
+      goal.preferredLongRunDay === "both" || goal.preferredLongRunDay === "flexible" || !goal.preferredLongRunDay
+        ? "flexible"
+        : goal.preferredLongRunDay,
   };
 }
 

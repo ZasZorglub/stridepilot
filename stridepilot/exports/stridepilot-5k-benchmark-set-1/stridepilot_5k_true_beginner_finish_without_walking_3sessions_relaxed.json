@@ -1,0 +1,305 @@
+{
+  "benchmarkId": "benchmark-02-true-beginner-5k-finish-relaxed",
+  "fileStem": "stridepilot_5k_true_beginner_finish_without_walking_3sessions_relaxed",
+  "runnerProfile": {
+    "runnerType": "true_beginner",
+    "currentLevel": "true_beginner",
+    "sessionsPerWeek": [
+      2,
+      2,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      2,
+      2
+    ],
+    "goal": "5K finish without walking",
+    "goalType": "finish_without_walking",
+    "ambition": "relaxed",
+    "timelineWeeks": 14,
+    "profileSummary": [
+      "Current continuous ability: 1 min",
+      "Longest recent run: 12 min",
+      "Available days: Tuesday, Thursday, Sunday",
+      "Preferred long run day: Sunday"
+    ]
+  },
+  "programStructure": {
+    "numberOfWeeks": 15,
+    "phases": [
+      {
+        "phase": "Base",
+        "startWeek": 1,
+        "endWeek": 5
+      },
+      {
+        "phase": "Build",
+        "startWeek": 6,
+        "endWeek": 10
+      },
+      {
+        "phase": "Specific",
+        "startWeek": 11,
+        "endWeek": 12
+      },
+      {
+        "phase": "Taper",
+        "startWeek": 13,
+        "endWeek": 14
+      },
+      {
+        "phase": "Race week",
+        "startWeek": 15,
+        "endWeek": 15
+      }
+    ],
+    "stepBackWeeks": [
+      4,
+      7,
+      10
+    ],
+    "taperWeeks": [
+      13,
+      14
+    ],
+    "raceWeek": 15
+  },
+  "weeklyProgression": [
+    {
+      "weekNumber": 1,
+      "phase": "Base",
+      "sessions": 2,
+      "totalWeeklyTimeMin": 40,
+      "longRunDurationMin": 20,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 20
+    },
+    {
+      "weekNumber": 2,
+      "phase": "Base",
+      "sessions": 2,
+      "totalWeeklyTimeMin": 40,
+      "longRunDurationMin": 20,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 20
+    },
+    {
+      "weekNumber": 3,
+      "phase": "Base",
+      "sessions": 3,
+      "totalWeeklyTimeMin": 60,
+      "longRunDurationMin": 20,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 40
+    },
+    {
+      "weekNumber": 4,
+      "phase": "Base",
+      "sessions": 3,
+      "totalWeeklyTimeMin": 60,
+      "longRunDurationMin": 20,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 40
+    },
+    {
+      "weekNumber": 5,
+      "phase": "Base",
+      "sessions": 3,
+      "totalWeeklyTimeMin": 60,
+      "longRunDurationMin": 20,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 40
+    },
+    {
+      "weekNumber": 6,
+      "phase": "Build",
+      "sessions": 3,
+      "totalWeeklyTimeMin": 60,
+      "longRunDurationMin": 20,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 40
+    },
+    {
+      "weekNumber": 7,
+      "phase": "Build",
+      "sessions": 3,
+      "totalWeeklyTimeMin": 60,
+      "longRunDurationMin": 20,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 40
+    },
+    {
+      "weekNumber": 8,
+      "phase": "Build",
+      "sessions": 3,
+      "totalWeeklyTimeMin": 67.5,
+      "longRunDurationMin": 22.5,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 45
+    },
+    {
+      "weekNumber": 9,
+      "phase": "Build",
+      "sessions": 3,
+      "totalWeeklyTimeMin": 67.5,
+      "longRunDurationMin": 22.5,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 45
+    },
+    {
+      "weekNumber": 10,
+      "phase": "Build",
+      "sessions": 3,
+      "totalWeeklyTimeMin": 67.5,
+      "longRunDurationMin": 22.5,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 45
+    },
+    {
+      "weekNumber": 11,
+      "phase": "Specific",
+      "sessions": 3,
+      "totalWeeklyTimeMin": 87,
+      "longRunDurationMin": 31,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 56
+    },
+    {
+      "weekNumber": 12,
+      "phase": "Specific",
+      "sessions": 3,
+      "totalWeeklyTimeMin": 89,
+      "longRunDurationMin": 33,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 56
+    },
+    {
+      "weekNumber": 13,
+      "phase": "Taper",
+      "sessions": 2,
+      "totalWeeklyTimeMin": 63,
+      "longRunDurationMin": 34,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 29
+    },
+    {
+      "weekNumber": 14,
+      "phase": "Taper",
+      "sessions": 2,
+      "totalWeeklyTimeMin": 46,
+      "longRunDurationMin": 23,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 23
+    },
+    {
+      "weekNumber": 15,
+      "phase": "Race week",
+      "sessions": 2,
+      "totalWeeklyTimeMin": 58,
+      "longRunDurationMin": 0,
+      "intervalType": null,
+      "intervalTotalTimeMin": 0,
+      "easyRunTotalTimeMin": 58
+    }
+  ],
+  "progressionMetrics": {
+    "longestContinuousRunProgressionMin": [
+      1,
+      3.5,
+      3.5,
+      1.5,
+      4,
+      6.5,
+      4.5,
+      7,
+      9.5,
+      7.5,
+      7.5,
+      10,
+      11.5,
+      16,
+      11
+    ],
+    "longRunProgressionMin": [
+      14.5,
+      16,
+      17.5,
+      15.5,
+      17,
+      19,
+      16.5,
+      18,
+      20,
+      19,
+      21,
+      23,
+      31,
+      24.5,
+      22.5
+    ],
+    "weeklyVolumeProgressionMin": [
+      39,
+      40.5,
+      44,
+      41,
+      42.5,
+      46,
+      41.5,
+      45,
+      48.5,
+      46,
+      50,
+      54,
+      74,
+      59,
+      54
+    ],
+    "intervalProgressionMin": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      3,
+      3,
+      3,
+      4,
+      4,
+      5,
+      5,
+      2,
+      2,
+      3
+    ]
+  },
+  "safetyMetrics": {
+    "biggestWeeklyVolumeIncreasePct": 37.03703703703704,
+    "biggestLongRunIncreasePct": 34.78260869565217,
+    "numberOfStepBackWeeks": 3,
+    "taperLengthWeeks": 2,
+    "startingLoadMin": 39,
+    "peakLoadMin": 74
+  }
+}

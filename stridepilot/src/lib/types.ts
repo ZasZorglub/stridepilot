@@ -1,6 +1,13 @@
 export type ActivityLevel = "meget_lav" | "lav" | "moderat" | "høj" | "meget_høj";
 export type GoalDistance = "5K" | "10K" | "Halvmaraton" | "Marathon";
 export type GoalType = "complete" | "run_without_walking" | "target_time" | "pr";
+export type PlanAmbition = "gentle" | "standard" | "ambitious";
+export type RecommendationPlanLevel =
+  | "very_easy"
+  | "easy"
+  | "realistic"
+  | "slightly_ambitious"
+  | "ambitious";
 export type GuidancePreference = "simple" | "flexible" | "performance_oriented";
 export type CurrentRunningAbility =
   | "helt_ny"
@@ -34,6 +41,8 @@ export interface RunnerProfile {
   typicalWorkoutMinutes?: number;
   otherTraining?: string;
   preferredGuidance?: GuidancePreference;
+  pulseGuidanceEnabled?: boolean;
+  maxHeartRate?: number | null;
 }
 
 export interface RunnerProfileInsights {
@@ -74,15 +83,59 @@ export interface Goal {
   targetTime?: string;
   targetPaceSecPerKm?: number;
   availableTrainingDays?: WorkoutSession["dayOfWeek"][];
+  preferredLongRunDay?: "saturday" | "sunday" | "both" | "flexible";
+}
+
+export interface PlanRecommendationOption {
+  mode: PlanAmbition;
+  label: string;
+  durationWeeks: number;
+  goalDate: string;
+  sessionsPerWeek: number;
+  progressionMode: "conservative" | "standard" | "ambitious";
+  realism: "high_confidence" | "realistic" | "stretch" | "capped";
+  warnings: string[];
+  headline: string;
+  summary: string;
+  planLevel: RecommendationPlanLevel;
+  planLevelLabel: string;
+  planLevelExplanation: string;
+  wasAdjusted: boolean;
+  adjustmentMessage?: string;
+}
+
+export interface PlanRecommendation {
+  recommendedDurationWeeks: number;
+  minDurationWeeks: number;
+  maxDurationWeeks: number;
+  recommendedSessionsPerWeek: number;
+  startingSessionsPerWeek: number;
+  peakSessionsPerWeek: number;
+  progressionMode: "conservative" | "standard" | "ambitious";
+  realism: "high_confidence" | "realistic" | "stretch" | "capped";
+  warnings: string[];
+  summary: string;
+  headline: string;
+  rationaleTags: string[];
+  recommendedOption: PlanRecommendationOption;
+  selectedPathVariant: PlanAmbition;
+  selectedOption: PlanRecommendationOption;
+  options: PlanRecommendationOption[];
 }
 
 export type WorkoutStepType = "warmup" | "run" | "walk" | "cooldown";
+
+export interface WorkoutHeartRateGuidance {
+  zoneLabel: string;
+  summary: string;
+}
 
 export interface WorkoutStep {
   type: WorkoutStepType;
   label: string;
   durationSec: number;
   cue: string;
+  heartRateGuidance?: WorkoutHeartRateGuidance;
 }
 
 export interface WorkoutSession {
@@ -152,4 +205,40 @@ export interface SavedWorkoutSessionFeedback {
   painLevel: number;
   notes?: string;
   submittedAt: string;
+}
+
+export interface WeeklyHistoryPoint {
+  week: number;
+  completedWorkouts: number;
+  plannedWorkouts: number;
+  completedMinutes: number;
+  longRunMinutes: number;
+  longestContinuousRunMinutes: number;
+}
+
+export interface PlanHistorySummary {
+  currentWeek: number;
+  completedWorkouts: number;
+  totalWorkouts: number;
+  progressPct: number;
+  weeklyVolumeHistory: Array<{ week: number; minutes: number }>;
+  longRunHistory: Array<{ week: number; minutes: number }>;
+  weeklyHistory: WeeklyHistoryPoint[];
+}
+
+export interface SavedPlanAdaptation {
+  id: string;
+  createdAt: string;
+  mode: "hold" | "down_shift" | "recovery_microcycle" | "resume_build" | "progress";
+  reason: string;
+  runnerFocus?: string;
+  changeSummary: string[];
+  weekNumber?: number;
+  triggeredBySessionId?: string;
+}
+
+export interface SavedProfileNote {
+  id: string;
+  createdAt: string;
+  text: string;
 }

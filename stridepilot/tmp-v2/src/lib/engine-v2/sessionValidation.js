@@ -74,6 +74,12 @@ function validateWeeklySessions(sessions, selections, structure, classification,
     if (longRun && longRun.durationMin < maxDuration) {
         issues.push({ severity: "important", area: "structure", message: "Long run is not clearly the week's longest session.", sessionId: longRun.id, weekIndex: structure.weekIndex });
     }
+    if (structure.isRaceWeek) {
+        const nonLongStress = sessions.filter((session) => session.role !== "long_run" && (session.family === "race_specific" || session.family === "intervals" || session.family === "hill_reps"));
+        if (nonLongStress.length > 0) {
+            issues.push({ severity: "important", area: "progression", message: "Race week still contains sessions that feel too heavy or too normal-week-like.", weekIndex: structure.weekIndex });
+        }
+    }
     if (structure.totalRuns <= 2 && sessions.filter((session) => session.role === "quality").length > 1) {
         issues.push({ severity: "important", area: "safety", message: "Low-frequency week contains too much quality.", weekIndex: structure.weekIndex });
     }
@@ -98,6 +104,12 @@ function validateWeeklySessions(sessions, selections, structure, classification,
         structure.continuousTargetMin >= 8 &&
         runWalkSessions.length >= 3) {
         issues.push({ severity: "important", area: "progression", message: "Beginner week stays too fully run/walk despite readiness to introduce more continuous running.", weekIndex: structure.weekIndex });
+    }
+    if (planType === "10k_finish" &&
+        structure.weekIndex <= 2 &&
+        structure.continuousTargetMin <= 12 &&
+        sessions.some((session) => session.family === "steady_run" || session.family === "tempo_run" || session.family === "intervals")) {
+        issues.push({ severity: "important", area: "specificity", message: "Low-capacity 10K finish week is too advanced too early.", weekIndex: structure.weekIndex });
     }
     if (planType.includes("marathon")) {
         const supportDurations = sessions
