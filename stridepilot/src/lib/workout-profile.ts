@@ -18,6 +18,10 @@ export interface WorkoutCardRepresentation {
   visualProfile: WorkoutProfileSegment[] | null;
 }
 
+function sameVisualSemantics(left: WorkoutProfileSegment, right: WorkoutProfileSegment): boolean {
+  return left.stepType === right.stepType && left.level === right.level;
+}
+
 function stepProfileLevel(step: WorkoutStep): WorkoutProfileLevel {
   if (step.type === "walk") return "rest";
   if (step.type === "warmup" || step.type === "cooldown") return "easy";
@@ -112,18 +116,28 @@ function deriveShortStructureSummary(session: WorkoutSession, locale: "da" | "en
   return fallbackStructureSummary(relevantSteps, locale);
 }
 
-function deriveVisualProfile(session: WorkoutSession, maxSegments: number): WorkoutProfileSegment[] | null {
-  const segments = session.steps
+function deriveVisualProfile(session: WorkoutSession): WorkoutProfileSegment[] | null {
+  const groupedSegments = session.steps
     .filter((step) => step.durationSec > 0)
-    .map((step) => ({
-      level: stepProfileLevel(step),
-      durationSec: step.durationSec,
-      stepType: step.type,
-    }));
+    .reduce<WorkoutProfileSegment[]>((segments, step) => {
+      const nextSegment: WorkoutProfileSegment = {
+        level: stepProfileLevel(step),
+        durationSec: step.durationSec,
+        stepType: step.type,
+      };
 
-  if (segments.length === 0) return null;
-  if (segments.length > maxSegments) return null;
-  return segments;
+      const previous = segments[segments.length - 1];
+      if (previous && sameVisualSemantics(previous, nextSegment)) {
+        previous.durationSec += nextSegment.durationSec;
+        return segments;
+      }
+
+      segments.push(nextSegment);
+      return segments;
+    }, []);
+
+  if (groupedSegments.length === 0) return null;
+  return groupedSegments;
 }
 
 function visibleWorkoutTitle(session: WorkoutSession, locale: "da" | "en", goalDistance?: GoalDistance): string {
@@ -139,7 +153,6 @@ export function deriveWorkoutCardRepresentation(
   options?: {
     locale?: "da" | "en";
     goalDistance?: GoalDistance;
-    maxVisualSegments?: number;
   },
 ): WorkoutCardRepresentation | null {
   if (!session || session.steps.length === 0) return null;
@@ -152,10 +165,10 @@ export function deriveWorkoutCardRepresentation(
     duration: formatReadableDurationFromSeconds(durationSec),
     durationSec,
     shortStructureSummary: deriveShortStructureSummary(session, locale),
-    visualProfile: deriveVisualProfile(session, options?.maxVisualSegments ?? 12),
+    visualProfile: deriveVisualProfile(session),
   };
 }
 
-export function deriveWorkoutProfile(session: WorkoutSession | null | undefined, maxSegments = 12): WorkoutProfileSegment[] | null {
-  return deriveWorkoutCardRepresentation(session, { maxVisualSegments: maxSegments })?.visualProfile ?? null;
+export function deriveWorkoutProfile(session: WorkoutSession | null | undefined): WorkoutProfileSegment[] | null {
+  return deriveWorkoutCardRepresentation(session)?.visualProfile ?? null;
 }

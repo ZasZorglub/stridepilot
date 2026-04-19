@@ -192,6 +192,38 @@ const easyRunCard = deriveWorkoutCardRepresentation(easyRunSession);
 assert.equal(easyRunCard?.shortStructureSummary, "15 min roligt løb");
 assert.equal(easyRunCard?.visualProfile?.length, 1, "continuous easy runs should stay visually continuous instead of looking interval-like");
 
+const repeatedEasySegmentsSession: WorkoutSession = {
+  id: "easy-build-1",
+  title: "Roligt løb",
+  week: 1,
+  dayOfWeek: "Fredag",
+  loadScore: 3,
+  steps: [
+    { type: "warmup", label: "Opvarmning", durationSec: 180, cue: "" },
+    { type: "warmup", label: "Opvarmning", durationSec: 120, cue: "" },
+    { type: "run", label: "Roligt løb", durationSec: 240, cue: "", heartRateGuidance: { zoneLabel: "Zone 2", summary: "" } },
+    { type: "run", label: "Roligt løb", durationSec: 360, cue: "", heartRateGuidance: { zoneLabel: "Zone 2", summary: "" } },
+    { type: "walk", label: "Gang", durationSec: 60, cue: "" },
+    { type: "walk", label: "Gang", durationSec: 60, cue: "" },
+    { type: "run", label: "Tempo", durationSec: 120, cue: "", heartRateGuidance: { zoneLabel: "Zone 3", summary: "" } },
+    { type: "run", label: "Tempo", durationSec: 120, cue: "", heartRateGuidance: { zoneLabel: "Zone 3", summary: "" } },
+    { type: "cooldown", label: "Nedkøling", durationSec: 180, cue: "" },
+    { type: "cooldown", label: "Nedkøling", durationSec: 120, cue: "" },
+  ],
+};
+const repeatedEasySegmentsCard = deriveWorkoutCardRepresentation(repeatedEasySegmentsSession);
+assert.deepEqual(
+  repeatedEasySegmentsCard?.visualProfile,
+  [
+    { stepType: "warmup", level: "easy", durationSec: 300 },
+    { stepType: "run", level: "easy", durationSec: 600 },
+    { stepType: "walk", level: "rest", durationSec: 120 },
+    { stepType: "run", level: "moderate", durationSec: 240 },
+    { stepType: "cooldown", level: "easy", durationSec: 300 },
+  ],
+  "adjacent steps should only be grouped when step type and intensity semantics stay identical, so the bars remain truthful instead of disappearing or fragmenting arbitrarily",
+);
+
 const restDayWithNextState = buildTodayActionState({
   todaySession: null,
   nextSession: { id: "next-1" } as never,
