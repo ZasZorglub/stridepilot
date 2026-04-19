@@ -19,10 +19,6 @@ export interface WorkoutCardRepresentation {
   visualProfile: WorkoutProfileSegment[] | null;
 }
 
-function sameVisualSemantics(left: WorkoutProfileSegment, right: WorkoutProfileSegment): boolean {
-  return left.role === right.role && left.level === right.level;
-}
-
 function stepRole(step: WorkoutStep): WorkoutProfileSegment["role"] {
   if (step.type === "warmup") return "warmup";
   if (step.type === "cooldown") return "cooldown";
@@ -138,28 +134,17 @@ function deriveShortStructureSummary(session: WorkoutSession, locale: "da" | "en
 }
 
 function deriveVisualProfile(session: WorkoutSession): WorkoutProfileSegment[] | null {
-  const groupedSegments = session.steps
+  const rawSegments = session.steps
     .filter((step) => step.durationSec > 0)
-    .reduce<WorkoutProfileSegment[]>((segments, step) => {
-      const nextSegment: WorkoutProfileSegment = {
-        level: stepProfileLevel(step),
-        durationSec: step.durationSec,
-        stepType: step.type,
-        role: stepRole(step),
-      };
+    .map<WorkoutProfileSegment>((step) => ({
+      level: stepProfileLevel(step),
+      durationSec: step.durationSec,
+      stepType: step.type,
+      role: stepRole(step),
+    }));
 
-      const previous = segments[segments.length - 1];
-      if (previous && sameVisualSemantics(previous, nextSegment)) {
-        previous.durationSec += nextSegment.durationSec;
-        return segments;
-      }
-
-      segments.push(nextSegment);
-      return segments;
-    }, []);
-
-  if (groupedSegments.length === 0) return null;
-  return groupedSegments;
+  if (rawSegments.length === 0) return null;
+  return rawSegments;
 }
 
 function visibleWorkoutTitle(session: WorkoutSession, locale: "da" | "en", goalDistance?: GoalDistance): string {

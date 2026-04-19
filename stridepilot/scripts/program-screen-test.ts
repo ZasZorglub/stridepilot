@@ -249,13 +249,18 @@ const repeatedEasySegmentsCard = deriveWorkoutCardRepresentation(repeatedEasySeg
 assert.deepEqual(
   repeatedEasySegmentsCard?.visualProfile,
   [
-    { stepType: "warmup", role: "warmup", level: "easy", durationSec: 300 },
-    { stepType: "run", role: "work", level: "easy", durationSec: 600 },
-    { stepType: "walk", role: "walk", level: "rest", durationSec: 120 },
-    { stepType: "run", role: "work", level: "moderate", durationSec: 240 },
-    { stepType: "cooldown", role: "cooldown", level: "easy", durationSec: 300 },
+    { stepType: "warmup", role: "warmup", level: "easy", durationSec: 180 },
+    { stepType: "warmup", role: "warmup", level: "easy", durationSec: 120 },
+    { stepType: "run", role: "work", level: "easy", durationSec: 240 },
+    { stepType: "run", role: "work", level: "easy", durationSec: 360 },
+    { stepType: "walk", role: "walk", level: "rest", durationSec: 60 },
+    { stepType: "walk", role: "walk", level: "rest", durationSec: 60 },
+    { stepType: "run", role: "work", level: "moderate", durationSec: 120 },
+    { stepType: "run", role: "work", level: "moderate", durationSec: 120 },
+    { stepType: "cooldown", role: "cooldown", level: "easy", durationSec: 180 },
+    { stepType: "cooldown", role: "cooldown", level: "easy", durationSec: 120 },
   ],
-  "adjacent steps should only be grouped when step type and intensity semantics stay identical, so the bars remain truthful instead of disappearing or fragmenting arbitrarily",
+  "visual profile should preserve the actual ordered workout steps so no second-pass grouping can flatten a structured workout into a simplified shape",
 );
 
 const restDayWithNextState = buildTodayActionState({
