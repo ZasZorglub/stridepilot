@@ -3863,7 +3863,7 @@ export default function Home() {
               </button>
               <p className={styles.subtleInline}>{siteCopy.betaTesterInstructions}</p>
               <p className={styles.authVersionLabel}>
-                {APP_NAME} {APP_VERSION}
+                {APP_NAME} {APP_VERSION} · build b00d5be
               </p>
             </div>
           </div>
@@ -3927,7 +3927,7 @@ export default function Home() {
               )}
 
               <p className={styles.authVersionLabel}>
-                {APP_NAME} {APP_VERSION} · 2aea539
+                {APP_NAME} {APP_VERSION} · build b00d5be
               </p>
             </section>
           </div>

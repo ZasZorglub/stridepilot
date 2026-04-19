@@ -2071,8 +2071,9 @@
 .authVersionLabel {
   margin: 1rem 0 0;
   text-align: center;
-  color: rgba(214, 225, 234, 0.82);
-  font-size: 0.76rem;
+  color: rgba(232, 239, 244, 0.92);
+  font-size: 0.79rem;
+  font-weight: 600;
   letter-spacing: 0.03em;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.28);
 }
