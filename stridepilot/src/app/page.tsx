@@ -91,6 +91,8 @@ import {
   buildWorkoutActionState,
   buildWorkoutCheckInState,
   buildWorkoutInterruptionNotice,
+  getNextWorkoutStep,
+  getVisibleWorkoutSteps,
   hasRequiredWorkoutFeedback,
   shouldSpeakWorkoutCue,
 } from "@/lib/workout-screen";
@@ -528,6 +530,14 @@ function phaseName(step: WorkoutStep, locale: SiteLocale = "da"): string {
   if (step.type === "walk") return "Gang";
   if (step.type === "warmup") return "Rask gang";
   return "Nedkøling";
+}
+
+function stepSupportingLabel(step: WorkoutStep, locale: SiteLocale = "da"): string | null {
+  const label = step.label.trim();
+  if (!label) return null;
+  const phase = phaseName(step, locale).trim().toLowerCase();
+  if (label.toLowerCase() === phase) return null;
+  return label;
 }
 
 function coachingHint(step: WorkoutStep, locale: SiteLocale = "da"): string {
@@ -3632,6 +3642,19 @@ export default function Home() {
       }),
     [isLastWorkoutStep, isRunning, siteLocale],
   );
+  const nextWorkoutStep = useMemo(
+    () => (activeSession ? getNextWorkoutStep(activeSession.steps, stepIndex) : null),
+    [activeSession, stepIndex],
+  );
+  const visibleWorkoutSteps = useMemo(
+    () => (activeSession ? getVisibleWorkoutSteps(activeSession.steps, stepIndex, completedSteps, false) : []),
+    [activeSession, completedSteps, stepIndex],
+  );
+  const currentStepProgressPct = useMemo(() => {
+    if (!currentStep || currentStep.durationSec <= 0) return 0;
+    const elapsedSec = Math.max(0, currentStep.durationSec - remainingSec);
+    return Math.max(0, Math.min(100, (elapsedSec / currentStep.durationSec) * 100));
+  }, [currentStep, remainingSec]);
   const workoutCheckInState = useMemo(
     () => buildWorkoutCheckInState(showDetailedFeedback, siteLocale),
     [showDetailedFeedback, siteLocale],
@@ -4961,6 +4984,18 @@ export default function Home() {
                       ))}
                     </div>
                   )}
+                  <ol className={styles.workoutDetailList}>
+                    {focusedProgramSession.steps.map((step, index) => (
+                      <li key={`${focusedProgramSession.id}-detail-step-${index}`} className={styles.workoutDetailRow}>
+                        <span className={styles.workoutDetailIndex}>{index + 1}</span>
+                        <div className={styles.workoutDetailText}>
+                          <strong>{phaseName(step, siteLocale)}</strong>
+                          {stepSupportingLabel(step, siteLocale) && <small>{stepSupportingLabel(step, siteLocale)}</small>}
+                        </div>
+                        <span className={styles.workoutDetailDuration}>{formatStepDuration(step)}</span>
+                      </li>
+                    ))}
+                  </ol>
                   <div className={styles.topActions}>
                     <button type="button" className={styles.primaryBtn} onClick={() => openWorkoutSession(focusedProgramSession.id)}>
                       {siteLocale === "en" ? "Start run" : "Start tur"}
@@ -5010,12 +5045,74 @@ export default function Home() {
                 {workoutInterruptionNotice && <p className={styles.workoutStatusNotice}>{workoutInterruptionNotice}</p>}
                 <div className={styles.liveWorkoutCard}>
                   {stepNotice && <p className={styles.stepNotice}>{stepNotice}</p>}
+                  <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Current segment" : "Aktuelt trin"}</p>
                   <p className={styles.phaseLabel}>{phaseName(currentStep, siteLocale)}</p>
+                  {stepSupportingLabel(currentStep, siteLocale) && <p className={styles.currentIntervalHeadline}>{stepSupportingLabel(currentStep, siteLocale)}</p>}
                   <div className={styles.timerBig}>{formatClock(remainingSec)}</div>
-                  <p className={styles.instruction}>{coachingHint(currentStep, siteLocale)}</p>
+                  <p className={styles.workoutTimerMeta}>
+                    {siteLocale === "en"
+                      ? `${Math.round(currentStepProgressPct)}% through this step`
+                      : `${Math.round(currentStepProgressPct)}% gennem dette trin`}
+                  </p>
+                  <div className={styles.workoutSequenceBar} aria-hidden="true">
+                    {activeSession.steps.map((step, index) => {
+                      const statusClass = completedSteps.includes(index)
+                        ? styles.workoutSequenceDone
+                        : index === stepIndex
+                          ? styles.workoutSequenceCurrent
+                          : index === stepIndex + 1
+                            ? styles.workoutSequenceNext
+                            : styles.workoutSequenceUpcoming;
+                      return (
+                        <span
+                          key={`${activeSession.id}-sequence-${index}`}
+                          className={`${styles.workoutSequenceSegment} ${statusClass}`}
+                          style={{ flexGrow: Math.max(1, step.durationSec) }}
+                        />
+                      );
+                    })}
+                  </div>
                   {isLastWorkoutStep && (
                     <p className={styles.workoutFinalHint}>{siteLocale === "en" ? "Ready to finish the workout." : "Passet er klar til at blive afsluttet."}</p>
                   )}
+                </div>
+
+                <div className={`${styles.nextCueCard} ${!nextWorkoutStep ? styles.nextCueCardMuted : ""}`}>
+                  <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Next segment" : "Næste trin"}</p>
+                  <h3>{nextWorkoutStep ? phaseName(nextWorkoutStep, siteLocale) : siteLocale === "en" ? "Finish workout" : "Afslut passet"}</h3>
+                  <p className={styles.subtleInline}>
+                    {nextWorkoutStep
+                      ? `${formatStepDuration(nextWorkoutStep)}${stepSupportingLabel(nextWorkoutStep, siteLocale) ? ` · ${stepSupportingLabel(nextWorkoutStep, siteLocale)}` : ""}`
+                      : siteLocale === "en"
+                        ? "You are on the final step."
+                        : "Du er i sidste trin."}
+                  </p>
+                </div>
+
+                <div className={`${styles.workoutStructureCard} ${styles.workoutStructureCardMuted}`}>
+                  <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Workout sequence" : "Workout-sekvens"}</p>
+                  <ol className={styles.stepOverviewCompact}>
+                    {visibleWorkoutSteps.map((item) => {
+                      const statusClass =
+                        item.status === "current"
+                          ? styles.stepCurrent
+                          : item.status === "done"
+                            ? styles.stepDone
+                            : item.status === "next"
+                              ? styles.stepNext
+                              : "";
+                      return (
+                        <li key={`${activeSession.id}-visible-step-${item.index}`} className={statusClass}>
+                          <div className={styles.stepJumpBtn}>
+                            <span>{item.index + 1}</span>
+                            <span>{phaseName(item.step, siteLocale)}</span>
+                            <span>{stepSupportingLabel(item.step, siteLocale) ?? ""}</span>
+                            <span>{formatStepDuration(item.step)}</span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
                 </div>
 
                 <div className={styles.workoutPrimaryAction}>

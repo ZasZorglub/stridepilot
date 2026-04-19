@@ -189,10 +189,12 @@ export function expandStructure(
   structure.forEach((segment, segmentIndex) => {
     const repeats = segment.repeats ?? 1;
     for (let index = 0; index < repeats; index += 1) {
+      const stepType = segmentToStepType(segment, segmentIndex, structure);
+      const rawDurationSec = Math.max(15, Math.round(segment.durationMin * 60));
       steps.push({
-        type: segmentToStepType(segment, segmentIndex, structure),
+        type: stepType,
         label: repeats > 1 ? `${segment.label} ${index + 1}` : segment.label,
-        durationSec: Math.max(15, Math.round(segment.durationMin * 60)),
+        durationSec: steps.length === 0 && stepType === "walk" ? Math.min(rawDurationSec, 5 * 60) : rawDurationSec,
         cue: segmentCue(segment),
         heartRateGuidance: sessionAwareHeartRateGuidance(segment, sessionType),
       });

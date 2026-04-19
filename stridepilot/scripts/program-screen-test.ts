@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
 import { sessionDateFromCalendarWeek } from "../src/lib/calendar-week";
+import { expandStructure } from "../src/lib/coach/mapToAppPlan";
 import { enforceAvailableTrainingDays } from "../src/lib/plan";
 import {
   buildGoalEventSessionLabel,
@@ -312,6 +313,11 @@ assert.equal(
   }).ctaLabel,
   "See week plan",
   "English beta locale should keep the calm rest-day CTA readable for first-time users",
+);
+assert.equal(
+  expandStructure([{ type: "walk", label: "Rask gang opvarmning", durationMin: 8 } as never])[0]?.durationSec,
+  5 * 60,
+  "opening walk blocks should be capped at 5 minutes when plan structure is expanded into workout steps",
 );
 assert.equal(
   buildProgramAdjustmentHighlights({
