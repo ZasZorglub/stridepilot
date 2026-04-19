@@ -92,7 +92,7 @@ import {
   buildWorkoutCheckInState,
   buildWorkoutInterruptionNotice,
   getNextWorkoutStep,
-  getVisibleWorkoutSteps,
+  buildWorkoutStepHeartRateState,
   hasRequiredWorkoutFeedback,
   shouldSpeakWorkoutCue,
 } from "@/lib/workout-screen";
@@ -517,6 +517,17 @@ function workoutProfileSegmentClassName(segment: { level: "rest" | "easy" | "mod
             : styles.dayIntensityWork;
 
   return `${styles.dayIntensitySegment} ${levelClass} ${roleClass}`;
+}
+
+function workoutSegmentAccent(segment: { level: "rest" | "easy" | "moderate" | "hard"; role: "warmup" | "work" | "recovery" | "walk" | "cooldown" }): { color: string; muted: string } {
+  if (segment.role === "walk") return { color: "rgba(242, 245, 247, 0.96)", muted: "rgba(242, 245, 247, 0.18)" };
+  if (segment.role === "recovery") return { color: "rgba(154, 166, 178, 0.82)", muted: "rgba(154, 166, 178, 0.18)" };
+  if (segment.role === "warmup") return { color: "rgba(90, 184, 209, 0.8)", muted: "rgba(90, 184, 209, 0.18)" };
+  if (segment.role === "cooldown") return { color: "rgba(90, 184, 209, 0.62)", muted: "rgba(90, 184, 209, 0.16)" };
+  if (segment.level === "hard") return { color: "rgba(212, 84, 84, 0.92)", muted: "rgba(212, 84, 84, 0.18)" };
+  if (segment.level === "moderate") return { color: "rgba(232, 185, 65, 0.92)", muted: "rgba(232, 185, 65, 0.18)" };
+  if (segment.level === "easy") return { color: "rgba(52, 165, 218, 0.9)", muted: "rgba(52, 165, 218, 0.18)" };
+  return { color: "rgba(242, 245, 247, 0.88)", muted: "rgba(242, 245, 247, 0.16)" };
 }
 
 function phaseName(step: WorkoutStep, locale: SiteLocale = "da"): string {
@@ -1830,16 +1841,6 @@ export default function Home() {
       visiblePlanSessions(plan, goal.startDate).find((session) => sessionDateFromPlan(goal.startDate, session).toDateString() === today.toDateString()) ?? null
     );
   }, [goal.startDate, plan]);
-
-  const stepProgress = useMemo(() => {
-    if (!activeSession || !currentStep) return 0;
-
-    const totalSessionSec = activeSession.steps.reduce((sum, step) => sum + step.durationSec, 0);
-    const completedBeforeCurrent = activeSession.steps.slice(0, stepIndex).reduce((sum, step) => sum + step.durationSec, 0);
-    const currentCompleted = currentStep.durationSec - remainingSec;
-
-    return Math.min(100, Math.max(0, ((completedBeforeCurrent + currentCompleted) / totalSessionSec) * 100));
-  }, [activeSession, currentStep, stepIndex, remainingSec]);
 
   const hydrateProgramState = useCallback(
     async (currentProfileId: string) => {
@@ -3587,6 +3588,10 @@ export default function Home() {
     () => deriveWorkoutCardRepresentation(todaySession, { locale: siteLocale, goalDistance: goal.distance }),
     [goal.distance, siteLocale, todaySession],
   );
+  const activeWorkoutCard = useMemo(
+    () => deriveWorkoutCardRepresentation(activeSession, { locale: siteLocale, goalDistance: goal.distance }),
+    [activeSession, goal.distance, siteLocale],
+  );
   const focusedProgramSession = useMemo(
     () => (focusedProgramDayIso && plan ? plan.sessions.find((session) => session.id === selectedSessionId) ?? null : null),
     [focusedProgramDayIso, plan, selectedSessionId],
@@ -3646,15 +3651,42 @@ export default function Home() {
     () => (activeSession ? getNextWorkoutStep(activeSession.steps, stepIndex) : null),
     [activeSession, stepIndex],
   );
-  const visibleWorkoutSteps = useMemo(
-    () => (activeSession ? getVisibleWorkoutSteps(activeSession.steps, stepIndex, completedSteps, false) : []),
-    [activeSession, completedSteps, stepIndex],
-  );
   const currentStepProgressPct = useMemo(() => {
     if (!currentStep || currentStep.durationSec <= 0) return 0;
     const elapsedSec = Math.max(0, currentStep.durationSec - remainingSec);
     return Math.max(0, Math.min(100, (elapsedSec / currentStep.durationSec) * 100));
   }, [currentStep, remainingSec]);
+  const totalElapsedSec = useMemo(() => {
+    if (!activeSession || !currentStep) return 0;
+    const completedBeforeCurrent = activeSession.steps.slice(0, stepIndex).reduce((sum, step) => sum + step.durationSec, 0);
+    const currentCompleted = Math.max(0, currentStep.durationSec - remainingSec);
+    return completedBeforeCurrent + currentCompleted;
+  }, [activeSession, currentStep, remainingSec, stepIndex]);
+  const currentWorkoutHeartRateState = useMemo(
+    () =>
+      buildWorkoutStepHeartRateState({
+        step: currentStep,
+        pulseGuidanceEnabled: Boolean(runnerProfile.pulseGuidanceEnabled),
+        maxHeartRate: runnerProfile.maxHeartRate ?? null,
+        locale: siteLocale,
+      }),
+    [currentStep, runnerProfile.maxHeartRate, runnerProfile.pulseGuidanceEnabled, siteLocale],
+  );
+  const nextWorkoutHeartRateState = useMemo(
+    () =>
+      buildWorkoutStepHeartRateState({
+        step: nextWorkoutStep,
+        pulseGuidanceEnabled: Boolean(runnerProfile.pulseGuidanceEnabled),
+        maxHeartRate: runnerProfile.maxHeartRate ?? null,
+        locale: siteLocale,
+      }),
+    [nextWorkoutStep, runnerProfile.maxHeartRate, runnerProfile.pulseGuidanceEnabled, siteLocale],
+  );
+  const currentWorkoutSegment = activeWorkoutCard?.visualProfile?.[stepIndex] ?? null;
+  const currentWorkoutAccent = useMemo(
+    () => (currentWorkoutSegment ? workoutSegmentAccent(currentWorkoutSegment) : workoutSegmentAccent({ level: "easy", role: "work" })),
+    [currentWorkoutSegment],
+  );
   const workoutCheckInState = useMemo(
     () => buildWorkoutCheckInState(showDetailedFeedback, siteLocale),
     [showDetailedFeedback, siteLocale],
@@ -5043,76 +5075,88 @@ export default function Home() {
                   <span className={styles.workoutCompactProgress}>{stepIndex + 1} / {activeSession.steps.length}</span>
                 </div>
                 {workoutInterruptionNotice && <p className={styles.workoutStatusNotice}>{workoutInterruptionNotice}</p>}
+                <div className={styles.workoutSessionOverview}>
+                  <div className={styles.workoutTopMetrics}>
+                    <div className={styles.workoutMetricCard}>
+                      <span>{siteLocale === "en" ? "Segment time" : "Segment tid"}</span>
+                      <strong>{formatClock(currentStep.durationSec)}</strong>
+                    </div>
+                    <div className={styles.workoutMetricCard}>
+                      <span>{siteLocale === "en" ? "Total elapsed" : "Total tid"}</span>
+                      <strong>{formatClock(totalElapsedSec)}</strong>
+                    </div>
+                  </div>
+                  <div className={styles.workoutNextSummary}>
+                    <div>
+                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Next" : "Næste"}</p>
+                      <h3>{nextWorkoutStep ? phaseName(nextWorkoutStep, siteLocale) : siteLocale === "en" ? "Finish workout" : "Afslut passet"}</h3>
+                    </div>
+                    <div className={styles.workoutNextMetaGrid}>
+                      <span>
+                        <small>{siteLocale === "en" ? "Time" : "Tid"}</small>
+                        <strong>{nextWorkoutStep ? formatStepDuration(nextWorkoutStep) : "—"}</strong>
+                      </span>
+                      <span>
+                        <small>{siteLocale === "en" ? "Target" : "Målzone"}</small>
+                        <strong>{nextWorkoutHeartRateState?.zoneLabel ?? (siteLocale === "en" ? "Easy" : "Roligt")}</strong>
+                      </span>
+                      <span>
+                        <small>{siteLocale === "en" ? "Type" : "Type"}</small>
+                        <strong>{nextWorkoutStep ? (stepSupportingLabel(nextWorkoutStep, siteLocale) ?? phaseName(nextWorkoutStep, siteLocale)) : siteLocale === "en" ? "Complete" : "Afslut"}</strong>
+                      </span>
+                    </div>
+                  </div>
+                  {activeWorkoutCard?.visualProfile && (
+                    <div className={styles.workoutTopProfile}>
+                      {activeWorkoutCard.visualProfile.map((segment, index) => {
+                        const tone = workoutSegmentAccent(segment);
+                        const isCurrentSegment = index === stepIndex;
+                        return (
+                          <span
+                            key={`${activeSession.id}-top-profile-${index}`}
+                            className={`${styles.workoutTopProfileSegment} ${isCurrentSegment ? styles.workoutTopProfileSegmentCurrent : ""}`}
+                            style={{
+                              flexGrow: Math.max(1, segment.durationSec),
+                              background: tone.color,
+                              boxShadow: isCurrentSegment ? `0 0 0 2px ${tone.muted}` : "none",
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
                 <div className={styles.liveWorkoutCard}>
                   {stepNotice && <p className={styles.stepNotice}>{stepNotice}</p>}
-                  <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Current segment" : "Aktuelt trin"}</p>
-                  <p className={styles.phaseLabel}>{phaseName(currentStep, siteLocale)}</p>
-                  {stepSupportingLabel(currentStep, siteLocale) && <p className={styles.currentIntervalHeadline}>{stepSupportingLabel(currentStep, siteLocale)}</p>}
-                  <div className={styles.timerBig}>{formatClock(remainingSec)}</div>
-                  <p className={styles.workoutTimerMeta}>
-                    {siteLocale === "en"
-                      ? `${Math.round(currentStepProgressPct)}% through this step`
-                      : `${Math.round(currentStepProgressPct)}% gennem dette trin`}
-                  </p>
-                  <div className={styles.workoutSequenceBar} aria-hidden="true">
-                    {activeSession.steps.map((step, index) => {
-                      const statusClass = completedSteps.includes(index)
-                        ? styles.workoutSequenceDone
-                        : index === stepIndex
-                          ? styles.workoutSequenceCurrent
-                          : index === stepIndex + 1
-                            ? styles.workoutSequenceNext
-                            : styles.workoutSequenceUpcoming;
-                      return (
-                        <span
-                          key={`${activeSession.id}-sequence-${index}`}
-                          className={`${styles.workoutSequenceSegment} ${statusClass}`}
-                          style={{ flexGrow: Math.max(1, step.durationSec) }}
-                        />
-                      );
-                    })}
+                  <div className={styles.trackTimerShell}>
+                    <svg viewBox="0 0 280 220" className={styles.trackTimerSvg} aria-hidden="true">
+                      <path
+                        d="M84 34 H196 A56 56 0 0 1 196 186 H84 A56 56 0 0 1 84 34 Z"
+                        pathLength={100}
+                        className={styles.trackTimerBase}
+                        style={{ stroke: currentWorkoutAccent.muted }}
+                      />
+                      <path
+                        d="M84 34 H196 A56 56 0 0 1 196 186 H84 A56 56 0 0 1 84 34 Z"
+                        pathLength={100}
+                        className={styles.trackTimerProgress}
+                        style={{
+                          stroke: currentWorkoutAccent.color,
+                          strokeDasharray: `${currentStepProgressPct} 100`,
+                        }}
+                      />
+                    </svg>
+                    <div className={styles.trackTimerCenter}>
+                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Current segment" : "Aktuelt trin"}</p>
+                      <p className={styles.phaseLabel}>{phaseName(currentStep, siteLocale)}</p>
+                      <div className={styles.timerBig}>{formatClock(remainingSec)}</div>
+                      <p className={styles.trackTimerZone}>{currentWorkoutHeartRateState?.zoneLabel ?? (siteLocale === "en" ? "Easy effort" : "Roligt arbejde")}</p>
+                      {stepSupportingLabel(currentStep, siteLocale) && <p className={styles.trackTimerType}>{stepSupportingLabel(currentStep, siteLocale)}</p>}
+                    </div>
                   </div>
                   {isLastWorkoutStep && (
                     <p className={styles.workoutFinalHint}>{siteLocale === "en" ? "Ready to finish the workout." : "Passet er klar til at blive afsluttet."}</p>
                   )}
-                </div>
-
-                <div className={`${styles.nextCueCard} ${!nextWorkoutStep ? styles.nextCueCardMuted : ""}`}>
-                  <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Next segment" : "Næste trin"}</p>
-                  <h3>{nextWorkoutStep ? phaseName(nextWorkoutStep, siteLocale) : siteLocale === "en" ? "Finish workout" : "Afslut passet"}</h3>
-                  <p className={styles.subtleInline}>
-                    {nextWorkoutStep
-                      ? `${formatStepDuration(nextWorkoutStep)}${stepSupportingLabel(nextWorkoutStep, siteLocale) ? ` · ${stepSupportingLabel(nextWorkoutStep, siteLocale)}` : ""}`
-                      : siteLocale === "en"
-                        ? "You are on the final step."
-                        : "Du er i sidste trin."}
-                  </p>
-                </div>
-
-                <div className={`${styles.workoutStructureCard} ${styles.workoutStructureCardMuted}`}>
-                  <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Workout sequence" : "Workout-sekvens"}</p>
-                  <ol className={styles.stepOverviewCompact}>
-                    {visibleWorkoutSteps.map((item) => {
-                      const statusClass =
-                        item.status === "current"
-                          ? styles.stepCurrent
-                          : item.status === "done"
-                            ? styles.stepDone
-                            : item.status === "next"
-                              ? styles.stepNext
-                              : "";
-                      return (
-                        <li key={`${activeSession.id}-visible-step-${item.index}`} className={statusClass}>
-                          <div className={styles.stepJumpBtn}>
-                            <span>{item.index + 1}</span>
-                            <span>{phaseName(item.step, siteLocale)}</span>
-                            <span>{stepSupportingLabel(item.step, siteLocale) ?? ""}</span>
-                            <span>{formatStepDuration(item.step)}</span>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ol>
                 </div>
 
                 <div className={styles.workoutPrimaryAction}>
