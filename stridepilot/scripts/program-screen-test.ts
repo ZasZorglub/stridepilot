@@ -192,6 +192,40 @@ const easyRunCard = deriveWorkoutCardRepresentation(easyRunSession);
 assert.equal(easyRunCard?.shortStructureSummary, "15 min roligt løb");
 assert.equal(easyRunCard?.visualProfile?.length, 1, "continuous easy runs should stay visually continuous instead of looking interval-like");
 
+const brokenThreeIntervalSession: WorkoutSession = {
+  id: "broken-3-intervals",
+  title: "Roligt løb",
+  week: 1,
+  dayOfWeek: "Tirsdag",
+  loadScore: 4,
+  steps: [
+    { type: "run", label: "Arbejdsblok 1", durationSec: 120, cue: "Løb i fast, kontrolleret tempo.", heartRateGuidance: { zoneLabel: "Zone 3", summary: "Arbejd op mod zone 3 med kontrol." } },
+    { type: "run", label: "Recovery 1", durationSec: 90, cue: "Hold det meget let fra start til slut.", heartRateGuidance: { zoneLabel: "Zone 2", summary: "Hold det roligt i zone 2." } },
+    { type: "run", label: "Arbejdsblok 2", durationSec: 120, cue: "Løb i fast, kontrolleret tempo.", heartRateGuidance: { zoneLabel: "Zone 3", summary: "Arbejd op mod zone 3 med kontrol." } },
+    { type: "run", label: "Recovery 2", durationSec: 90, cue: "Hold det meget let fra start til slut.", heartRateGuidance: { zoneLabel: "Zone 2", summary: "Hold det roligt i zone 2." } },
+    { type: "run", label: "Arbejdsblok 3", durationSec: 120, cue: "Løb i fast, kontrolleret tempo.", heartRateGuidance: { zoneLabel: "Zone 3", summary: "Arbejd op mod zone 3 med kontrol." } },
+    { type: "run", label: "Recovery 3", durationSec: 90, cue: "Hold det meget let fra start til slut.", heartRateGuidance: { zoneLabel: "Zone 2", summary: "Hold det roligt i zone 2." } },
+  ],
+};
+const brokenThreeIntervalCard = deriveWorkoutCardRepresentation(brokenThreeIntervalSession);
+assert.equal(
+  brokenThreeIntervalCard?.shortStructureSummary,
+  "3 × 2 min løb · 1,5 min roligt",
+  "summary should reflect interval structure even when recovery segments are stored as run steps",
+);
+assert.deepEqual(
+  brokenThreeIntervalCard?.visualProfile?.map((segment) => ({ role: segment.role, durationSec: segment.durationSec, level: segment.level })),
+  [
+    { role: "work", durationSec: 120, level: "moderate" },
+    { role: "recovery", durationSec: 90, level: "rest" },
+    { role: "work", durationSec: 120, level: "moderate" },
+    { role: "recovery", durationSec: 90, level: "rest" },
+    { role: "work", durationSec: 120, level: "moderate" },
+    { role: "recovery", durationSec: 90, level: "rest" },
+  ],
+  "run-based recovery blocks must stay visually separate so a 3-interval workout does not collapse into one long continuous block",
+);
+
 const repeatedEasySegmentsSession: WorkoutSession = {
   id: "easy-build-1",
   title: "Roligt løb",
@@ -215,11 +249,11 @@ const repeatedEasySegmentsCard = deriveWorkoutCardRepresentation(repeatedEasySeg
 assert.deepEqual(
   repeatedEasySegmentsCard?.visualProfile,
   [
-    { stepType: "warmup", level: "easy", durationSec: 300 },
-    { stepType: "run", level: "easy", durationSec: 600 },
-    { stepType: "walk", level: "rest", durationSec: 120 },
-    { stepType: "run", level: "moderate", durationSec: 240 },
-    { stepType: "cooldown", level: "easy", durationSec: 300 },
+    { stepType: "warmup", role: "warmup", level: "easy", durationSec: 300 },
+    { stepType: "run", role: "work", level: "easy", durationSec: 600 },
+    { stepType: "walk", role: "walk", level: "rest", durationSec: 120 },
+    { stepType: "run", role: "work", level: "moderate", durationSec: 240 },
+    { stepType: "cooldown", role: "cooldown", level: "easy", durationSec: 300 },
   ],
   "adjacent steps should only be grouped when step type and intensity semantics stay identical, so the bars remain truthful instead of disappearing or fragmenting arbitrarily",
 );

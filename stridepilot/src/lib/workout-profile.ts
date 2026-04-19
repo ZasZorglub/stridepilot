@@ -8,6 +8,7 @@ export type WorkoutProfileSegment = {
   level: WorkoutProfileLevel;
   durationSec: number;
   stepType: WorkoutStep["type"];
+  role: "warmup" | "work" | "recovery" | "walk" | "cooldown";
 };
 
 export interface WorkoutCardRepresentation {
@@ -19,12 +20,26 @@ export interface WorkoutCardRepresentation {
 }
 
 function sameVisualSemantics(left: WorkoutProfileSegment, right: WorkoutProfileSegment): boolean {
-  return left.stepType === right.stepType && left.level === right.level;
+  return left.role === right.role && left.level === right.level;
+}
+
+function stepRole(step: WorkoutStep): WorkoutProfileSegment["role"] {
+  if (step.type === "warmup") return "warmup";
+  if (step.type === "cooldown") return "cooldown";
+  if (step.type === "walk") return "walk";
+
+  const identity = `${step.label} ${step.cue} ${step.heartRateGuidance?.summary ?? ""}`.toLowerCase();
+  if (/pause|recovery|meget let|falde til ro|zone 1-2|rolig tilbage|rolig afslutning/.test(identity)) {
+    return "recovery";
+  }
+
+  return "work";
 }
 
 function stepProfileLevel(step: WorkoutStep): WorkoutProfileLevel {
   if (step.type === "walk") return "rest";
   if (step.type === "warmup" || step.type === "cooldown") return "easy";
+  if (stepRole(step) === "recovery") return "rest";
 
   const zoneLabel = step.heartRateGuidance?.zoneLabel?.toLowerCase() ?? "";
   const stepIdentity = `${step.label} ${step.cue}`.toLowerCase();
@@ -45,10 +60,15 @@ function sameDurations(steps: WorkoutStep[]): boolean {
   return steps.every((step) => step.durationSec === steps[0]?.durationSec);
 }
 
-function alternatingRunWalkPattern(steps: WorkoutStep[]): boolean {
+function alternatingWorkRecoveryPattern(steps: WorkoutStep[]): boolean {
   if (steps.length < 2) return false;
-  if (steps[0]?.type !== "run") return false;
-  return steps.every((step, index) => step.type === (index % 2 === 0 ? "run" : "walk"));
+  if (stepRole(steps[0]!) !== "work") return false;
+  return steps.every((step, index) => stepRole(step) === (index % 2 === 0 ? "work" : "recovery"));
+}
+
+function recoveryStepLabel(step: WorkoutStep, locale: "da" | "en"): string {
+  if (step.type === "walk") return locale === "en" ? "walk" : "gang";
+  return locale === "en" ? "easy" : "roligt";
 }
 
 function describeSingleRunStep(step: WorkoutStep, locale: "da" | "en"): string {
@@ -86,31 +106,32 @@ function fallbackStructureSummary(steps: WorkoutStep[], locale: "da" | "en"): st
 
 function deriveShortStructureSummary(session: WorkoutSession, locale: "da" | "en"): string {
   const relevantSteps = session.steps.filter((step) => step.durationSec > 0);
-  const workSteps = relevantSteps.filter((step) => step.type === "run" || step.type === "walk");
-  const runSteps = workSteps.filter((step) => step.type === "run");
-  const walkSteps = workSteps.filter((step) => step.type === "walk");
+  const mainSteps = relevantSteps.filter((step) => stepRole(step) === "work" || stepRole(step) === "recovery" || stepRole(step) === "walk");
+  const workSteps = mainSteps.filter((step) => stepRole(step) === "work");
+  const recoverySteps = mainSteps.filter((step) => stepRole(step) === "recovery" || stepRole(step) === "walk");
 
-  if (runSteps.length === 1 && walkSteps.length === 0) {
-    return describeSingleRunStep(runSteps[0]!, locale);
+  if (workSteps.length === 1 && recoverySteps.length === 0) {
+    return describeSingleRunStep(workSteps[0]!, locale);
   }
 
-  if (runSteps.length >= 2 && walkSteps.length === 0 && sameDurations(runSteps)) {
-    const runDuration = formatStepMinutes(runSteps[0]!.durationSec);
-    return locale === "en" ? `${runSteps.length} × ${runDuration} run` : `${runSteps.length} × ${runDuration} løb`;
+  if (workSteps.length >= 2 && recoverySteps.length === 0 && sameDurations(workSteps)) {
+    const runDuration = formatStepMinutes(workSteps[0]!.durationSec);
+    return locale === "en" ? `${workSteps.length} × ${runDuration} run` : `${workSteps.length} × ${runDuration} løb`;
   }
 
   if (
-    runSteps.length >= 2 &&
-    walkSteps.length >= 1 &&
-    alternatingRunWalkPattern(workSteps) &&
-    sameDurations(runSteps) &&
-    sameDurations(walkSteps)
+    workSteps.length >= 2 &&
+    recoverySteps.length >= 1 &&
+    alternatingWorkRecoveryPattern(mainSteps) &&
+    sameDurations(workSteps) &&
+    sameDurations(recoverySteps)
   ) {
-    const runDuration = formatStepMinutes(runSteps[0]!.durationSec);
-    const walkDuration = formatStepMinutes(walkSteps[0]!.durationSec);
+    const runDuration = formatStepMinutes(workSteps[0]!.durationSec);
+    const recoveryDuration = formatStepMinutes(recoverySteps[0]!.durationSec);
+    const recoveryLabel = recoveryStepLabel(recoverySteps[0]!, locale);
     return locale === "en"
-      ? `${runSteps.length} × ${runDuration} run · ${walkDuration} walk`
-      : `${runSteps.length} × ${runDuration} løb · ${walkDuration} gang`;
+      ? `${workSteps.length} × ${runDuration} run · ${recoveryDuration} ${recoveryLabel}`
+      : `${workSteps.length} × ${runDuration} løb · ${recoveryDuration} ${recoveryLabel}`;
   }
 
   return fallbackStructureSummary(relevantSteps, locale);
@@ -124,6 +145,7 @@ function deriveVisualProfile(session: WorkoutSession): WorkoutProfileSegment[] |
         level: stepProfileLevel(step),
         durationSec: step.durationSec,
         stepType: step.type,
+        role: stepRole(step),
       };
 
       const previous = segments[segments.length - 1];

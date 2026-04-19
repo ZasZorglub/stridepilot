@@ -2917,6 +2917,7 @@
   min-width: 6px;
   border-radius: 999px;
   opacity: 0.88;
+  transition: opacity 140ms ease, transform 140ms ease;
 }
 
 .dayIntensityRest {
@@ -2937,6 +2938,34 @@
 .dayIntensityHard {
   background: rgba(212, 84, 84, 0.92);
   height: 13px;
+}
+
+.dayIntensityWork {
+  opacity: 0.96;
+}
+
+.dayIntensityRecovery {
+  background: rgba(154, 166, 178, 0.82);
+  height: 5px;
+  opacity: 0.82;
+}
+
+.dayIntensityWalk {
+  background: rgba(242, 245, 247, 0.96);
+  height: 4px;
+  opacity: 0.96;
+}
+
+.dayIntensityWarmup {
+  background: rgba(90, 184, 209, 0.8);
+  height: 6px;
+  opacity: 0.74;
+}
+
+.dayIntensityCooldown {
+  background: rgba(90, 184, 209, 0.62);
+  height: 5px;
+  opacity: 0.66;
 }
 
 .dayFocusWeekday {

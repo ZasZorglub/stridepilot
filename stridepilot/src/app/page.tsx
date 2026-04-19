@@ -493,6 +493,30 @@ function visibleSessionTitle(title: string, locale: SiteLocale = "da"): string {
   return translateVisibleSessionTitle(title, locale);
 }
 
+function workoutProfileSegmentClassName(segment: { level: "rest" | "easy" | "moderate" | "hard"; role: "warmup" | "work" | "recovery" | "walk" | "cooldown" }): string {
+  const levelClass =
+    segment.level === "hard"
+      ? styles.dayIntensityHard
+      : segment.level === "moderate"
+        ? styles.dayIntensityModerate
+        : segment.level === "easy"
+          ? styles.dayIntensityEasy
+          : styles.dayIntensityRest;
+
+  const roleClass =
+    segment.role === "warmup"
+      ? styles.dayIntensityWarmup
+      : segment.role === "cooldown"
+        ? styles.dayIntensityCooldown
+        : segment.role === "walk"
+          ? styles.dayIntensityWalk
+          : segment.role === "recovery"
+            ? styles.dayIntensityRecovery
+            : styles.dayIntensityWork;
+
+  return `${styles.dayIntensitySegment} ${levelClass} ${roleClass}`;
+}
+
 function phaseName(step: WorkoutStep, locale: SiteLocale = "da"): string {
   if (locale === "en") {
     if (step.type === "run") return "Run";
@@ -4681,15 +4705,7 @@ export default function Home() {
                         {todayWorkoutCard.visualProfile.map((segment, index) => (
                           <span
                             key={`${todaySession.id}-today-intensity-${index}`}
-                            className={`${styles.dayIntensitySegment} ${
-                              segment.level === "hard"
-                                ? styles.dayIntensityHard
-                                : segment.level === "moderate"
-                                  ? styles.dayIntensityModerate
-                                  : segment.level === "easy"
-                                    ? styles.dayIntensityEasy
-                                    : styles.dayIntensityRest
-                            }`}
+                            className={workoutProfileSegmentClassName(segment)}
                             style={{ flexGrow: Math.max(1, segment.durationSec) }}
                           />
                         ))}
@@ -4904,15 +4920,7 @@ export default function Home() {
                                   {dayWorkoutCard.visualProfile.map((segment, index) => (
                                     <span
                                       key={`${daySession.id}-intensity-${index}`}
-                                      className={`${styles.dayIntensitySegment} ${
-                                        segment.level === "hard"
-                                          ? styles.dayIntensityHard
-                                          : segment.level === "moderate"
-                                            ? styles.dayIntensityModerate
-                                            : segment.level === "easy"
-                                              ? styles.dayIntensityEasy
-                                              : styles.dayIntensityRest
-                                      }`}
+                                      className={workoutProfileSegmentClassName(segment)}
                                       style={{ flexGrow: Math.max(1, segment.durationSec) }}
                                     />
                                   ))}
@@ -4947,15 +4955,7 @@ export default function Home() {
                       {focusedWorkoutCard.visualProfile.map((segment, index) => (
                         <span
                           key={`${focusedProgramSession.id}-focus-intensity-${index}`}
-                          className={`${styles.dayIntensitySegment} ${
-                            segment.level === "hard"
-                              ? styles.dayIntensityHard
-                              : segment.level === "moderate"
-                                ? styles.dayIntensityModerate
-                                : segment.level === "easy"
-                                  ? styles.dayIntensityEasy
-                                  : styles.dayIntensityRest
-                          }`}
+                          className={workoutProfileSegmentClassName(segment)}
                           style={{ flexGrow: Math.max(1, segment.durationSec) }}
                         />
                       ))}
