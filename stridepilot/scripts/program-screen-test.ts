@@ -23,7 +23,8 @@ import {
   translateVisibleSessionTitle,
 } from "../src/lib/program-screen";
 import { formatReadableDurationFromSeconds } from "../src/lib/duration";
-import type { TrainingPlan } from "../src/lib/types";
+import type { TrainingPlan, WorkoutSession } from "../src/lib/types";
+import { deriveWorkoutCardRepresentation } from "../src/lib/workout-profile";
 
 const DAY_INDEX: Record<string, number> = {
   Mandag: 0,
@@ -149,6 +150,47 @@ const trainingDayState = buildTodayActionState({
 assert.equal(trainingDayState.mode, "training_day", "training days should keep the action-first state");
 assert.equal(trainingDayState.label, "Dagens træning");
 assert.equal(trainingDayState.ctaLabel, "Start pas");
+
+const runWalkSession: WorkoutSession = {
+  id: "run-walk-1",
+  title: "Intervalpas",
+  week: 1,
+  dayOfWeek: "Mandag",
+  loadScore: 4,
+  steps: [
+    { type: "warmup", label: "Opvarmning", durationSec: 300, cue: "" },
+    { type: "run", label: "Løb", durationSec: 120, cue: "" },
+    { type: "walk", label: "Gang", durationSec: 120, cue: "" },
+    { type: "run", label: "Løb", durationSec: 120, cue: "" },
+    { type: "walk", label: "Gang", durationSec: 120, cue: "" },
+    { type: "run", label: "Løb", durationSec: 120, cue: "" },
+    { type: "walk", label: "Gang", durationSec: 120, cue: "" },
+    { type: "cooldown", label: "Nedkøling", durationSec: 300, cue: "" },
+  ],
+};
+const easyRunSession: WorkoutSession = {
+  id: "easy-1",
+  title: "Roligt løb",
+  week: 1,
+  dayOfWeek: "Onsdag",
+  loadScore: 3,
+  steps: [
+    { type: "run", label: "Roligt løb", durationSec: 900, cue: "", heartRateGuidance: { zoneLabel: "Zone 2", summary: "" } },
+  ],
+};
+
+const runWalkCard = deriveWorkoutCardRepresentation(runWalkSession);
+assert.ok(runWalkCard, "run-walk sessions should produce a shared workout-card representation");
+assert.equal(runWalkCard?.shortStructureSummary, "3 × 2 min løb · 2 min gang");
+assert.equal(
+  runWalkCard?.visualProfile?.map((segment) => segment.stepType).join(","),
+  "warmup,run,walk,run,walk,run,walk,cooldown",
+  "visual profile should preserve the actual workout order instead of collapsing repeated intervals",
+);
+
+const easyRunCard = deriveWorkoutCardRepresentation(easyRunSession);
+assert.equal(easyRunCard?.shortStructureSummary, "15 min roligt løb");
+assert.equal(easyRunCard?.visualProfile?.length, 1, "continuous easy runs should stay visually continuous instead of looking interval-like");
 
 const restDayWithNextState = buildTodayActionState({
   todaySession: null,

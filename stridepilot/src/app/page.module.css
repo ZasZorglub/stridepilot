@@ -2606,6 +2606,14 @@
   opacity: 0.96;
 }
 
+.workoutCardSummary {
+  margin: 0.12rem 0 0;
+  color: #dce6ed;
+  font-size: 0.88rem;
+  line-height: 1.42;
+  opacity: 0.86;
+}
+
 .todayDescription {
   color: #f2f5f7;
   font-size: 0.98rem;
@@ -2882,6 +2890,12 @@
 .dayCardGoal span {
   color: #9aa6b2;
   font-size: 0.8rem;
+}
+
+.dayCardSummary {
+  color: #dce6ed !important;
+  line-height: 1.35;
+  opacity: 0.88;
 }
 
 .dayCard strong,

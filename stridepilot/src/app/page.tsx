@@ -86,7 +86,7 @@ import {
   sessionAnalyticsType,
 } from "@/lib/analytics";
 import { buildPulseGuidanceSummary, buildPulseGuidanceWarning, buildPulseZoneLegend, parseMaxHeartRateInput } from "@/lib/profile-settings";
-import { deriveWorkoutProfile } from "@/lib/workout-profile";
+import { deriveWorkoutCardRepresentation } from "@/lib/workout-profile";
 import {
   buildWorkoutActionState,
   buildWorkoutCheckInState,
@@ -3549,13 +3549,17 @@ export default function Home() {
     () => (nextSession ? formatDateWithWeekday(sessionDateFromPlan(goal.startDate, nextSession), siteLocale) : siteLocale === "en" ? "To be decided" : "Kommer snart"),
     [goal.startDate, nextSession, siteLocale],
   );
-  const todayWorkoutProfile = useMemo(
-    () => deriveWorkoutProfile(todaySession),
-    [todaySession],
+  const todayWorkoutCard = useMemo(
+    () => deriveWorkoutCardRepresentation(todaySession, { locale: siteLocale, goalDistance: goal.distance }),
+    [goal.distance, siteLocale, todaySession],
   );
   const focusedProgramSession = useMemo(
     () => (focusedProgramDayIso && plan ? plan.sessions.find((session) => session.id === selectedSessionId) ?? null : null),
     [focusedProgramDayIso, plan, selectedSessionId],
+  );
+  const focusedWorkoutCard = useMemo(
+    () => deriveWorkoutCardRepresentation(focusedProgramSession, { locale: siteLocale, goalDistance: goal.distance }),
+    [focusedProgramSession, goal.distance, siteLocale],
   );
   const focusedProgramDate = useMemo(
     () => (focusedProgramDayIso ? new Date(focusedProgramDayIso) : null),
@@ -4667,13 +4671,14 @@ export default function Home() {
             <div className={styles.programHeroGrid}>
               <div className={styles.todayCard}>
                 <p className={styles.nextLabel}>{todayActionState.label}</p>
-                <h3 className={!todaySession ? styles.restDayTitle : undefined}>{todaySession ? visibleSessionTitle(todaySession.title, siteLocale) : todayActionState.emptyTitle}</h3>
+                <h3 className={!todaySession ? styles.restDayTitle : undefined}>{todayWorkoutCard?.title ?? todayActionState.emptyTitle}</h3>
                 {todaySession ? (
                   <>
-                    <p className={styles.todayMeta}>{formatReadableDurationFromSeconds(todayDuration * 60)}</p>
-                    {todayWorkoutProfile && (
+                    <p className={styles.todayMeta}>{todayWorkoutCard?.duration ?? formatReadableDurationFromSeconds(todayDuration * 60)}</p>
+                    {todayWorkoutCard && <p className={styles.workoutCardSummary}>{todayWorkoutCard.shortStructureSummary}</p>}
+                    {todayWorkoutCard?.visualProfile && (
                       <div className={styles.dayIntensityBar} aria-hidden="true">
-                        {todayWorkoutProfile.map((segment, index) => (
+                        {todayWorkoutCard.visualProfile.map((segment, index) => (
                           <span
                             key={`${todaySession.id}-today-intensity-${index}`}
                             className={`${styles.dayIntensitySegment} ${
@@ -4865,7 +4870,7 @@ export default function Home() {
                     {calendarWeekDates.map((date) => {
                       const daySession = sessionsByDate.get(date.toISOString().slice(0, 10));
                       const daySessionFeedback = daySession ? sessionFeedbackMap[daySession.id] ?? null : null;
-                      const sessionIntensityProfile = deriveWorkoutProfile(daySession);
+                      const dayWorkoutCard = deriveWorkoutCardRepresentation(daySession, { locale: siteLocale, goalDistance: goal.distance });
                       const isToday = date.toDateString() === new Date().toDateString();
                       const isGoalDay = Boolean(daySession && isGoalEventSession(daySession));
                       const isNextWorkout = shouldHighlightNextWorkout(daySession, nextSession?.id ?? null);
@@ -4892,10 +4897,11 @@ export default function Home() {
                           <span className={styles.dayCardDate}>{formatDateWithWeekday(date, siteLocale).split(":")[0]}</span>
                           {daySession ? (
                             <>
-                              <strong>{sessionDisplayTitle(daySession, goal.distance, siteLocale)}</strong>
-                              {sessionIntensityProfile && (
+                              <strong>{dayWorkoutCard?.title ?? sessionDisplayTitle(daySession, goal.distance, siteLocale)}</strong>
+                              {dayWorkoutCard && <span className={styles.dayCardSummary}>{dayWorkoutCard.shortStructureSummary}</span>}
+                              {dayWorkoutCard?.visualProfile && (
                                 <div className={styles.dayIntensityBar} aria-hidden="true">
-                                  {sessionIntensityProfile.map((segment, index) => (
+                                  {dayWorkoutCard.visualProfile.map((segment, index) => (
                                     <span
                                       key={`${daySession.id}-intensity-${index}`}
                                       className={`${styles.dayIntensitySegment} ${
@@ -4913,7 +4919,7 @@ export default function Home() {
                                 </div>
                               )}
                               <span>
-                                {`${Math.round(sessionTotalDurationSec(daySession) / 60)} min`}
+                                {dayWorkoutCard?.duration ?? `${Math.round(sessionTotalDurationSec(daySession) / 60)} min`}
                                 {daySessionFeedback ? ` · ${savedFeedbackStatusLabel(daySessionFeedback.status, siteLocale)}` : ""}
                                 {isNextWorkout ? ` · ${ui.program.nextWorkout}` : ""}
                               </span>
@@ -4931,17 +4937,14 @@ export default function Home() {
               <section className={styles.inlineOverlay}>
                 <div className={styles.inlineOverlayBackdrop} onClick={() => setFocusedProgramDayIso(null)} />
                 <article className={styles.inlineOverlayCard}>
-                  {(() => {
-                    const focusedIntensityProfile = deriveWorkoutProfile(focusedProgramSession);
-                    return (
                       <>
                   <p className={styles.dayFocusWeekday}>{dayLabel(focusedProgramSession.dayOfWeek, siteLocale).toUpperCase()}</p>
-                  <h3>{sessionDisplayTitle(focusedProgramSession, goal.distance, siteLocale)}</h3>
-                  <p className={styles.subtleStrong}>{formatReadableDurationFromSeconds(sessionTotalDurationSec(focusedProgramSession))}</p>
-                  <p className={styles.dayFocusStructure}>{sessionStructureSummary(focusedProgramSession, siteLocale)}</p>
-                  {focusedIntensityProfile && (
+                  <h3>{focusedWorkoutCard?.title ?? sessionDisplayTitle(focusedProgramSession, goal.distance, siteLocale)}</h3>
+                  <p className={styles.subtleStrong}>{focusedWorkoutCard?.duration ?? formatReadableDurationFromSeconds(sessionTotalDurationSec(focusedProgramSession))}</p>
+                  <p className={styles.dayFocusStructure}>{focusedWorkoutCard?.shortStructureSummary ?? sessionStructureSummary(focusedProgramSession, siteLocale)}</p>
+                  {focusedWorkoutCard?.visualProfile && (
                     <div className={styles.dayIntensityBar} aria-hidden="true">
-                      {focusedIntensityProfile.map((segment, index) => (
+                      {focusedWorkoutCard.visualProfile.map((segment, index) => (
                         <span
                           key={`${focusedProgramSession.id}-focus-intensity-${index}`}
                           className={`${styles.dayIntensitySegment} ${
@@ -4967,8 +4970,6 @@ export default function Home() {
                     </button>
                   </div>
                       </>
-                    );
-                  })()}
                 </article>
               </section>
             )}
