@@ -53,3 +53,4 @@ tmp-v2/
 # benchmark reports
 tmp/benchmark-reports/
 tmp/**/*.zip
+.env*.local
