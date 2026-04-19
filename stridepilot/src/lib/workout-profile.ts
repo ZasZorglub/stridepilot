@@ -9,6 +9,7 @@ export type WorkoutProfileSegment = {
   durationSec: number;
   stepType: WorkoutStep["type"];
   role: "warmup" | "work" | "recovery" | "walk" | "cooldown";
+  zoneKey: "z0" | "z1" | "z2" | "z3" | "z4";
 };
 
 export interface WorkoutCardRepresentation {
@@ -45,6 +46,18 @@ function stepProfileLevel(step: WorkoutStep): WorkoutProfileLevel {
   if (/interval|bakke|hill|drag/.test(stepIdentity)) return "hard";
   if (/tempo|steady|progression|maal|mål|race|specifik/.test(stepIdentity)) return "moderate";
   return "easy";
+}
+
+function stepZoneKey(step: WorkoutStep): WorkoutProfileSegment["zoneKey"] {
+  if (step.type === "walk") return "z0";
+
+  const zoneLabel = step.heartRateGuidance?.zoneLabel?.toLowerCase() ?? "";
+  if (zoneLabel.includes("zone 4") || zoneLabel.includes("zone 5")) return "z4";
+  if (zoneLabel.includes("zone 3") || zoneLabel.includes("ovre zone 2")) return "z3";
+  if (zoneLabel.includes("zone 2")) return "z2";
+
+  if (step.type === "warmup" || step.type === "cooldown" || stepRole(step) === "recovery") return "z1";
+  return "z2";
 }
 
 function formatStepMinutes(durationSec: number): string {
@@ -141,6 +154,7 @@ function deriveVisualProfile(session: WorkoutSession): WorkoutProfileSegment[] |
       durationSec: step.durationSec,
       stepType: step.type,
       role: stepRole(step),
+      zoneKey: stepZoneKey(step),
     }));
 
   if (rawSegments.length === 0) return null;

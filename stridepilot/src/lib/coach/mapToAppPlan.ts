@@ -186,21 +186,41 @@ export function expandStructure(
 ): WorkoutStep[] {
   const steps: WorkoutStep[] = [];
 
+  function pushStepWithWalkLimit(step: WorkoutStep) {
+    if (step.type !== "walk" || step.durationSec <= 5 * 60) {
+      steps.push(step);
+      return;
+    }
+
+    let remaining = step.durationSec;
+    let partIndex = 1;
+    while (remaining > 0) {
+      const chunk = Math.min(remaining, 5 * 60);
+      steps.push({
+        ...step,
+        label: remaining > 5 * 60 ? `${step.label} ${partIndex}` : step.label,
+        durationSec: chunk,
+      });
+      remaining -= chunk;
+      partIndex += 1;
+    }
+  }
+
   structure.forEach((segment, segmentIndex) => {
     const repeats = segment.repeats ?? 1;
     for (let index = 0; index < repeats; index += 1) {
       const stepType = segmentToStepType(segment, segmentIndex, structure);
       const rawDurationSec = Math.max(15, Math.round(segment.durationMin * 60));
-      steps.push({
+      pushStepWithWalkLimit({
         type: stepType,
         label: repeats > 1 ? `${segment.label} ${index + 1}` : segment.label,
-        durationSec: steps.length === 0 && stepType === "walk" ? Math.min(rawDurationSec, 5 * 60) : rawDurationSec,
+        durationSec: rawDurationSec,
         cue: segmentCue(segment),
         heartRateGuidance: sessionAwareHeartRateGuidance(segment, sessionType),
       });
 
       if (segment.recoverMin && index < repeats - 1) {
-        steps.push({
+        pushStepWithWalkLimit({
           type: "walk",
           label: "Pause",
           durationSec: Math.max(15, Math.round(segment.recoverMin * 60)),

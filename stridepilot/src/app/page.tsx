@@ -519,15 +519,12 @@ function workoutProfileSegmentClassName(segment: { level: "rest" | "easy" | "mod
   return `${styles.dayIntensitySegment} ${levelClass} ${roleClass}`;
 }
 
-function workoutSegmentAccent(segment: { level: "rest" | "easy" | "moderate" | "hard"; role: "warmup" | "work" | "recovery" | "walk" | "cooldown" }): { color: string; muted: string } {
-  if (segment.role === "walk") return { color: "rgba(242, 245, 247, 0.96)", muted: "rgba(242, 245, 247, 0.18)" };
-  if (segment.role === "recovery") return { color: "rgba(154, 166, 178, 0.82)", muted: "rgba(154, 166, 178, 0.18)" };
-  if (segment.role === "warmup") return { color: "rgba(90, 184, 209, 0.8)", muted: "rgba(90, 184, 209, 0.18)" };
-  if (segment.role === "cooldown") return { color: "rgba(90, 184, 209, 0.62)", muted: "rgba(90, 184, 209, 0.16)" };
-  if (segment.level === "hard") return { color: "rgba(212, 84, 84, 0.92)", muted: "rgba(212, 84, 84, 0.18)" };
-  if (segment.level === "moderate") return { color: "rgba(232, 185, 65, 0.92)", muted: "rgba(232, 185, 65, 0.18)" };
-  if (segment.level === "easy") return { color: "rgba(52, 165, 218, 0.9)", muted: "rgba(52, 165, 218, 0.18)" };
-  return { color: "rgba(242, 245, 247, 0.88)", muted: "rgba(242, 245, 247, 0.16)" };
+function workoutSegmentAccent(segment: { zoneKey: "z0" | "z1" | "z2" | "z3" | "z4" }): { color: string; muted: string } {
+  if (segment.zoneKey === "z0") return { color: "rgba(242, 245, 247, 0.96)", muted: "rgba(242, 245, 247, 0.18)" };
+  if (segment.zoneKey === "z1") return { color: "rgba(154, 166, 178, 0.82)", muted: "rgba(154, 166, 178, 0.18)" };
+  if (segment.zoneKey === "z2") return { color: "rgba(52, 165, 218, 0.9)", muted: "rgba(52, 165, 218, 0.18)" };
+  if (segment.zoneKey === "z3") return { color: "rgba(232, 185, 65, 0.92)", muted: "rgba(232, 185, 65, 0.18)" };
+  return { color: "rgba(212, 84, 84, 0.92)", muted: "rgba(212, 84, 84, 0.18)" };
 }
 
 function phaseName(step: WorkoutStep, locale: SiteLocale = "da"): string {
@@ -3684,7 +3681,7 @@ export default function Home() {
   );
   const currentWorkoutSegment = activeWorkoutCard?.visualProfile?.[stepIndex] ?? null;
   const currentWorkoutAccent = useMemo(
-    () => (currentWorkoutSegment ? workoutSegmentAccent(currentWorkoutSegment) : workoutSegmentAccent({ level: "easy", role: "work" })),
+    () => (currentWorkoutSegment ? workoutSegmentAccent(currentWorkoutSegment) : workoutSegmentAccent({ zoneKey: "z2" })),
     [currentWorkoutSegment],
   );
   const workoutCheckInState = useMemo(

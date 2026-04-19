@@ -183,6 +183,8 @@ const easyRunSession: WorkoutSession = {
 const runWalkCard = deriveWorkoutCardRepresentation(runWalkSession);
 assert.ok(runWalkCard, "run-walk sessions should produce a shared workout-card representation");
 assert.equal(runWalkCard?.shortStructureSummary, "3 × 2 min løb · 2 min gang");
+assert.equal(runWalkCard?.visualProfile?.[1]?.zoneKey, "z2");
+assert.equal(runWalkCard?.visualProfile?.[2]?.zoneKey, "z0");
 assert.equal(
   runWalkCard?.visualProfile?.map((segment) => segment.stepType).join(","),
   "warmup,run,walk,run,walk,run,walk,cooldown",
@@ -318,6 +320,11 @@ assert.equal(
   expandStructure([{ type: "walk", label: "Rask gang opvarmning", durationMin: 8 } as never])[0]?.durationSec,
   5 * 60,
   "opening walk blocks should be capped at 5 minutes when plan structure is expanded into workout steps",
+);
+assert.deepEqual(
+  expandStructure([{ type: "walk", label: "Lang pause", durationMin: 11 } as never]).map((step) => step.durationSec),
+  [5 * 60, 5 * 60, 60],
+  "walking steps should never exceed 5 minutes anywhere in expanded workout structure",
 );
 assert.equal(
   buildProgramAdjustmentHighlights({
