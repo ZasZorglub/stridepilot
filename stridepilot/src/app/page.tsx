@@ -3927,7 +3927,7 @@ export default function Home() {
               )}
 
               <p className={styles.authVersionLabel}>
-                {APP_NAME} {APP_VERSION}
+                {APP_NAME} {APP_VERSION} · 2aea539
               </p>
             </section>
           </div>
