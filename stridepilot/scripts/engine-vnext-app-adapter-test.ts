@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
 import { evaluateBenchmarkRunner, referenceRunnerBenchmarks } from "../src/lib/engine-v2/benchmark";
+import { buildTimelineRecommendation, classifyRunner } from "../src/lib/engine-v2";
 import type { RunnerInput } from "../src/lib/engine-v2/models";
 import {
   generatePlanForApp,
@@ -12,6 +13,8 @@ import {
 } from "../src/lib/engine-vnext/app/engineAdapter";
 import { runVNextAdaptivePass } from "../src/lib/engine-vnext/adaptation/runAdaptivePass";
 import { InMemoryVNextPlanRepository } from "../src/lib/engine-vnext/persistence/vnextPlanRepository";
+import { buildEngineV2RunnerInput } from "../src/lib/engine-v2/appAdapter";
+import type { Goal, RunnerProfile } from "../src/lib/types";
 
 const beginnerInput: RunnerInput = {
   raceDistance: "5K",
@@ -42,7 +45,255 @@ function fakeClient(outputText: string) {
   };
 }
 
+function buildRunnerProfile(overrides: Partial<RunnerProfile>): RunnerProfile {
+  return {
+    heightCm: 175,
+    weightKg: 72,
+    age: 36,
+    activityLevel: "lav",
+    runningExperience: "let_ovet",
+    currentRunningAbility: "ti_femten_min",
+    ...overrides,
+  };
+}
+
 async function main() {
+  {
+    const gettingStarted = buildEngineV2RunnerInput({
+      runnerProfile: {
+        ...buildRunnerProfile({
+        currentRunningAbility: "tyve_tredive_min",
+        currentContinuousDistanceKm: 4,
+        currentRunsPerWeek: 3,
+        currentWeeklyVolumeKm: 18,
+        longestCurrentRunMin: 30,
+        onboardingTrack: "getting_started",
+      }),
+      },
+      goal: {
+        distance: "10K",
+        goalType: "complete",
+        weeks: 14,
+        startDate: "2026-03-23",
+        availableTrainingDays: ["Tirsdag", "Torsdag", "Sondag"],
+      },
+    });
+    const runningConsistently = buildEngineV2RunnerInput({
+      runnerProfile: {
+        ...buildRunnerProfile({
+        currentRunningAbility: "tyve_tredive_min",
+        currentContinuousDistanceKm: 4,
+        currentRunsPerWeek: 3,
+        currentWeeklyVolumeKm: 18,
+        longestCurrentRunMin: 30,
+        onboardingTrack: "running_consistently",
+      }),
+      },
+      goal: {
+        distance: "10K",
+        goalType: "complete",
+        weeks: 14,
+        startDate: "2026-03-23",
+        availableTrainingDays: ["Tirsdag", "Torsdag", "Sondag"],
+      },
+    });
+    assert.equal(gettingStarted.trainingStylePreference, "conservative", "getting-started runners should get a visibly more protective starting posture");
+    assert.equal(runningConsistently.trainingStylePreference, "balanced", "consistent runners should not be pushed back into beginner-only conservative defaults");
+    assert.ok(gettingStarted.recentConsistency < runningConsistently.recentConsistency, "track should materially change early consistency posture for similar inputs");
+    assert.ok((gettingStarted.confidence ?? 0) < (runningConsistently.confidence ?? 0), "track should also affect confidence framing in the deterministic engine input");
+  }
+
+  {
+    const returning = buildEngineV2RunnerInput({
+      runnerProfile: {
+        ...buildRunnerProfile({
+        currentContinuousDistanceKm: 2,
+        currentRunsPerWeek: 2,
+        currentWeeklyVolumeKm: 10,
+        longestCurrentRunMin: 18,
+        onboardingTrack: "returning",
+      }),
+      },
+      goal: {
+        distance: "5K",
+        goalType: "complete",
+        weeks: 10,
+        startDate: "2026-03-23",
+        availableTrainingDays: ["Tirsdag", "Sondag"],
+      },
+    });
+    const gettingStarted = buildEngineV2RunnerInput({
+      runnerProfile: {
+        ...buildRunnerProfile({
+        currentContinuousDistanceKm: 2,
+        currentRunsPerWeek: 2,
+        currentWeeklyVolumeKm: 10,
+        longestCurrentRunMin: 18,
+        onboardingTrack: "getting_started",
+      }),
+      },
+      goal: {
+        distance: "5K",
+        goalType: "complete",
+        weeks: 10,
+        startDate: "2026-03-23",
+        availableTrainingDays: ["Tirsdag", "Sondag"],
+      },
+    });
+    const returningClassification = classifyRunner(returning);
+    assert.ok(returning.freeTextFlags?.includes("returning_runner"), "returning track should explicitly preserve comeback context in engine flags");
+    assert.notEqual(returning.recentConsistency, gettingStarted.recentConsistency, "returning should not collapse all the way down into pure beginner posture");
+    assert.equal(returningClassification.traits.primaryRunnerType, "return_to_running", "returning runners should classify distinctly from true getting-started runners when the rest of the profile is similar");
+  }
+
+  {
+    const goalFocused = buildEngineV2RunnerInput({
+      runnerProfile: {
+        ...buildRunnerProfile({
+        activityLevel: "moderat",
+        runningExperience: "ovet",
+        currentRunningAbility: "mere_end_tredive_min",
+        currentContinuousDistanceKm: 10,
+        currentRunsPerWeek: 4,
+        currentWeeklyVolumeKm: 34,
+        longestCurrentRunMin: 65,
+        onboardingTrack: "goal_focused",
+      }),
+      },
+      goal: {
+        distance: "10K",
+        goalType: "target_time",
+        weeks: 14,
+        startDate: "2026-03-23",
+        availableTrainingDays: ["Mandag", "Onsdag", "Fredag", "Sondag"],
+      },
+    });
+    const gettingStarted = buildEngineV2RunnerInput({
+      runnerProfile: {
+        ...buildRunnerProfile({
+        activityLevel: "moderat",
+        runningExperience: "ovet",
+        currentRunningAbility: "mere_end_tredive_min",
+        currentContinuousDistanceKm: 10,
+        currentRunsPerWeek: 4,
+        currentWeeklyVolumeKm: 34,
+        longestCurrentRunMin: 65,
+        onboardingTrack: "getting_started",
+      }),
+      },
+      goal: {
+        distance: "10K",
+        goalType: "target_time",
+        weeks: 14,
+        startDate: "2026-03-23",
+        availableTrainingDays: ["Mandag", "Onsdag", "Fredag", "Sondag"],
+      },
+    });
+    const goalFocusedRecommendation = buildTimelineRecommendation(goalFocused, classifyRunner(goalFocused)).recommendation;
+    const gettingStartedRecommendation = buildTimelineRecommendation(gettingStarted, classifyRunner(gettingStarted)).recommendation;
+    assert.equal(goalFocused.trainingStylePreference, "performance", "goal-focused runners with a performance goal should get a more intentional training-style signal");
+    assert.equal(goalFocused.baseProgramTrack, "goal_focused", "goal-focused onboarding should formalize into the dedicated base track");
+    assert.ok(goalFocused.currentContinuousRunMin >= 60, "consistent stronger runners should keep a credible starting baseline instead of being pulled far down");
+    assert.notEqual(
+      goalFocusedRecommendation.recommendedProgressionMode,
+      gettingStartedRecommendation.recommendedProgressionMode,
+      "goal-focused and getting-started runners should not be recommended the same progression posture for otherwise similar stronger inputs",
+    );
+  }
+
+  {
+    const adapted = buildEngineV2RunnerInput({
+      runnerProfile: {
+        heightCm: 178,
+        weightKg: 74,
+        age: 34,
+        activityLevel: "moderat",
+        runningExperience: "ovet",
+        currentRunningAbility: "mere_end_tredive_min",
+        currentContinuousDistanceKm: 10,
+        currentRunsPerWeek: 4,
+        currentWeeklyVolumeKm: 32.8,
+        longestCurrentRunMin: 63,
+      },
+      goal: {
+        distance: "10K",
+        goalType: "target_time",
+        weeks: 14,
+        startDate: "2026-03-23",
+        availableTrainingDays: ["Mandag", "Onsdag", "Fredag", "Sondag"],
+      },
+    });
+    assert.equal(adapted.currentContinuousRunMin, 63, "current-capacity distance should carry through to the engine adapter so stronger runners do not start far below baseline");
+  }
+
+  {
+    const sharedGoal: Goal = {
+      distance: "Halvmaraton" as const,
+      goalType: "complete" as const,
+      weeks: 18,
+      startDate: "2026-03-23",
+      availableTrainingDays: ["Mandag", "Onsdag", "Fredag", "Sondag"],
+    };
+    const gettingStarted = buildEngineV2RunnerInput({
+      runnerProfile: buildRunnerProfile({
+        onboardingTrack: "getting_started",
+        currentRunningAbility: "ti_femten_min",
+        currentContinuousDistanceKm: 3,
+        currentRunsPerWeek: 3,
+        currentWeeklyVolumeKm: 18,
+        longestCurrentRunMin: 28,
+      }),
+      goal: sharedGoal,
+    });
+    const returning = buildEngineV2RunnerInput({
+      runnerProfile: buildRunnerProfile({
+        onboardingTrack: "returning",
+        currentRunningAbility: "ti_femten_min",
+        currentContinuousDistanceKm: 3,
+        currentRunsPerWeek: 3,
+        currentWeeklyVolumeKm: 18,
+        longestCurrentRunMin: 28,
+      }),
+      goal: sharedGoal,
+    });
+    const steadyRunner = buildEngineV2RunnerInput({
+      runnerProfile: buildRunnerProfile({
+        onboardingTrack: "running_consistently",
+        currentRunningAbility: "mere_end_tredive_min",
+        currentContinuousDistanceKm: 8,
+        currentRunsPerWeek: 4,
+        currentWeeklyVolumeKm: 30,
+        longestCurrentRunMin: 60,
+      }),
+      goal: sharedGoal,
+    });
+    const goalFocused = buildEngineV2RunnerInput({
+      runnerProfile: buildRunnerProfile({
+        onboardingTrack: "goal_focused",
+        runningExperience: "ovet",
+        currentRunningAbility: "mere_end_tredive_min",
+        currentContinuousDistanceKm: 10,
+        currentRunsPerWeek: 4,
+        currentWeeklyVolumeKm: 36,
+        longestCurrentRunMin: 70,
+      }),
+      goal: { ...sharedGoal, goalType: "target_time" },
+    });
+    const gettingStartedRecommendation = buildTimelineRecommendation(gettingStarted, classifyRunner(gettingStarted)).recommendation;
+    const returningRecommendation = buildTimelineRecommendation(returning, classifyRunner(returning)).recommendation;
+    const steadyRecommendation = buildTimelineRecommendation(steadyRunner, classifyRunner(steadyRunner)).recommendation;
+    const goalFocusedRecommendation = buildTimelineRecommendation(goalFocused, classifyRunner(goalFocused)).recommendation;
+    assert.equal(gettingStarted.baseProgramTrack, "getting_started");
+    assert.equal(returning.baseProgramTrack, "returning");
+    assert.equal(steadyRunner.baseProgramTrack, "steady_runner");
+    assert.equal(goalFocused.baseProgramTrack, "goal_focused");
+    assert.equal(gettingStartedRecommendation.recommendedProgressionMode, "conservative", "getting-started track should preserve beginner safety");
+    assert.equal(returningRecommendation.recommendedProgressionMode, "conservative", "returning track should keep a comeback-oriented posture");
+    assert.equal(steadyRecommendation.recommendedProgressionMode, "standard", "steady runners should retain a stable non-beginner posture");
+    assert.ok(goalFocusedRecommendation.recommendedSessionsPerWeek >= steadyRecommendation.recommendedSessionsPerWeek, "goal-focused stronger runners should not be flattened below steady runners");
+    assert.ok((goalFocused.confidence ?? 0) >= (steadyRunner.confidence ?? 0), "goal-focused stronger runners should keep a stronger deterministic confidence posture");
+  }
+
   {
     const result = generatePlanForApp(beginnerInput);
     assert.equal(result.ok, true, "Plan generation adapter should return stable success shape");

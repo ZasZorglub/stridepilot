@@ -1,4 +1,4 @@
-import { OnboardingInterpretationInput, ProgressionStyle, RunnerArchetype, RunnerProfile } from "./types";
+import { BaseProgramTrack, OnboardingInterpretationInput, ProgressionStyle, RunnerArchetype, RunnerProfile } from "./types";
 import { classifyRunnerCategory } from "./classification";
 
 function clampScale(value: number): 1 | 2 | 3 | 4 | 5 {
@@ -12,6 +12,13 @@ function normalizeText(value?: string): string {
 
 function hasAnyKeyword(text: string, keywords: string[]): boolean {
   return keywords.some((keyword) => text.includes(keyword));
+}
+
+function resolveBaseProgramTrack(track?: OnboardingInterpretationInput["onboardingTrack"]): BaseProgramTrack {
+  if (track === "returning") return "returning";
+  if (track === "running_consistently") return "steady_runner";
+  if (track === "goal_focused") return "goal_focused";
+  return "getting_started";
 }
 
 function hasStrongStructuredExperience(input: OnboardingInterpretationInput): boolean {
@@ -79,6 +86,7 @@ function inferBaseFromAbility(currentAbility?: string): { aerobicBase: 1 | 2 | 3
 }
 
 function inferArchetype(input: OnboardingInterpretationInput): RunnerArchetype {
+  const baseProgramTrack = resolveBaseProgramTrack(input.onboardingTrack);
   const text = [input.onboardingText, input.injuryHistory, input.weakPoints, input.otherTraining].map(normalizeText).join(" ");
   const currentAbility = normalizeText(input.currentAbility);
   const activityLevel = normalizeText(input.activityLevel);
@@ -89,6 +97,7 @@ function inferArchetype(input: OnboardingInterpretationInput): RunnerArchetype {
   const explicitBeginner = hasAnyKeyword(text, ["helt ny", "aldrig løbet", "never run", "har aldrig løbet", "ingen løbeerfaring", "start fra nul"]);
   const strongStructuredExperience = hasStrongStructuredExperience(input);
 
+  if (baseProgramTrack === "returning") return "returning_runner";
   if (strongStructuredExperience) {
     if (hasAnyKeyword(text, ["tilbage", "igen", "comeback", "returning", "har løbet før", "kommer tilbage"])) {
       return "returning_runner";
@@ -103,6 +112,12 @@ function inferArchetype(input: OnboardingInterpretationInput): RunnerArchetype {
     return "motivated_novice";
   }
 
+  if (baseProgramTrack === "goal_focused" && input.goalType && (input.goalType === "pr" || input.goalType === "target_time") && !strongStructuredExperience) {
+    return "overeager_runner";
+  }
+  if (baseProgramTrack === "steady_runner" && !explicitBeginner) {
+    return "fit_but_inexperienced";
+  }
   if (explicitBeginner) {
     return "nervous_beginner";
   }
@@ -145,13 +160,18 @@ function inferInjurySensitivity(text: string, archetype: RunnerArchetype): 1 | 2
   return 2;
 }
 
-function inferProgressionStyle(archetype: RunnerArchetype, injurySensitivity: number, confidence: number): ProgressionStyle {
+function inferProgressionStyle(baseProgramTrack: BaseProgramTrack, archetype: RunnerArchetype, injurySensitivity: number, confidence: number): ProgressionStyle {
+  if (baseProgramTrack === "getting_started") return "conservative";
+  if (baseProgramTrack === "returning") return "conservative";
+  if (baseProgramTrack === "goal_focused" && injurySensitivity <= 3 && confidence >= 4) return "steady";
+  if (baseProgramTrack === "steady_runner") return "balanced";
   if (injurySensitivity >= 4 || confidence <= 2) return "conservative";
   if (archetype === "fit_but_inexperienced" || archetype === "motivated_novice") return "balanced";
   return "steady";
 }
 
 export function interpretRunnerProfile(input: OnboardingInterpretationInput): RunnerProfile {
+  const baseProgramTrack = resolveBaseProgramTrack(input.onboardingTrack);
   const text = [input.onboardingText, input.injuryHistory, input.weakPoints, input.otherTraining].map(normalizeText).join(" ");
   const archetype = inferArchetype(input);
   const base = inferBaseFromAbility(input.currentAbility);
@@ -161,21 +181,26 @@ export function interpretRunnerProfile(input: OnboardingInterpretationInput): Ru
 
   const confidence = clampScale(
     input.confidence ??
-      (archetype === "nervous_beginner"
+      (baseProgramTrack === "getting_started"
         ? 2
-        : archetype === "overeager_runner"
+        : baseProgramTrack === "goal_focused"
           ? 4
-          : archetype === "returning_runner"
-            ? 3
-            : hasAnyKeyword(text, ["usikker", "nervøs", "bange"])
-              ? 2
-              : 3),
+          : archetype === "nervous_beginner"
+            ? 2
+            : archetype === "overeager_runner"
+              ? 4
+              : archetype === "returning_runner"
+                ? 3
+                : hasAnyKeyword(text, ["usikker", "nervøs", "bange"])
+                  ? 2
+                  : 3),
   );
 
   const injurySensitivity = inferInjurySensitivity(text, archetype);
 
   const aerobicBase = clampScale(
     base.aerobicBase +
+      (baseProgramTrack === "goal_focused" ? 1 : 0) +
       (archetype === "fit_but_inexperienced" ? 1 : 0) +
       (normalizeText(input.activityLevel) === "meget_høj" ? 1 : 0) +
       (weeklyVolume >= 20 ? 1 : 0),
@@ -183,6 +208,8 @@ export function interpretRunnerProfile(input: OnboardingInterpretationInput): Ru
 
   const runningSpecificity = clampScale(
     base.runningSpecificity +
+      (baseProgramTrack === "steady_runner" ? 1 : 0) +
+      (baseProgramTrack === "goal_focused" && currentRunsPerWeek >= 3 ? 1 : 0) +
       (archetype === "returning_runner" ? 1 : 0) -
       (archetype === "fit_but_inexperienced" ? 1 : 0) +
       (currentRunsPerWeek >= 3 ? 1 : 0),
@@ -190,18 +217,21 @@ export function interpretRunnerProfile(input: OnboardingInterpretationInput): Ru
 
   const adjustedConfidence = clampScale(
     confidence +
+      (baseProgramTrack === "goal_focused" ? 1 : 0) +
+      (baseProgramTrack === "getting_started" ? -1 : 0) +
       (hasAnyKeyword(text, ["usikker", "nervøs", "bange", "bekymret"]) ? -1 : 0) +
       (input.goalType === "pr" && realisticDays >= 3 ? 1 : 0) +
       (hasStrongStructuredExperience(input) ? 1 : 0),
   );
 
   const runnerCategory = classifyRunnerCategory({
+    baseProgramTrack,
     archetype,
     aerobicBase,
     runningSpecificity,
     confidence: adjustedConfidence,
     injurySensitivity,
-    progressionStyle: inferProgressionStyle(archetype, injurySensitivity, adjustedConfidence),
+    progressionStyle: inferProgressionStyle(baseProgramTrack, archetype, injurySensitivity, adjustedConfidence),
     currentRunsPerWeek,
     currentWeeklyVolumeKm: weeklyVolume,
     longestRunMinutes: input.longestRunMinutes ?? 0,
@@ -210,13 +240,14 @@ export function interpretRunnerProfile(input: OnboardingInterpretationInput): Ru
   });
 
   return {
+    baseProgramTrack,
     archetype,
     runnerCategory,
     aerobicBase,
     runningSpecificity,
     confidence: adjustedConfidence,
     injurySensitivity,
-    progressionStyle: inferProgressionStyle(archetype, injurySensitivity, adjustedConfidence),
+    progressionStyle: inferProgressionStyle(baseProgramTrack, archetype, injurySensitivity, adjustedConfidence),
     currentRunsPerWeek,
     currentWeeklyVolumeKm: weeklyVolume,
     longestRunMinutes: input.longestRunMinutes ?? 0,

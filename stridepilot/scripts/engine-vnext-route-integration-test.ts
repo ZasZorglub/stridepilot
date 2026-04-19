@@ -60,6 +60,92 @@ async function main() {
   }
 
   {
+    const lowFrequencyGoal: Goal = {
+      distance: "Halvmaraton",
+      goalType: "complete",
+      weeks: 20,
+      startDate: "2026-03-23",
+      endDate: "2026-08-10",
+      availableTrainingDays: ["Onsdag", "Sondag"],
+      preferredLongRunDay: "sunday",
+    };
+    const result = await handleVNextPlanGenerationRequest({
+      engineVersion: "vnext",
+      runnerProfile: {
+        ...runnerProfile,
+        onboardingTrack: "goal_focused",
+        currentContinuousDistanceKm: 8,
+        currentRunningAbility: "mere_end_tredive_min",
+        currentRunsPerWeek: 2,
+        currentWeeklyVolumeKm: 18,
+        longestCurrentRunMin: 52,
+        runningExperience: "let_ovet",
+      },
+      goal: lowFrequencyGoal,
+    });
+    assert.equal(result.status, 200, "vNext generation should still build a plan after an explicit low-frequency override path");
+    assert.equal(result.body.ok, true);
+    if (result.body.ok) {
+      assert.equal(
+        result.body.data.plan.weeks.every((week) => week.sessions.length <= 2),
+        true,
+        "generated plans should never silently exceed the user's selected weekly training-day count",
+      );
+      assert.equal(
+        result.body.data.plan.weeks.some((week) => week.sessions.length === 2),
+        true,
+        "a 2-day selection should remain present in the generated week templates instead of expanding to 3-4 days",
+      );
+    }
+  }
+
+  {
+    const result = await handleVNextPlanGenerationRequest({
+      engineVersion: "vnext",
+      runnerProfile,
+      goal,
+      recommendationSelection: {
+        mode: "standard",
+        durationWeeks: 8,
+        goalDate: "2026-05-18",
+      },
+    });
+    assert.equal(result.status, 200, "route/controller should still accept an explicitly confirmed duration below the realistic span");
+    assert.equal(result.body.ok, true);
+    if (result.body.ok) {
+      assert.equal(result.body.data.plan.weeks.length, 8);
+      assert.equal(result.body.data.plan.resolvedInput.goalDate, "2026-05-18");
+    }
+  }
+
+  {
+    const result = await handleVNextPlanGenerationRequest({
+      engineVersion: "vnext",
+      runnerProfile,
+      goal,
+      recommendationSelection: {
+        mode: "standard",
+        durationWeeks: 12,
+        goalDate: "2026-06-15",
+      },
+    });
+    assert.equal(result.status, 200, "route/controller should accept an explicitly chosen duration override");
+    assert.equal(result.body.ok, true);
+    if (result.body.ok) {
+      assert.equal(
+        result.body.data.plan.weeks.length,
+        12,
+        "final plan generation should respect the user's confirmed duration override instead of silently regenerating the recommended length",
+      );
+      assert.equal(
+        result.body.data.plan.resolvedInput.goalDate,
+        "2026-06-15",
+        "the chosen goal date should flow through with the chosen duration override",
+      );
+    }
+  }
+
+  {
     const result = await handleVNextPlanGenerationRequest({
       engineVersion: "vnext",
       goal,

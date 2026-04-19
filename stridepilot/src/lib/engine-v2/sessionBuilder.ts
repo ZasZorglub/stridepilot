@@ -132,10 +132,19 @@ function raceEventRunTarget(
   longRunMin: number,
   runnerLevel: RunnerClassification["traits"]["runnerLevel"],
   goalType: GoalType,
+  currentWeeklyRuns: number,
+  currentWeeklyVolumeKm: number,
+  longestRecentRunMin: number,
 ): number {
   const conservative5k10k =
     (runnerLevel === "true_beginner" || runnerLevel === "beginner_plus") &&
     (goalType === "finish" || goalType === "finish_without_walking" || goalType === "return_to_running");
+  const experiencedPerformanceMarathon =
+    raceDistance === "Marathon" &&
+    (goalType === "improve_time" || goalType === "target_time") &&
+    runnerLevel === "advanced" &&
+    currentWeeklyRuns >= 4 &&
+    (currentWeeklyVolumeKm >= 50 || longestRecentRunMin >= 120);
 
   if (raceDistance === "5K") {
     if (conservative5k10k) {
@@ -151,6 +160,9 @@ function raceEventRunTarget(
   }
   if (raceDistance === "HalfMarathon") {
     return roundHalf(Math.max(82, Math.min(150, Math.max(continuousMin * 1.24, longRunMin * 0.88))));
+  }
+  if (experiencedPerformanceMarathon) {
+    return roundHalf(Math.max(136, Math.min(230, Math.max(continuousMin * 1.58, longRunMin * 0.98))));
   }
   return roundHalf(Math.max(132, Math.min(230, Math.max(continuousMin * 1.52, longRunMin * 0.94))));
 }
@@ -439,7 +451,16 @@ function buildMainSet(
   intervalTargetMin?: number,
 ): { segments: SessionSegment[]; purposeText: string; cues: string[]; longRunContribution: number } {
   if (selection.isRaceEvent) {
-    const raceDuration = raceEventRunTarget(input.raceDistance, continuousMin, longRunMin, runnerLevel, goalType);
+    const raceDuration = raceEventRunTarget(
+      input.raceDistance,
+      continuousMin,
+      longRunMin,
+      runnerLevel,
+      goalType,
+      input.currentWeeklyRuns,
+      input.currentWeeklyVolumeKm,
+      input.longestRecentRunMin,
+    );
     return {
       segments: [{ kind: "main", label: `${raceTitleForDistance(input.raceDistance)} i rolig, jævn rytme`, durationMin: raceDuration }],
       purposeText: "Lade måldagen være den klare kulmination af planen med en samlet indsats, der stadig bygger på friskhed og kontrol.",

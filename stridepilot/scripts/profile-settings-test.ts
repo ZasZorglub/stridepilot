@@ -35,5 +35,15 @@ assert.match(
   /makspuls 190/,
   "saved pulse guidance should summarize the known max heart rate",
 );
+assert.match(
+  buildPulseGuidanceSummary({ enabled: true, maxHeartRate: 190 }, "en"),
+  /max heart rate 190/i,
+  "English beta locale should expose pulse guidance summaries in clear English",
+);
+assert.match(
+  buildPulseGuidanceWarning("241", true, "en") ?? "",
+  /between 120 and 240/i,
+  "English beta locale should expose calm max-heart-rate validation copy",
+);
 
 console.log("profile settings tests passed");

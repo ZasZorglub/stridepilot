@@ -20,6 +20,7 @@ import { choosePlanType, classifyRunnerCategory } from "./classification";
 import { buildTenKDistancePlan } from "./buildTenKDistancePlan";
 import { deriveCalendarWeekCount, planStartWeekMonday } from "../calendar-week";
 import { orderTrainingDaysForLongRun } from "./week-structure";
+import { buildCapacityInterpretationPolicy, buildEarlyWeekRealismPolicy, buildEntryRealismPolicy, buildProgressionRealismPolicy, buildTrackPosturePolicy, ContinuityBand } from "./realismPolicy";
 
 type LegacyPlanPhase = "introduction" | "continuous_running" | "capacity" | "race_preparation";
 
@@ -223,9 +224,7 @@ function beginnerSafe(profile: RunnerProfile): boolean {
   );
 }
 
-type BeginnerContinuityBand = "ultra_zero" | "one_to_two_min" | "five_min" | "established";
-
-function beginnerContinuityBand(profile: RunnerProfile): BeginnerContinuityBand {
+function beginnerContinuityBand(profile: RunnerProfile): ContinuityBand {
   const zeroBase =
     profile.currentRunsPerWeek === 0 &&
     profile.currentWeeklyVolumeKm === 0 &&
@@ -281,6 +280,22 @@ function allowRunWalk(profile: RunnerProfile, goal: GoalConfig): boolean {
 function shouldUseRunWalk(profile: RunnerProfile, phase: LegacyPlanPhase, weekNumberInPhase: number, goal: GoalConfig): boolean {
   if (!allowRunWalk(profile, goal)) return false;
   const continuityBand = beginnerContinuityBand(profile);
+  const capacityPolicy = buildCapacityInterpretationPolicy({
+    profile,
+    continuityBand,
+    beginnerLike: beginnerSafe(profile),
+  });
+  const earlyWeekPolicy = buildEarlyWeekRealismPolicy({
+    profile,
+    continuityBand,
+    beginnerLike: beginnerSafe(profile),
+    phase,
+    weekNumberInPhase,
+  });
+  if (capacityPolicy.preferRunWalkByDefault && (phase === "introduction" || (phase === "continuous_running" && weekNumberInPhase <= 1))) {
+    return true;
+  }
+  if (earlyWeekPolicy.preferRunWalk) return true;
   if (continuityBand === "ultra_zero") {
     return phase === "introduction" || (phase === "continuous_running" && weekNumberInPhase === 1);
   }
@@ -299,6 +314,34 @@ function shouldUseRunWalk(profile: RunnerProfile, phase: LegacyPlanPhase, weekNu
 }
 
 type PerformanceMode = "non_performance" | "finish_like" | "conservative_performance" | "full_performance";
+
+function goalDistanceKm(goal: GoalConfig): number {
+  if (goal.goalDistance === "5K") return 5;
+  if (goal.goalDistance === "10K") return 10;
+  if (goal.goalDistance === "Halvmaraton") return 21.0975;
+  return 42.195;
+}
+
+function parseTargetTimeToSeconds(value?: string): number | null {
+  if (!value) return null;
+  const parts = value.split(":").map((part) => Number(part));
+  if (parts.length < 2 || parts.some((part) => !Number.isFinite(part))) return null;
+  if (parts.length === 2) return parts[0]! * 60 + parts[1]!;
+  return parts[0]! * 3600 + parts[1]! * 60 + parts[2]!;
+}
+
+function targetPaceSecPerKm(goal: GoalConfig): number | null {
+  if (typeof goal.targetPaceSecPerKm === "number" && Number.isFinite(goal.targetPaceSecPerKm)) return goal.targetPaceSecPerKm;
+  const targetTimeSec = parseTargetTimeToSeconds(goal.targetTime);
+  if (!targetTimeSec) return null;
+  return targetTimeSec / goalDistanceKm(goal);
+}
+
+function hasAmbitiousLongDistanceTarget(goal: GoalConfig): boolean {
+  const pace = targetPaceSecPerKm(goal);
+  if (!pace) return false;
+  return (goal.goalDistance === "Halvmaraton" || goal.goalDistance === "Marathon") && pace <= 240;
+}
 
 function performanceReadinessScore(profile: RunnerProfile): number {
   return (
@@ -319,6 +362,7 @@ function resolvePerformanceMode(profile: RunnerProfile, goal: GoalConfig, totalW
   const longest = profile.longestRunMinutes;
   const readinessScore = performanceReadinessScore(profile);
   const shortBuild = totalWeeks <= DISTANCE_PROFILE[goal.goalDistance].minWeeks + (goal.goalDistance === "5K" ? 1 : 2);
+  const ambitiousLongDistanceTarget = hasAmbitiousLongDistanceTarget(goal);
 
   const fullReady =
     goal.goalDistance === "5K"
@@ -337,6 +381,19 @@ function resolvePerformanceMode(profile: RunnerProfile, goal: GoalConfig, totalW
         : goal.goalDistance === "Halvmaraton"
           ? volume < 18 || runs < 3 || longest < 50
           : volume < 28 || runs < 3 || longest < 80;
+
+  const ambitiousLongDistanceReady =
+    ambitiousLongDistanceTarget &&
+    (goal.goalDistance === "Halvmaraton"
+      ? volume >= 40 && runs >= 4 && longest >= 90
+      : volume >= 52 && runs >= 4 && longest >= 120);
+
+  if (ambitiousLongDistanceReady && readinessScore >= (goal.goalDistance === "Marathon" ? 74 : 66) && !shortBuild) {
+    return "full_performance";
+  }
+  if (ambitiousLongDistanceReady && !clearlyUnderReady) {
+    return "conservative_performance";
+  }
 
   if (fullReady && !shortBuild) return "full_performance";
   if (fullReady) return goal.goalDistance === "5K" ? "full_performance" : "conservative_performance";
@@ -376,6 +433,16 @@ function runnerStartingPoint(profile: RunnerProfile, goal: GoalConfig, totalWeek
   const distanceProfile = DISTANCE_PROFILE[goal.goalDistance];
   const cautious = profile.injurySensitivity >= 4 || profile.confidence <= 2;
   const continuityBand = beginnerContinuityBand(profile);
+  const entryPolicy = buildEntryRealismPolicy({
+    profile,
+    continuityBand,
+    beginnerLike: beginnerSafe(profile),
+  });
+  const capacityPolicy = buildCapacityInterpretationPolicy({
+    profile,
+    continuityBand,
+    beginnerLike: beginnerSafe(profile),
+  });
   const intentWeight = intentAggressiveness(goal.goalIntent);
   const experienceWeight = clamp(
     (profile.aerobicBase * 0.2 + profile.runningSpecificity * 0.2 + Math.min(profile.currentRunsPerWeek, 5) * 0.12 + Math.min(profile.currentWeeklyVolumeKm, 60) * 0.01) /
@@ -389,25 +456,28 @@ function runnerStartingPoint(profile: RunnerProfile, goal: GoalConfig, totalWeek
   const baseLongRun = profile.aerobicBase * 7 + 15;
   const targetContinuousPeak = roundHalf(
     clamp(
-      distanceProfile.continuousPeak.min + (distanceProfile.continuousPeak.max - distanceProfile.continuousPeak.min) * ((experienceWeight + intentWeight) / 2),
+      (distanceProfile.continuousPeak.min + (distanceProfile.continuousPeak.max - distanceProfile.continuousPeak.min) * ((experienceWeight + intentWeight) / 2)) *
+        entryPolicy.conservativeCapacityFactor,
       distanceProfile.continuousPeak.min,
       distanceProfile.continuousPeak.max,
     ),
   );
   const targetLongRunPeak = roundHalf(
     clamp(
-      distanceProfile.longRunPeak.min + (distanceProfile.longRunPeak.max - distanceProfile.longRunPeak.min) * ((experienceWeight * 0.55) + (intentWeight * 0.45)),
+      (distanceProfile.longRunPeak.min + (distanceProfile.longRunPeak.max - distanceProfile.longRunPeak.min) * ((experienceWeight * 0.55) + (intentWeight * 0.45))) *
+        entryPolicy.conservativeCapacityFactor,
       distanceProfile.longRunPeak.min,
       distanceProfile.longRunPeak.max,
     ),
   );
   const startContinuous = clamp(
-    Math.max(baseContinuous, currentLongest > 0 ? currentLongest * 0.6 : 0, profile.currentWeeklyVolumeKm > 0 ? profile.currentWeeklyVolumeKm * 0.8 : 0),
+    Math.max(baseContinuous, currentLongest > 0 ? currentLongest * 0.6 : 0, profile.currentWeeklyVolumeKm > 0 ? profile.currentWeeklyVolumeKm * 0.8 : 0) *
+      entryPolicy.conservativeCapacityFactor,
     10,
     Math.max(18, baseWorkoutBudget - 8),
   );
   const startLongRun = clamp(
-    Math.max(baseLongRun, currentLongest > 0 ? currentLongest * 0.82 : 0),
+    Math.max(baseLongRun, currentLongest > 0 ? currentLongest * 0.82 : 0) * entryPolicy.conservativeCapacityFactor,
     18,
     Math.max(30, targetLongRunPeak * 0.9),
   );
@@ -423,15 +493,15 @@ function runnerStartingPoint(profile: RunnerProfile, goal: GoalConfig, totalWeek
 
   if (continuityBand === "ultra_zero") {
     return {
-      continuousStart: 4,
+      continuousStart: capacityPolicy.introductoryContinuousStartMin ?? 1,
       continuousPeak: roundHalf(clamp(goal.goalDistance === "5K" ? 18 : 22, 12, Math.min(distanceProfile.continuousPeak.max, 24))),
-      longRunStart: 10,
+      longRunStart: capacityPolicy.introductoryLongRunStartMin ?? 8,
       longRunPeak: roundHalf(clamp(goal.goalDistance === "5K" ? 28 : goal.goalDistance === "10K" ? 36 : 42, 24, Math.min(distanceProfile.longRunPeak.max, 48))),
-      intervalStart: 0.5,
+      intervalStart: capacityPolicy.introductoryIntervalRunMin ?? 0.5,
       intervalPeak: 1.5,
-      repeatsStart: 4,
+      repeatsStart: capacityPolicy.introductoryRepeats ?? 4,
       repeatsPeak: 6,
-      walkBreakStart: 2.5,
+      walkBreakStart: capacityPolicy.introductoryWalkBreakMin ?? 2.5,
       nonLongCap: 24,
       longRunCap: 48,
       conservativeIntensity: true,
@@ -441,15 +511,15 @@ function runnerStartingPoint(profile: RunnerProfile, goal: GoalConfig, totalWeek
 
   if (continuityBand === "one_to_two_min") {
     return {
-      continuousStart: 6,
+      continuousStart: capacityPolicy.introductoryContinuousStartMin ?? 2,
       continuousPeak: roundHalf(clamp(goal.goalDistance === "5K" ? 22 : 28, 14, Math.min(distanceProfile.continuousPeak.max, 30))),
-      longRunStart: 12,
+      longRunStart: capacityPolicy.introductoryLongRunStartMin ?? 10,
       longRunPeak: roundHalf(clamp(goal.goalDistance === "5K" ? 34 : goal.goalDistance === "10K" ? 44 : 52, 28, Math.min(distanceProfile.longRunPeak.max, 58))),
-      intervalStart: 1,
+      intervalStart: capacityPolicy.introductoryIntervalRunMin ?? 0.75,
       intervalPeak: 2,
-      repeatsStart: 4,
+      repeatsStart: capacityPolicy.introductoryRepeats ?? 4,
       repeatsPeak: 6,
-      walkBreakStart: 2.25,
+      walkBreakStart: capacityPolicy.introductoryWalkBreakMin ?? 2.25,
       nonLongCap: 30,
       longRunCap: 58,
       conservativeIntensity: true,
@@ -459,15 +529,15 @@ function runnerStartingPoint(profile: RunnerProfile, goal: GoalConfig, totalWeek
 
   if (continuityBand === "five_min") {
     return {
-      continuousStart: 9,
+      continuousStart: capacityPolicy.introductoryContinuousStartMin ?? 4,
       continuousPeak: roundHalf(clamp(goal.goalDistance === "5K" ? 28 : 34, 18, Math.min(distanceProfile.continuousPeak.max, 40))),
-      longRunStart: 16,
+      longRunStart: capacityPolicy.introductoryLongRunStartMin ?? 14,
       longRunPeak: roundHalf(clamp(goal.goalDistance === "5K" ? 38 : goal.goalDistance === "10K" ? 50 : 60, 32, Math.min(distanceProfile.longRunPeak.max, 66))),
-      intervalStart: 2,
+      intervalStart: capacityPolicy.introductoryIntervalRunMin ?? 1,
       intervalPeak: 3,
-      repeatsStart: 4,
+      repeatsStart: capacityPolicy.introductoryRepeats ?? 4,
       repeatsPeak: 6,
-      walkBreakStart: 1.75,
+      walkBreakStart: capacityPolicy.introductoryWalkBreakMin ?? 2,
       nonLongCap: 40,
       longRunCap: 68,
       conservativeIntensity: true,
@@ -476,10 +546,34 @@ function runnerStartingPoint(profile: RunnerProfile, goal: GoalConfig, totalWeek
   }
 
   return {
-    continuousStart: roundHalf(cautious ? startContinuous * 0.92 : startContinuous),
-    continuousPeak: roundHalf(clamp(targetContinuousPeak * progressionRate, 20, Math.min(distanceProfile.continuousPeak.max, nonLongCap))),
-    longRunStart: roundHalf(cautious ? startLongRun * 0.94 : startLongRun),
-    longRunPeak: roundHalf(clamp(targetLongRunPeak * progressionRate, 35, Math.min(distanceProfile.longRunPeak.max, longRunCap))),
+    continuousStart: roundHalf(
+      clamp(
+        cautious ? startContinuous * 0.92 : startContinuous,
+        10,
+        Math.min(entryPolicy.continuousStartMax ?? Number.POSITIVE_INFINITY, Math.max(20, nonLongCap)),
+      ),
+    ),
+    continuousPeak: roundHalf(
+      clamp(
+        targetContinuousPeak * progressionRate,
+        20,
+        Math.min(distanceProfile.continuousPeak.max, entryPolicy.nonLongCapMax ?? nonLongCap, nonLongCap),
+      ),
+    ),
+    longRunStart: roundHalf(
+      clamp(
+        cautious ? startLongRun * 0.94 : startLongRun,
+        18,
+        Math.min(entryPolicy.longRunStartMax ?? Number.POSITIVE_INFINITY, Math.max(35, longRunCap)),
+      ),
+    ),
+    longRunPeak: roundHalf(
+      clamp(
+        targetLongRunPeak * progressionRate,
+        35,
+        Math.min(distanceProfile.longRunPeak.max, entryPolicy.longRunCapMax ?? longRunCap, longRunCap),
+      ),
+    ),
     intervalStart: clamp(qualityBase, distanceProfile.intervalPeak.min, distanceProfile.intervalPeak.max),
     intervalPeak: clamp(
       roundHalf(distanceProfile.intervalPeak.min + (distanceProfile.intervalPeak.max - distanceProfile.intervalPeak.min) * ((intentWeight + experienceWeight) / 2)),
@@ -493,8 +587,8 @@ function runnerStartingPoint(profile: RunnerProfile, goal: GoalConfig, totalWeek
       distanceProfile.repeatsPeak.max,
     ),
     walkBreakStart: cautious ? 2 : beginnerSafe(profile) ? 1.5 : 1,
-    nonLongCap,
-    longRunCap,
+    nonLongCap: Math.min(nonLongCap, entryPolicy.nonLongCapMax ?? nonLongCap),
+    longRunCap: Math.min(longRunCap, entryPolicy.longRunCapMax ?? longRunCap),
     conservativeIntensity: beginnerSafe(profile),
     canHandleDoubleQuality:
       profile.currentRunsPerWeek >= 4 &&
@@ -512,6 +606,76 @@ function shouldStabilizeWeek(weekNumber: number, totalWeeks: number, phase: Lega
   if (weekNumber === totalWeeks - 1 || weekNumber === totalWeeks) return false;
   const frequency = goal.trainingDaysPerWeek;
   return weekNumber % (frequency >= 4 ? 4 : 3) === 0;
+}
+
+function buildWaveFactors(
+  phase: LegacyPlanPhase,
+  weekNumberInPhase: number,
+  phaseLength: number,
+): { loadFactor: number; longRunFactor: number; continuousFactor: number } {
+  if (phase === "introduction" || phase === "race_preparation" || phaseLength <= 1) {
+    return { loadFactor: 1, longRunFactor: 1, continuousFactor: 1 };
+  }
+
+  const waveIndex = phaseLength <= 2 ? weekNumberInPhase - 1 : (weekNumberInPhase - 1) % 3;
+  if (phase === "continuous_running") {
+    if (waveIndex === 0) return { loadFactor: 0.99, longRunFactor: 0.99, continuousFactor: 0.995 };
+    if (waveIndex === 1) return { loadFactor: 1.01, longRunFactor: 1.025, continuousFactor: 1.01 };
+    return { loadFactor: 1.035, longRunFactor: 1.055, continuousFactor: 1.02 };
+  }
+
+  if (waveIndex === 0) return { loadFactor: 0.995, longRunFactor: 0.99, continuousFactor: 1 };
+  if (waveIndex === 1) return { loadFactor: 1.02, longRunFactor: 1.04, continuousFactor: 1.015 };
+  return { loadFactor: 1.045, longRunFactor: 1.07, continuousFactor: 1.025 };
+}
+
+function clampRelative(value: number, previous: number, minFactor: number, maxFactor: number): number {
+  return clamp(value, previous * minFactor, previous * maxFactor);
+}
+
+function smoothWeekTargets(params: {
+  current: {
+    continuousRunMin: number;
+    longRunMin: number;
+    intervalRunMin: number;
+    repeats: number;
+  };
+  previous: {
+    continuousRunMin: number;
+    longRunMin: number;
+    intervalRunMin: number;
+    repeats: number;
+  } | null;
+  phase: LegacyPlanPhase;
+  goal: GoalConfig;
+  profile: RunnerProfile;
+  continuityBand: ContinuityBand;
+  isStabilizationWeek: boolean;
+  previousWasStabilizationWeek: boolean;
+}): {
+  continuousRunMin: number;
+  longRunMin: number;
+  intervalRunMin: number;
+  repeats: number;
+} {
+  if (!params.previous) return params.current;
+
+  const progressionPolicy = buildProgressionRealismPolicy({
+    profile: params.profile,
+    continuityBand: params.continuityBand,
+    beginnerLike: beginnerSafe(params.profile),
+    goal: params.goal,
+    phase: params.phase,
+    isStabilizationWeek: params.isStabilizationWeek,
+    previousWasStabilizationWeek: params.previousWasStabilizationWeek,
+  });
+
+  return {
+    continuousRunMin: roundHalf(clampRelative(params.current.continuousRunMin, params.previous.continuousRunMin, progressionPolicy.continuousMinFactor, progressionPolicy.continuousMaxFactor)),
+    longRunMin: roundHalf(clampRelative(params.current.longRunMin, params.previous.longRunMin, progressionPolicy.longRunMinFactor, progressionPolicy.longRunMaxFactor)),
+    intervalRunMin: roundHalf(clampRelative(params.current.intervalRunMin, params.previous.intervalRunMin, progressionPolicy.intervalMinFactor, progressionPolicy.intervalMaxFactor)),
+    repeats: clamp(params.current.repeats, Math.max(4, params.previous.repeats - 1), params.previous.repeats + 1),
+  };
 }
 
 function taperFactor(goal: GoalConfig, phase: LegacyPlanPhase, weekNumberInPhase: number, phaseLength: number): number {
@@ -556,16 +720,42 @@ function sessionMix(
 ): WorkoutType[] {
   const finalPhaseWeek = phase === "race_preparation" && weekNumberInPhase === phaseLength;
   const performanceIntent = goal.goalIntent === "improve" || goal.goalIntent === "target_time";
+  const onboardingTrack = profile.baseProgramTrack;
   const continuityBand = beginnerContinuityBand(profile);
   const performanceMode = resolvePerformanceMode(profile, goal, totalWeeks);
   const fullPerformance = performanceMode === "full_performance";
   const conservativePerformance = performanceMode === "conservative_performance";
   const downgradedPerformance = performanceMode === "finish_like";
   const conservative = beginnerSafe(profile) || goal.goalIntent === "finish";
+  const progressionSupport: WorkoutType = weekNumberInPhase % 3 === 0 ? "progression" : weekNumberInPhase % 2 === 0 ? "steady" : "easy";
+  const endurancePrimary: WorkoutType = weekNumberInPhase % 2 === 0 ? "progression" : "steady";
   const endurancePerformance = (fullPerformance || conservativePerformance) && (goal.goalDistance === "Halvmaraton" || goal.goalDistance === "Marathon");
   const strong5kPerformance = goal.goalDistance === "5K" && fullPerformance && strongBackground(profile, goal);
   const strongMarathonBackground = goal.goalDistance === "Marathon" && strongBackground(profile, goal) && !beginnerSafe(profile);
+  const ambitiousLongDistancePerformance =
+    hasAmbitiousLongDistanceTarget(goal) &&
+    (goal.goalDistance === "Halvmaraton" || goal.goalDistance === "Marathon") &&
+    (fullPerformance || conservativePerformance);
   const effectivePerformance = performanceIntent && !downgradedPerformance;
+  const trackPosture = buildTrackPosturePolicy({
+    profile,
+    track: onboardingTrack,
+    continuityBand,
+    beginnerLike: beginnerSafe(profile),
+    phase,
+    weekNumberInPhase,
+    useRunWalk,
+    effectivePerformance,
+  });
+  const trackDrivenQuality = trackPosture.preferControlledQualitySignal;
+  const earlyQualityType: WorkoutType =
+    weekNumberInPhase <= 1
+      ? "steady"
+      : goal.goalDistance === "5K"
+        ? "strides"
+        : goal.goalDistance === "10K"
+          ? "progression"
+          : "tempo";
   if (goal.trainingDaysPerWeek === 2) {
     if (continuityBand === "ultra_zero" && phase === "introduction") return ["run-walk", "run-walk"];
     if (continuityBand === "one_to_two_min" && phase === "introduction") return ["run-walk", "easy"];
@@ -577,23 +767,34 @@ function sessionMix(
 
   if (goal.trainingDaysPerWeek === 3) {
     if (continuityBand === "ultra_zero" && phase === "introduction") return ["run-walk", "run-walk", "run-walk"];
-    if (continuityBand === "one_to_two_min" && phase === "introduction") return ["run-walk", "easy", "run-walk"];
+    if (continuityBand === "one_to_two_min" && phase === "introduction") return ["run-walk", "run-walk", "run-walk"];
+    if (continuityBand === "five_min" && phase === "introduction") return ["run-walk", "run-walk", "run-walk"];
     if (finalPhaseWeek) return ["easy", "easy", "benchmark"];
     if (isStabilizationWeek) return [useRunWalk ? "run-walk" : "easy", "recovery", "long"];
-    if (phase === "introduction") return [useRunWalk ? "run-walk" : "easy", strong5kPerformance ? "strides" : conservative ? "easy" : "strides", "long"];
+    if (phase === "introduction") {
+      if (trackPosture.preferEasyOnly) return [useRunWalk ? "run-walk" : "easy", "easy", "long"];
+      if (trackDrivenQuality) return ["easy", earlyQualityType, "long"];
+      if (trackPosture.preferSteadySupport) return ["easy", "steady", "long"];
+      if (onboardingTrack === "returning") return [useRunWalk ? "run-walk" : "easy", "easy", "long"];
+      return [useRunWalk ? "run-walk" : "easy", strong5kPerformance ? "strides" : conservative ? "easy" : "strides", "long"];
+    }
     if (phase === "continuous_running") {
+      if (trackPosture.preferEasyOnly) return [useRunWalk ? "run-walk" : "easy", "easy", "long"];
+      if (trackDrivenQuality) return ["easy", weekNumberInPhase <= 2 ? "progression" : endurancePrimary, "long"];
+      if (trackPosture.preferSteadySupport) return ["easy", "steady", "long"];
       if (strong5kPerformance) return ["easy", weekNumberInPhase % 2 === 0 ? "tempo" : "interval", "long"];
-      if (strongMarathonBackground) return ["easy", "tempo", "long"];
-      return [useRunWalk ? "run-walk" : "easy", endurancePerformance ? "tempo" : effectivePerformance ? "strides" : "easy", "long"];
+      if (strongMarathonBackground) return ["easy", endurancePrimary, "long"];
+      return [useRunWalk ? "run-walk" : "easy", endurancePerformance ? endurancePrimary : effectivePerformance ? "strides" : progressionSupport, "long"];
     }
     if (phase === "capacity") {
       if (strong5kPerformance) return ["interval", weekNumberInPhase % 2 === 0 ? "tempo" : "easy", "long"];
-      if (strongMarathonBackground) return ["tempo", "easy", "long"];
-      return [endurancePerformance ? "tempo" : effectivePerformance ? "interval" : "easy", goal.goalDistance === "Marathon" ? "easy" : "recovery", "long"];
+      if (ambitiousLongDistancePerformance) return [endurancePrimary, "race-specific", "long"];
+      if (strongMarathonBackground) return [endurancePrimary, progressionSupport === "easy" ? "easy" : progressionSupport, "long"];
+      return [endurancePerformance ? endurancePrimary : effectivePerformance ? "interval" : progressionSupport, goal.goalDistance === "Marathon" ? "easy" : "recovery", "long"];
     }
     if (strong5kPerformance) return ["tempo", weekNumberInPhase === phaseLength - 1 ? "strides" : "easy", "long"];
-    if (strongMarathonBackground) return ["tempo", "easy", "long"];
-    return [endurancePerformance || effectivePerformance ? "tempo" : "easy", "easy", "long"];
+    if (strongMarathonBackground) return [endurancePrimary, progressionSupport === "easy" ? "easy" : progressionSupport, "long"];
+    return [endurancePerformance || effectivePerformance ? endurancePrimary : progressionSupport, "easy", "long"];
   }
 
   if (continuityBand === "ultra_zero" && phase === "introduction") return ["run-walk", "recovery", "run-walk", "run-walk"];
@@ -601,26 +802,35 @@ function sessionMix(
   if (finalPhaseWeek) return ["easy", "recovery", "easy", "benchmark"];
   if (isStabilizationWeek) return [useRunWalk ? "run-walk" : "easy", "recovery", "easy", "long"];
   if (phase === "introduction") {
+    if (trackPosture.preferEasyOnly) return [useRunWalk ? "run-walk" : "easy", "recovery", "easy", "long"];
+    if (trackDrivenQuality) return ["easy", "recovery", earlyQualityType, "long"];
+    if (trackPosture.preferSteadySupport) return ["easy", "recovery", "steady", "long"];
+    if (onboardingTrack === "returning") return [useRunWalk ? "run-walk" : "easy", "recovery", "easy", "long"];
     if (strong5kPerformance) return ["easy", "strides", "easy", "long"];
     return [useRunWalk ? "run-walk" : "easy", "recovery", "easy", "long"];
   }
   if (phase === "continuous_running") {
+    if (trackPosture.preferEasyOnly) return [useRunWalk ? "run-walk" : "easy", "recovery", "easy", "long"];
+    if (trackDrivenQuality) return ["easy", "recovery", weekNumberInPhase <= 2 ? "progression" : endurancePrimary, "long"];
+    if (trackPosture.preferSteadySupport) return ["easy", "recovery", "steady", "long"];
     if (strong5kPerformance) return ["easy", weekNumberInPhase % 2 === 0 ? "tempo" : "interval", weekNumberInPhase % 2 === 0 ? "strides" : "easy", "long"];
-    if (strongMarathonBackground) return ["easy", "tempo", "easy", "long"];
-    return [useRunWalk ? "run-walk" : "easy", endurancePerformance ? "tempo" : conservative ? "recovery" : "strides", "easy", "long"];
+    if (strongMarathonBackground) return ["easy", endurancePrimary, progressionSupport, "long"];
+    return [useRunWalk ? "run-walk" : "easy", endurancePerformance ? endurancePrimary : conservative ? "recovery" : "strides", progressionSupport, "long"];
   }
   if (phase === "capacity") {
     if (strong5kPerformance) return ["interval", "recovery", weekNumberInPhase % 2 === 0 ? "tempo" : "strides", "long"];
-    if (strongMarathonBackground && fullPerformance) return ["tempo", "recovery", "tempo", "long"];
-    if (strongMarathonBackground) return ["tempo", "recovery", "easy", "long"];
-    if (endurancePerformance && canHandleDoubleQuality) return ["tempo", "recovery", "easy", "long"];
+    if (ambitiousLongDistancePerformance) return [endurancePrimary, "recovery", "race-specific", "long"];
+    if (strongMarathonBackground && fullPerformance) return [endurancePrimary, "recovery", progressionSupport === "easy" ? "steady" : progressionSupport, "long"];
+    if (strongMarathonBackground) return [endurancePrimary, "recovery", progressionSupport, "long"];
+    if (endurancePerformance && canHandleDoubleQuality) return [endurancePrimary, "recovery", progressionSupport, "long"];
     if (effectivePerformance && canHandleDoubleQuality) return ["interval", "recovery", "tempo", "long"];
-    return [endurancePerformance ? "tempo" : effectivePerformance ? "interval" : "easy", "recovery", "easy", "long"];
+    return [endurancePerformance ? endurancePrimary : effectivePerformance ? "interval" : progressionSupport, "recovery", "easy", "long"];
   }
   if (strong5kPerformance) return ["tempo", "recovery", weekNumberInPhase === phaseLength ? "easy" : "strides", "long"];
-  if (strongMarathonBackground && fullPerformance) return ["tempo", "recovery", "tempo", "long"];
-  if (strongMarathonBackground) return ["tempo", "recovery", "easy", "long"];
-  if (endurancePerformance && canHandleDoubleQuality) return ["tempo", "recovery", "tempo", "long"];
+  if (ambitiousLongDistancePerformance) return [endurancePrimary, "recovery", "race-specific", "long"];
+  if (strongMarathonBackground && fullPerformance) return [endurancePrimary, "recovery", progressionSupport === "easy" ? "steady" : progressionSupport, "long"];
+  if (strongMarathonBackground) return [endurancePrimary, "recovery", progressionSupport, "long"];
+  if (endurancePerformance && canHandleDoubleQuality) return [endurancePrimary, "recovery", progressionSupport === "easy" ? "steady" : progressionSupport, "long"];
   if (effectivePerformance && canHandleDoubleQuality) return ["tempo", "recovery", goal.goalDistance === "5K" ? "strides" : "easy", "long"];
   return [endurancePerformance ? "tempo" : "tempo", "recovery", "easy", "long"];
 }
@@ -639,14 +849,31 @@ function createWeekState(params: {
   const continuityBand = beginnerContinuityBand(params.profile);
   const strong5kPerformance = params.goal.goalDistance === "5K" && performanceMode === "full_performance" && strongBackground(params.profile, params.goal);
   const strongMarathonBackground = params.goal.goalDistance === "Marathon" && strongBackground(params.profile, params.goal) && !beginnerSafe(params.profile);
+  const ambitiousLongDistancePerformance =
+    hasAmbitiousLongDistanceTarget(params.goal) &&
+    (params.goal.goalDistance === "Halvmaraton" || params.goal.goalDistance === "Marathon") &&
+    (performanceMode === "full_performance" || performanceMode === "conservative_performance");
   const phaseLength = countPhaseWeeks(params.phaseTimeline, params.phase);
   const weekNumberInPhase = phaseWeekIndex(params.phaseTimeline, params.weekNumber);
-  const useRunWalk = shouldUseRunWalk(params.profile, params.phase, weekNumberInPhase, params.goal);
+  const earlyWeekPolicy = buildEarlyWeekRealismPolicy({
+    profile: params.profile,
+    continuityBand,
+    beginnerLike: beginnerSafe(params.profile),
+    phase: params.phase,
+    weekNumberInPhase,
+  });
+  const capacityPolicy = buildCapacityInterpretationPolicy({
+    profile: params.profile,
+    continuityBand,
+    beginnerLike: beginnerSafe(params.profile),
+  });
+  const useRunWalk = earlyWeekPolicy.preferRunWalk || shouldUseRunWalk(params.profile, params.phase, weekNumberInPhase, params.goal);
   const introLen = countPhaseWeeks(params.phaseTimeline, "introduction");
   const continuousLen = countPhaseWeeks(params.phaseTimeline, "continuous_running");
   const capacityLen = countPhaseWeeks(params.phaseTimeline, "capacity");
   const introAndBase = Math.max(1, introLen + continuousLen);
   const distanceProfile = DISTANCE_PROFILE[params.goal.goalDistance];
+  const wave = buildWaveFactors(params.phase, weekNumberInPhase, phaseLength);
 
   let phaseProgress = 0;
   if (phaseLength > 1) {
@@ -673,6 +900,11 @@ function createWeekState(params: {
     longRunMin = profileStart.longRunPeak * (params.goal.goalDistance === "Marathon" ? 0.88 + phaseProgress * 0.08 : 0.82 + phaseProgress * 0.12);
   } else {
     longRunMin = profileStart.longRunPeak * taperFactor(params.goal, params.phase, weekNumberInPhase, phaseLength);
+  }
+
+  if (!params.isStabilizationWeek) {
+    continuousRunMin *= wave.continuousFactor;
+    longRunMin *= wave.longRunFactor;
   }
 
   const qualityProgress =
@@ -733,65 +965,112 @@ function createWeekState(params: {
     }
   }
 
+  if (ambitiousLongDistancePerformance) {
+    continuousRunMin *= params.phase === "capacity" || params.phase === "race_preparation" ? 1.06 : 1.02;
+    intervalRunMin *= params.phase === "capacity" || params.phase === "race_preparation" ? 1.08 : 1.02;
+    if (params.goal.goalDistance === "Marathon") {
+      longRunMin *= params.phase === "race_preparation" ? 1 : 1.03;
+    }
+  }
+
   if (continuityBand === "ultra_zero") {
     if (params.phase === "introduction") {
-      continuousRunMin = 4 + phaseProgress * 2;
-      longRunMin = 10 + phaseProgress * 4;
-      intervalRunMin = 0.5 + phaseProgress * 0.5;
-      repeats = weekNumberInPhase === 1 ? 4 : 5;
-      walkBreakMin = 2.5 - phaseProgress * 0.25;
+      continuousRunMin = (capacityPolicy.introductoryContinuousStartMin ?? 1) + phaseProgress * 1.5;
+      longRunMin = (capacityPolicy.introductoryLongRunStartMin ?? 8) + phaseProgress * 4;
+      intervalRunMin = (capacityPolicy.introductoryIntervalRunMin ?? 0.5) + phaseProgress * 0.5;
+      repeats = weekNumberInPhase === 1 ? (capacityPolicy.introductoryRepeats ?? 4) : Math.max(capacityPolicy.introductoryRepeats ?? 4, 5);
+      walkBreakMin = (capacityPolicy.introductoryWalkBreakMin ?? 2.5) - phaseProgress * 0.25;
     } else if (params.phase === "continuous_running") {
-      continuousRunMin = 7 + phaseProgress * 5;
-      longRunMin = 15 + phaseProgress * 6;
-      intervalRunMin = 1.25 + phaseProgress * 0.75;
+      continuousRunMin = Math.max(4, (capacityPolicy.introductoryContinuousStartMin ?? 1) + 2 + phaseProgress * 4);
+      longRunMin = Math.max(12, (capacityPolicy.introductoryLongRunStartMin ?? 8) + 4 + phaseProgress * 6);
+      intervalRunMin = Math.max(1, (capacityPolicy.introductoryIntervalRunMin ?? 0.5) + 0.5 + phaseProgress * 0.5);
       repeats = 5;
-      walkBreakMin = 2.25 - phaseProgress * 0.5;
+      walkBreakMin = Math.max(1.75, (capacityPolicy.introductoryWalkBreakMin ?? 2.5) - 0.25 - phaseProgress * 0.5);
     }
   } else if (continuityBand === "one_to_two_min") {
     if (params.phase === "introduction") {
-      continuousRunMin = 6 + phaseProgress * 2;
-      longRunMin = 12 + phaseProgress * 4;
-      intervalRunMin = 1 + phaseProgress * 0.5;
-      repeats = 4 + Math.round(phaseProgress);
-      walkBreakMin = 2.25 - phaseProgress * 0.25;
+      continuousRunMin = (capacityPolicy.introductoryContinuousStartMin ?? 2) + phaseProgress * 2;
+      longRunMin = (capacityPolicy.introductoryLongRunStartMin ?? 10) + phaseProgress * 4;
+      intervalRunMin = (capacityPolicy.introductoryIntervalRunMin ?? 0.75) + phaseProgress * 0.5;
+      repeats = (capacityPolicy.introductoryRepeats ?? 4) + Math.round(phaseProgress);
+      walkBreakMin = (capacityPolicy.introductoryWalkBreakMin ?? 2.25) - phaseProgress * 0.25;
     } else if (params.phase === "continuous_running") {
-      continuousRunMin = 10 + phaseProgress * 7;
-      longRunMin = 19 + phaseProgress * 8;
-      intervalRunMin = 1.5 + phaseProgress * 0.75;
+      continuousRunMin = Math.max(6, (capacityPolicy.introductoryContinuousStartMin ?? 2) + 4 + phaseProgress * 5);
+      longRunMin = Math.max(16, (capacityPolicy.introductoryLongRunStartMin ?? 10) + 6 + phaseProgress * 7);
+      intervalRunMin = Math.max(1.25, (capacityPolicy.introductoryIntervalRunMin ?? 0.75) + 0.5 + phaseProgress * 0.75);
       repeats = 5;
-      walkBreakMin = 2 - phaseProgress * 0.5;
+      walkBreakMin = Math.max(1.5, (capacityPolicy.introductoryWalkBreakMin ?? 2.25) - 0.25 - phaseProgress * 0.5);
     }
   } else if (continuityBand === "five_min" && params.phase === "introduction") {
-    continuousRunMin = 9 + phaseProgress * 3;
-    longRunMin = 16 + phaseProgress * 5;
-    intervalRunMin = 2 + phaseProgress * 0.5;
-    repeats = 4 + Math.round(phaseProgress);
-    walkBreakMin = 1.75 - phaseProgress * 0.25;
+    continuousRunMin = (capacityPolicy.introductoryContinuousStartMin ?? 4) + phaseProgress * 2;
+    longRunMin = (capacityPolicy.introductoryLongRunStartMin ?? 14) + phaseProgress * 4;
+    intervalRunMin = (capacityPolicy.introductoryIntervalRunMin ?? 1) + phaseProgress * 0.5;
+    repeats = (capacityPolicy.introductoryRepeats ?? 4) + Math.round(phaseProgress);
+    walkBreakMin = (capacityPolicy.introductoryWalkBreakMin ?? 2) - phaseProgress * 0.25;
+  }
+
+  if (earlyWeekPolicy.maxContinuousRunMin != null) {
+    continuousRunMin = Math.min(continuousRunMin, earlyWeekPolicy.maxContinuousRunMin);
+  }
+  if (earlyWeekPolicy.maxLongRunMin != null) {
+    longRunMin = Math.min(longRunMin, earlyWeekPolicy.maxLongRunMin);
+  }
+  if (earlyWeekPolicy.maxIntervalRunMin != null) {
+    intervalRunMin = Math.min(intervalRunMin, earlyWeekPolicy.maxIntervalRunMin);
+  }
+  if (earlyWeekPolicy.minWalkBreakMin != null) {
+    walkBreakMin = Math.max(walkBreakMin, earlyWeekPolicy.minWalkBreakMin);
+  }
+  if (params.weekNumber === 1) {
+    if (capacityPolicy.firstWorkoutContinuousMaxMin != null) {
+      continuousRunMin = Math.min(continuousRunMin, capacityPolicy.firstWorkoutContinuousMaxMin);
+    }
+    if (useRunWalk && capacityPolicy.firstWorkoutTotalRunMaxMin != null) {
+      const safeRepeats = Math.max(1, Math.floor(capacityPolicy.firstWorkoutTotalRunMaxMin / Math.max(intervalRunMin, 0.5)));
+      repeats = Math.min(repeats, safeRepeats);
+      if (intervalRunMin * repeats > capacityPolicy.firstWorkoutTotalRunMaxMin) {
+        intervalRunMin = capacityPolicy.firstWorkoutTotalRunMaxMin / Math.max(repeats, 1);
+      }
+    }
+  }
+
+  const resolvedContinuousRunMin = roundHalf(
+    clamp(
+      continuousRunMin,
+      capacityPolicy.introductoryContinuousFloorMin ?? (continuityBand === "ultra_zero" ? 4 : continuityBand === "one_to_two_min" ? 6 : continuityBand === "five_min" ? 9 : 10),
+      Math.min(profileStart.continuousPeak, profileStart.nonLongCap),
+    ),
+  );
+  const resolvedLongRunMin = roundHalf(
+    clamp(
+      longRunMin,
+      capacityPolicy.introductoryLongRunFloorMin ?? (continuityBand === "ultra_zero" ? 10 : continuityBand === "one_to_two_min" ? 12 : continuityBand === "five_min" ? 16 : 18),
+      Math.min(profileStart.longRunPeak, profileStart.longRunCap),
+    ),
+  );
+  const resolvedRepeats = clamp(repeats, distanceProfile.repeatsPeak.min, distanceProfile.repeatsPeak.max);
+  let resolvedIntervalRunMin = roundHalf(
+    clamp(
+      intervalRunMin,
+      capacityPolicy.introductoryIntervalFloorMin ?? (continuityBand === "ultra_zero" ? 0.5 : continuityBand === "one_to_two_min" ? 1 : continuityBand === "five_min" ? 2 : distanceProfile.intervalPeak.min),
+      distanceProfile.intervalPeak.max,
+    ),
+  );
+
+  if (params.weekNumber === 1 && useRunWalk && capacityPolicy.firstWorkoutTotalRunMaxMin != null) {
+    resolvedIntervalRunMin = roundHalf(
+      Math.min(
+        resolvedIntervalRunMin,
+        capacityPolicy.firstWorkoutTotalRunMaxMin / Math.max(resolvedRepeats, 1),
+      ),
+    );
   }
 
   return {
-    continuousRunMin: roundHalf(
-      clamp(
-        continuousRunMin,
-        continuityBand === "ultra_zero" ? 4 : continuityBand === "one_to_two_min" ? 6 : continuityBand === "five_min" ? 9 : 10,
-        Math.min(profileStart.continuousPeak, profileStart.nonLongCap),
-      ),
-    ),
-    longRunMin: roundHalf(
-      clamp(
-        longRunMin,
-        continuityBand === "ultra_zero" ? 10 : continuityBand === "one_to_two_min" ? 12 : continuityBand === "five_min" ? 16 : 18,
-        Math.min(profileStart.longRunPeak, profileStart.longRunCap),
-      ),
-    ),
-    intervalRunMin: roundHalf(
-      clamp(
-        intervalRunMin,
-        continuityBand === "ultra_zero" ? 0.5 : continuityBand === "one_to_two_min" ? 1 : continuityBand === "five_min" ? 2 : distanceProfile.intervalPeak.min,
-        distanceProfile.intervalPeak.max,
-      ),
-    ),
-    repeats: clamp(repeats, distanceProfile.repeatsPeak.min, distanceProfile.repeatsPeak.max),
+    continuousRunMin: resolvedContinuousRunMin,
+    longRunMin: resolvedLongRunMin,
+    intervalRunMin: resolvedIntervalRunMin,
+    repeats: resolvedRepeats,
     walkBreakMin,
     useRunWalk,
     phaseLength,
@@ -828,7 +1107,39 @@ function capWeekLoad(sessions: WorkoutSession[], targetLoad: number, previousLoa
   }));
 }
 
-function weeklyLoadTarget(profile: RunnerProfile, goal: GoalConfig, totalWeeks: number, weekNumber: number, phase: LegacyPlanPhase, isStabilizationWeek: boolean): number {
+function smoothWeeklyLoadTarget(
+  targetLoad: number,
+  previousLoad: number | null,
+  phase: LegacyPlanPhase,
+  isStabilizationWeek: boolean,
+  profile: RunnerProfile,
+  goal: GoalConfig,
+  continuityBand: ContinuityBand,
+  previousWasStabilizationWeek: boolean,
+): number {
+  if (!previousLoad) return targetLoad;
+  const progressionPolicy = buildProgressionRealismPolicy({
+    profile,
+    continuityBand,
+    beginnerLike: beginnerSafe(profile),
+    goal,
+    phase,
+    isStabilizationWeek,
+    previousWasStabilizationWeek,
+  });
+  return Math.round(clamp(targetLoad, previousLoad * progressionPolicy.loadMinFactor, previousLoad * progressionPolicy.loadMaxFactor) * 10) / 10;
+}
+
+function weeklyLoadTarget(
+  profile: RunnerProfile,
+  goal: GoalConfig,
+  totalWeeks: number,
+  weekNumber: number,
+  phase: LegacyPlanPhase,
+  isStabilizationWeek: boolean,
+  weekNumberInPhase: number,
+  phaseLength: number,
+): number {
   const performanceMode = resolvePerformanceMode(profile, goal, totalWeeks);
   const continuityBand = beginnerContinuityBand(profile);
   const currentLoadBase =
@@ -887,6 +1198,10 @@ function weeklyLoadTarget(profile: RunnerProfile, goal: GoalConfig, totalWeeks: 
           : 0.94;
 
   let target = loadBase * intentModifier * distanceModifier * progressionModifier * phaseModifier;
+  const wave = buildWaveFactors(phase, weekNumberInPhase, phaseLength);
+  if (!isStabilizationWeek) {
+    target *= wave.loadFactor;
+  }
   if (isStabilizationWeek) target *= 0.9;
   if (phase === "race_preparation") target *= goal.goalDistance === "Marathon" ? 0.9 : 0.86;
   if (profile.injurySensitivity >= 4) target *= 0.94;
@@ -929,6 +1244,8 @@ function buildSharedGoalPlan(profile: RunnerProfile, goalConfig: GoalConfig): Tr
   const phaseTimeline = buildPhaseTimeline(goalConfig, totalWeeks);
   const weeks: TrainingWeek[] = [];
   let previousLoad: number | null = null;
+  let previousWeekTargets: { continuousRunMin: number; longRunMin: number; intervalRunMin: number; repeats: number } | null = null;
+  let previousWasStabilizationWeek = false;
 
   for (let weekNumber = 1; weekNumber <= totalWeeks; weekNumber += 1) {
     const phase = phaseTimeline[weekNumber - 1];
@@ -942,6 +1259,22 @@ function buildSharedGoalPlan(profile: RunnerProfile, goalConfig: GoalConfig): Tr
       phaseTimeline,
       isStabilizationWeek,
     });
+    const smoothedWeekTargets = smoothWeekTargets({
+      current: {
+        continuousRunMin: weekState.continuousRunMin,
+        longRunMin: weekState.longRunMin,
+        intervalRunMin: weekState.intervalRunMin,
+        repeats: weekState.repeats,
+      },
+      previous: previousWeekTargets,
+      phase,
+      goal: goalConfig,
+      profile,
+      continuityBand: beginnerContinuityBand(profile),
+      isStabilizationWeek,
+      previousWasStabilizationWeek,
+    });
+
     const types = sessionMix(
       goalConfig,
       profile,
@@ -964,17 +1297,36 @@ function buildSharedGoalPlan(profile: RunnerProfile, goalConfig: GoalConfig): Tr
         dayOfWeek: weekDays[index],
         date: toIsoDate(addDays(startMonday, (weekNumber - 1) * 7 + dayOffset(weekDays[index]))),
         isStabilizationWeek,
-        continuousRunMin: weekState.continuousRunMin,
-        longRunMin: weekState.longRunMin,
-        intervalRunMin: weekState.intervalRunMin,
+        continuousRunMin: smoothedWeekTargets.continuousRunMin,
+        longRunMin: smoothedWeekTargets.longRunMin,
+        intervalRunMin: smoothedWeekTargets.intervalRunMin,
         walkBreakMin: weekState.walkBreakMin,
-        repeats: weekState.repeats,
+        repeats: smoothedWeekTargets.repeats,
         isGoalSession: isGoalWeek && index === types.length - 1,
       }),
     );
 
-    const targetLoad = weeklyLoadTarget(profile, goalConfig, totalWeeks, weekNumber, phase, isStabilizationWeek);
-    sessions = capWeekLoad(sessions, targetLoad, previousLoad);
+    const targetLoad = weeklyLoadTarget(
+      profile,
+      goalConfig,
+      totalWeeks,
+      weekNumber,
+      phase,
+      isStabilizationWeek,
+      weekState.weekNumberInPhase,
+      weekState.phaseLength,
+    );
+    const smoothedTargetLoad = smoothWeeklyLoadTarget(
+      targetLoad,
+      previousLoad,
+      phase,
+      isStabilizationWeek,
+      profile,
+      goalConfig,
+      beginnerContinuityBand(profile),
+      previousWasStabilizationWeek,
+    );
+    sessions = capWeekLoad(sessions, smoothedTargetLoad, previousLoad);
     const estimatedLoad = Math.round(sessions.reduce((sum, session) => sum + session.estimatedLoad, 0) * 10) / 10;
 
     weeks.push({
@@ -987,6 +1339,8 @@ function buildSharedGoalPlan(profile: RunnerProfile, goalConfig: GoalConfig): Tr
     });
 
     previousLoad = estimatedLoad;
+    previousWeekTargets = smoothedWeekTargets;
+    previousWasStabilizationWeek = isStabilizationWeek;
   }
 
   const sessions = weeks.flatMap((week) => week.sessions);

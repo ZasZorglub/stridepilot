@@ -20,6 +20,7 @@ function average(values: number[]): number {
 
 function hasReturnFlag(input: RunnerInput): boolean {
   return (
+    input.baseProgramTrack === "returning" ||
     input.goalType === "return_to_running" ||
     (input.freeTextFlags ?? []).some((flag) => /return|comeback|break|restart|back/i.test(flag))
   );
@@ -103,12 +104,14 @@ function primaryRunnerType(input: RunnerInput, runnerLevel: RunnerLevel, capabil
     consistency >= 0.62;
   const consistencyGoal = input.goalType === "build_consistency" || (input.goalType === "finish" && input.trainingStylePreference === "conservative" && consistency < 0.5);
 
-  if (returnFlag && input.experienceLevel !== "none" && runnerLevel !== "advanced") return "return_to_running";
+  if ((returnFlag || input.baseProgramTrack === "returning") && input.experienceLevel !== "none" && runnerLevel !== "advanced") return "return_to_running";
   if (runnerLevel === "true_beginner") return "true_beginner";
   if (runnerLevel === "beginner_plus") return "beginner_plus";
   if (injury >= 0.6) return "injury_sensitive";
   if (schedule === "high") return "low_availability_runner";
+  if (input.baseProgramTrack === "getting_started" && consistency < 0.55) return "consistency_builder";
   if (consistencyGoal) return "consistency_builder";
+  if (input.baseProgramTrack === "goal_focused" && performanceBias) return runnerLevel === "advanced" ? "advanced_recreational" : "performance_oriented";
   if (performanceBias && runnerLevel === "advanced") return "advanced_recreational";
   if (performanceBias) return "performance_oriented";
   if (runnerLevel === "advanced") return "advanced_recreational";
@@ -136,6 +139,8 @@ function modifiers(
   if (input.externalTrainingLoad === "high" || input.externalTrainingLoad === "moderate") result.add("high_external_load");
   if (input.trainingStylePreference === "performance" || inferredPerformanceBias) result.add("performance_bias");
   if (input.trainingStylePreference === "conservative") result.add("conservative_bias");
+  if (input.baseProgramTrack === "goal_focused") result.add("performance_bias");
+  if (input.baseProgramTrack === "getting_started" || input.baseProgramTrack === "returning") result.add("conservative_bias");
   if (hasReturnFlag(input)) result.add("return_from_break");
   if (input.goalType === "build_consistency" || primaryType === "consistency_builder") result.add("consistency_first");
   return [...result];
@@ -162,13 +167,21 @@ function deriveTraitScores(
   const schedulePenalty = schedule === "high" ? 0.16 : schedule === "moderate" ? 0.08 : 0;
   const conservativePenalty = input.trainingStylePreference === "conservative" ? 0.05 : 0;
   const performanceBonus = input.trainingStylePreference === "performance" ? 0.06 : 0;
+  const gettingStartedPenalty = input.baseProgramTrack === "getting_started" ? 0.08 : 0;
+  const returningPenalty = input.baseProgramTrack === "returning" ? 0.05 : 0;
+  const steadyBonus = input.baseProgramTrack === "steady_runner" ? 0.04 : 0;
+  const goalFocusedBonus = input.baseProgramTrack === "goal_focused" ? 0.06 : 0;
   const durabilityScore = clamp(
     average([
       capability,
       clamp(input.longestRecentRunMin / 100, 0, 1),
       clamp(input.currentWeeklyRuns / 5, 0, 1),
       consistency,
-    ]) -
+    ]) +
+      steadyBonus * 0.7 +
+      goalFocusedBonus * 0.45 -
+      gettingStartedPenalty * 0.55 -
+      returningPenalty * 0.32 -
       injury * 0.25 -
       schedulePenalty * 0.25,
     0,
@@ -179,8 +192,12 @@ function deriveTraitScores(
       consistency * 0.25 +
       clamp(input.currentContinuousRunMin / 50, 0, 1) * 0.18 +
       performanceBonus -
+      goalFocusedBonus +
+      steadyBonus * 0.4 -
       injury * 0.22 -
       conservativePenalty -
+      gettingStartedPenalty -
+      returningPenalty * 0.85 -
       schedulePenalty -
       (runnerLevel === "true_beginner" ? 0.18 : runnerLevel === "beginner_plus" ? 0.08 : 0),
     0,
@@ -194,7 +211,11 @@ function deriveTraitScores(
       consistency,
     ]) +
       performanceBonus -
+      goalFocusedBonus * 0.8 +
+      steadyBonus * 0.35 -
       injury * 0.25 -
+      gettingStartedPenalty * 1.2 -
+      returningPenalty * 0.85 -
       schedulePenalty * 0.55 -
       (runnerLevel === "true_beginner" ? 0.35 : runnerLevel === "beginner_plus" ? 0.16 : 0),
     0,
@@ -207,6 +228,10 @@ function deriveTraitScores(
       consistency,
       clamp(input.currentContinuousRunMin / 50, 0, 1),
     ]) -
+      gettingStartedPenalty * 0.8 -
+      returningPenalty * 0.55 +
+      steadyBonus * 0.3 +
+      goalFocusedBonus * 0.55 -
       injury * 0.18 -
       schedulePenalty * 0.3 -
       (runnerLevel === "true_beginner" ? 0.14 : runnerLevel === "beginner_plus" ? 0.06 : 0),
@@ -216,6 +241,7 @@ function deriveTraitScores(
   const recoveryNeed = clamp(
     0.22 +
       injury * 0.45 +
+      (input.baseProgramTrack === "returning" ? 0.08 : input.baseProgramTrack === "getting_started" ? 0.04 : 0) +
       (input.externalTrainingLoad === "high" ? 0.16 : input.externalTrainingLoad === "moderate" ? 0.09 : 0) +
       (input.age && input.age >= 55 ? 0.1 : input.age && input.age >= 45 ? 0.05 : 0) +
       (runnerLevel === "true_beginner" ? 0.05 : 0),
@@ -244,7 +270,7 @@ function riskSummary(input: RunnerInput, injury: number, schedule: ScheduleConst
 }
 
 function intentSummary(input: RunnerInput): string {
-  return `Intent is shaped by goal ${input.goalType}, distance ${input.raceDistance}, and training style ${input.trainingStylePreference}.`;
+  return `Intent is shaped by goal ${input.goalType}, distance ${input.raceDistance}, training style ${input.trainingStylePreference}, and base track ${input.baseProgramTrack ?? "unspecified"}.`;
 }
 
 function classificationSummary(primaryType: PrimaryRunnerType, modifierList: RunnerModifier[]): string {

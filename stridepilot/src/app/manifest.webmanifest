@@ -1,7 +1,7 @@
 {
   "name": "StridePilot",
   "short_name": "StridePilot",
-  "description": "Adaptivt løbeprogram med interval-timer og kalenderintegration.",
+  "description": "Adaptive running plans with guided workouts, calendar support, and calm coach-style progression.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b0f14",

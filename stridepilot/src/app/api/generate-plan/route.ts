@@ -8,6 +8,7 @@ import { applyAdaptiveGuardrails, buildAdaptationPayload, FeedbackSignal } from 
 import { applyPlanSafety, validatePlanFeasibility } from "@/lib/plan-safety";
 import { interpretWorkoutFeedback, summarizePlanRationale } from "@/lib/ai/interpretation";
 import { deriveCalendarWeekCount } from "@/lib/calendar-week";
+import { applyStubWeekToPlan, buildStubWeekSession, resolveStubWeekPolicy } from "@/lib/late-week-start";
 import {
   buildGoalPlan,
   GoalConfig as CoachGoalConfig,
@@ -381,6 +382,8 @@ export async function POST(req: Request) {
       engineVersion?: "vnext";
       runnerProfile: RunnerProfile;
       goal: Goal;
+      selectedStartDate?: string;
+      locale?: "da" | "en";
       profileId?: string;
       runsPerWeek?: number;
       demoMode?: boolean;
@@ -444,6 +447,10 @@ export async function POST(req: Request) {
 
     let source: "openai" | "fallback" = "fallback";
     const currentWeek = 1;
+    const stubWeekPolicy = resolveStubWeekPolicy({
+      selectedStartDateIso: body.selectedStartDate ?? goal.startDate,
+      availableTrainingDays: goal.availableTrainingDays,
+    });
     const recentFeedback = await fetchRecentFeedbackSignals(session?.userId, profileId);
     const coachProfile = interpretCoachRunnerProfile({
       onboardingText: runnerProfile.userTrainingContext,
@@ -491,6 +498,15 @@ export async function POST(req: Request) {
     const safety = applyPlanSafety({ plan, goal, recentFeedback });
     const dayAlignment = enforceAvailableTrainingDays(safety.plan, goal.availableTrainingDays);
     plan = dayAlignment.plan;
+    plan = applyStubWeekToPlan(
+      plan,
+      buildStubWeekSession({
+        policy: stubWeekPolicy,
+        runnerProfile,
+        goal,
+        locale: body.locale,
+      }),
+    );
     const warnings = [...feasibility.warnings, ...dayAlignment.warnings];
 
     try {

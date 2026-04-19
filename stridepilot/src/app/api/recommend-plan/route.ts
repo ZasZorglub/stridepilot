@@ -72,8 +72,19 @@ function optionHeadline(mode: PlanAmbition): string {
   return "StridePilot anbefaler denne vej";
 }
 
+function effectiveSessionsPerWeek(goal: Goal, value: number): number {
+  const selectedDays = goal.availableTrainingDays?.length ?? value;
+  return Math.max(1, Math.min(value, selectedDays));
+}
+
 function optionSummary(goal: Goal, option: PlanRecommendationOption, recommendedOption: PlanRecommendationOption): string {
-  const base = `Baseret på dit nuværende niveau anbefaler StridePilot ${option.durationWeeks} uger for at hjælpe dig med at ${goalSummaryText(goal)}. Forløbet starter med ${Math.max(2, option.sessionsPerWeek - 1)} pas om ugen og bygger gradvist op til ${option.sessionsPerWeek}.`;
+  const selectedDays = goal.availableTrainingDays?.length ?? option.sessionsPerWeek;
+  const startSessions = Math.min(selectedDays, Math.max(1, option.sessionsPerWeek - 1));
+  const frequencyText =
+    startSessions === option.sessionsPerWeek
+      ? `Forløbet holder sig til ${option.sessionsPerWeek} pas om ugen, fordi det er den rytme du har valgt.`
+      : `Forløbet starter med ${startSessions} pas om ugen og bygger roligt op til ${option.sessionsPerWeek}.`;
+  const base = `Baseret på dit nuværende niveau anbefaler StridePilot ${option.durationWeeks} uger for at hjælpe dig med at ${goalSummaryText(goal)}. ${frequencyText}`;
   if (option.mode === "gentle") {
     return `${base} Det giver lidt mere plads til ro, vaneopbygning og stabil progression end den anbefalede standardvej.`;
   }
@@ -165,9 +176,9 @@ export async function POST(req: Request) {
     const coachRecommendedWeeks = recommendation.recommendedDurationWeeks;
     const minimumWeeks = recommendation.feasibleDurationRangeWeeks.minimum;
     const maximumWeeks = recommendation.feasibleDurationRangeWeeks.maximum;
-    const sessionsPerWeek = recommendation.recommendedSessionsPerWeek;
-    const startingSessionsPerWeek = recommendation.startingSessionsPerWeek;
-    const peakSessionsPerWeek = recommendation.peakSessionsPerWeek;
+    const sessionsPerWeek = effectiveSessionsPerWeek(goal, recommendation.recommendedSessionsPerWeek);
+    const startingSessionsPerWeek = effectiveSessionsPerWeek(goal, recommendation.startingSessionsPerWeek);
+    const peakSessionsPerWeek = effectiveSessionsPerWeek(goal, recommendation.peakSessionsPerWeek);
     const standardProgressionMode = recommendation.recommendedProgressionMode;
 
     const recommendedOption: PlanRecommendationOption = {

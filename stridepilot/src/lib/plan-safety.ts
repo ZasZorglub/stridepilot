@@ -75,8 +75,82 @@ function parseTargetTimeToSec(value?: string): number | null {
   return null;
 }
 
+export function sumWorkoutStepDurationSec(steps: WorkoutStep[]): number {
+  return steps.reduce((sum, step) => sum + step.durationSec, 0);
+}
+
+export function sumWorkoutRunDurationSec(steps: WorkoutStep[]): number {
+  return steps.filter((step) => step.type === "run").reduce((sum, step) => sum + step.durationSec, 0);
+}
+
+export function summarizeWorkoutSteps(steps: WorkoutStep[]): string {
+  return steps
+    .map((step) => {
+      const minutes = Math.round((step.durationSec / 60) * 10) / 10;
+      const type = step.type === "warmup" ? "Warmup" : step.type === "cooldown" ? "Cooldown" : step.type === "walk" ? "Walk" : "Run";
+      return `${type} ${Number.isInteger(minutes) ? minutes : minutes.toFixed(1)} min`;
+    })
+    .join(" / ");
+}
+
 function sessionRunSec(session: WorkoutSession): number {
-  return session.steps.filter((step) => step.type === "run").reduce((sum, step) => sum + step.durationSec, 0);
+  return sumWorkoutRunDurationSec(session.steps);
+}
+
+function goalEventIdentity(session: WorkoutSession): string {
+  return `${session.title} ${session.notes ?? ""}`.toLowerCase();
+}
+
+function isGoalEventSession(session: WorkoutSession): boolean {
+  return /måldag/i.test(goalEventIdentity(session));
+}
+
+function goalDistanceKm(goal: Goal): number {
+  if (goal.distance === "5K") return 5;
+  if (goal.distance === "10K") return 10;
+  if (goal.distance === "Halvmaraton") return 21.1;
+  return 42.2;
+}
+
+function goalEventMinimumRunMin(goal: Goal, priorLongestRunMin: number): number {
+  const explicitTargetMin =
+    parseTargetTimeToSec(goal.targetTime) !== null
+      ? parseTargetTimeToSec(goal.targetTime)! / 60
+      : typeof goal.targetPaceSecPerKm === "number" && Number.isFinite(goal.targetPaceSecPerKm)
+        ? (goal.targetPaceSecPerKm * goalDistanceKm(goal)) / 60
+        : null;
+
+  if (goal.distance === "5K") {
+    return Math.max(18, explicitTargetMin ? explicitTargetMin * 0.88 : priorLongestRunMin * 0.58);
+  }
+  if (goal.distance === "10K") {
+    return Math.max(36, explicitTargetMin ? explicitTargetMin * 0.9 : priorLongestRunMin * 0.7);
+  }
+  if (goal.distance === "Halvmaraton") {
+    return Math.max(75, explicitTargetMin ? explicitTargetMin * 0.92 : priorLongestRunMin * 0.82);
+  }
+  return Math.max(180, explicitTargetMin ? explicitTargetMin * 0.9 : priorLongestRunMin * 1.2);
+}
+
+function scaleSessionToRunTarget(session: WorkoutSession, targetRunSec: number): WorkoutSession {
+  const currentRunSec = sessionRunSec(session);
+  if (currentRunSec <= 0 || targetRunSec <= currentRunSec) return session;
+
+  const factor = targetRunSec / currentRunSec;
+  const nextSteps: WorkoutStep[] = session.steps.map((step) =>
+    step.type !== "run"
+      ? step
+      : {
+          ...step,
+          durationSec: normalizeStepDuration(step.durationSec * factor),
+        },
+  );
+
+  return {
+    ...session,
+    steps: nextSteps,
+    loadScore: Math.max(1, Math.min(10, Math.round(session.loadScore * Math.min(factor, 1.6)))),
+  };
 }
 
 function scaleSessionRunSteps(session: WorkoutSession, factor: number): WorkoutSession {
@@ -267,6 +341,11 @@ function goalSpecificFinalSession(plan: TrainingPlan, goal: Goal, adjustments: S
   const sessions = [...plan.sessions];
   const idx = sessions.length - 1;
   const last = sessions[idx];
+  const lastIdentity = `${last.title} ${last.notes ?? ""}`.toLowerCase();
+
+  if (!/måldag|test/i.test(lastIdentity)) {
+    return plan;
+  }
 
   const simulationTitle =
     goal.distance === "5K"
@@ -285,9 +364,31 @@ function goalSpecificFinalSession(plan: TrainingPlan, goal: Goal, adjustments: S
 
   adjustments.push({
     type: "goal_specific_final_phase",
-    detail: "Jeg gør slutugen målspecifik, så du slutter med en tydelig måldag.",
+    detail: "Jeg bevarer den tydelige måldag i slutugen, så planen stadig kulminerer klart.",
   });
 
+  return { ...plan, sessions };
+}
+
+function ensureGoalEventSessionCredibility(plan: TrainingPlan, goal: Goal, adjustments: SafetyAdjustment[]): TrainingPlan {
+  const goalSessionIndex = [...plan.sessions]
+    .map((session, index) => ({ session, index }))
+    .reverse()
+    .find((entry) => isGoalEventSession(entry.session))?.index;
+  if (goalSessionIndex === undefined) return plan;
+
+  const goalSession = plan.sessions[goalSessionIndex];
+  const priorLongestRunMin = Math.max(0, ...plan.sessions.slice(0, goalSessionIndex).map((session) => sessionRunSec(session) / 60));
+  const minimumRunMin = goalEventMinimumRunMin(goal, priorLongestRunMin);
+  const currentRunMin = sessionRunSec(goalSession) / 60;
+  if (currentRunMin + 0.5 >= minimumRunMin) return plan;
+
+  const sessions = [...plan.sessions];
+  sessions[goalSessionIndex] = scaleSessionToRunTarget(goalSession, minimumRunMin * 60);
+  adjustments.push({
+    type: "goal_event_coherence",
+    detail: `Jeg løftede måldagspasset i uge ${goalSession.week}, så det igen matcher en troværdig ${goal.distance.toLowerCase()}-kulmination.`,
+  });
   return { ...plan, sessions };
 }
 
@@ -305,6 +406,7 @@ export function applyPlanSafety(params: {
   plan = applyRecoveryWeek(plan, adjustments);
   plan = applyFeedbackSafety(plan, recentFeedback, adjustments);
   plan = goalSpecificFinalSession(plan, goal, adjustments);
+  plan = ensureGoalEventSessionCredibility(plan, goal, adjustments);
 
   return { plan, adjustments };
 }

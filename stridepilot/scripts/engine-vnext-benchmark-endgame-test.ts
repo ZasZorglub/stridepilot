@@ -157,4 +157,24 @@ function evaluateInlinePlan(plan: EnginePlan) {
   );
 }
 
+{
+  const plan = generateEngineV2Plan(benchmarkById("marathon_improve").input);
+  const raceWeek = plan.weeks.find((week) => week.isRaceWeek);
+  assert.ok(raceWeek, "Expected marathon PR race week");
+  const raceEvent = raceWeek.sessions.find((session) => session.isRaceEvent);
+  const priorLongest = Math.max(
+    0,
+    ...plan.weeks.flatMap((week) => week.sessions).filter((session) => !session.isRaceEvent).map((session) => session.durationMin),
+  );
+  assert.ok(raceEvent, "Expected explicit marathon PR race event");
+  assert.ok(
+    raceEvent.durationMin >= priorLongest * 0.77,
+    "Experienced marathon PR race event should remain materially representative of prior peak durability without turning taper into a pseudo-long-run week",
+  );
+  assert.ok(
+    raceEvent.durationMin <= priorLongest * 0.9,
+    "Experienced marathon PR race event should still preserve a real taper margin",
+  );
+}
+
 console.log("engine-vnext benchmark endgame tests passed");

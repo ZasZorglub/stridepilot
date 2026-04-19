@@ -12,6 +12,56 @@ import {
   WorkoutSession,
 } from "./types";
 import { RunnerTraits } from "./capability";
+import { SiteLocale } from "../site-variant";
+
+function translateCoachExplanationLine(text: string, locale: SiteLocale = "da"): string {
+  if (locale !== "en") return text;
+  const normalized = text.trim();
+  const exact: Record<string, string> = {
+    "Du har håndteret den seneste progression stabilt, så planen kan bygge lidt mere tillidsfuldt videre.": "You have handled the recent progression steadily, so the plan can build a little more confidently.",
+    "De seneste uger peger på, at kroppen reagerer bedst på lidt mere forsigtig progression.": "Recent weeks suggest that your body responds best to slightly more cautious progression.",
+    "Dine seneste signaler peger på, at langturene skal bygges mere forsigtigt end resten af ugen.": "Your recent signals suggest that the long runs should build a little more cautiously than the rest of the week.",
+    "Du har håndteret de længere ture godt, så langturen kan udvikles mere normalt igen.": "You have handled the longer runs well, so the long run can develop more normally again.",
+    "Kvalitetspassene bliver holdt lidt mere kontrollerede, fordi de seneste signaler ikke peger på fuld tolerance endnu.": "The quality sessions are being kept a little more controlled because the recent signals do not point to full tolerance yet.",
+    "Du har tålt den specifikke kvalitet godt, så planen kan bruge lidt mere målrettet kvalitet igen.": "You have handled the specific quality work well, so the plan can use a little more targeted quality again.",
+    "Næste uge holder samme overordnede struktur som før.": "Next week keeps the same overall structure as before.",
+    "Fokus nu er at komme tilbage med ro i kroppen og få rytmen tilbage uden at jage noget.": "The focus now is to come back with calm in the body and find your rhythm again without chasing anything.",
+    "Fokus nu er at holde kvaliteten kontrolleret og få ugen til at føles mere bæredygtig.": "The focus now is to keep the quality controlled and make the week feel more sustainable.",
+    "Fokus nu er at komme tilbage i normal rytme uden at hoppe direkte til den hårdeste progression.": "The focus now is to return to your normal rhythm without jumping straight back to the hardest progression.",
+    "Fokus nu er at bruge overskuddet fornuftigt og ramme kvalitetspassene kontrolleret.": "The focus now is to use the surplus wisely and hit the quality sessions in a controlled way.",
+    "Fokus nu er at fortsætte stabilt og lade kontinuiteten arbejde for dig.": "The focus now is to continue steadily and let consistency work for you.",
+    "Du kom ikke helt gennem passet som planlagt.": "You did not get fully through the session as planned.",
+    "Du afkortede passet undervejs.": "You shortened the session along the way.",
+    "Det lød klart hårdere end det skulle være.": "It sounded clearly harder than it should have been.",
+    "Passet lød hårdere end ønsket.": "The session sounded harder than intended.",
+    "Energien var også lav.": "Energy was low as well.",
+    "Du rapporterede desuden tydelig smerte eller uro.": "You also reported clear pain or discomfort.",
+    "Der var også tegn på irritation eller forsigtighed.": "There were also signs of irritation or caution.",
+    "Jeg gør næste uge klart lettere med mindre belastning og mere plads til restitution.": "I am making next week clearly lighter, with less load and more room for recovery.",
+    "Jeg dæmper den næste uge lidt, så belastningen bliver mere bæredygtig.": "I am easing next week slightly so the load becomes more sustainable.",
+    "Jeg bygger forsigtigt videre igen, men uden at hoppe direkte tilbage til fuld progression.": "I am building carefully again, but without jumping straight back to full progression.",
+    "Jeg øger udfordringen en smule og holder den målrettet mod dit mål.": "I am increasing the challenge slightly and keeping it directed toward your goal.",
+    "Jeg holder næste uge stabil, så planen fortsætter uden unødigt pres.": "I am keeping next week steady so the plan continues without unnecessary pressure.",
+    "Næste skridt er en recovery-uge med mindre belastning og mere ro.": "Next comes a recovery week with less load and more calm.",
+    "Næste skridt er en lidt lettere uge med mindre progressionstryk.": "Next comes a slightly lighter week with less progression pressure.",
+    "Næste skridt er at komme tilbage i build på en kontrolleret måde.": "Next is a controlled return to building again.",
+    "Næste skridt er en lidt mere målrettet uge, fordi de seneste signaler var stærke nok til det.": "Next is a slightly more targeted week because the recent signals were strong enough for that.",
+    "Næste skridt er at holde rytmen og lade kontinuiteten arbejde.": "Next is to hold the rhythm and let consistency do the work.",
+    "Passet så kontrolleret ud med fint overskud, så planen kan skrue lidt mere målrettet op.": "The session looked controlled with good headroom, so the plan can turn up slightly in a more targeted way.",
+    "De seneste signaler peger på, at du er ved at finde rytmen igen.": "Recent signals suggest that you are finding your rhythm again.",
+    "Passet ser samlet set ud til at passe godt ind i planen.": "Overall, the session looks like it fit the plan well.",
+    "Næste skridt er at få kroppen tilbage i ro, før progressionen bygges videre.": "The next step is to let the body settle before progression builds again.",
+    "Næste skridt er en mere forsigtig uge, så planen ikke accelererer på de forkerte signaler.": "The next step is a more cautious week so the plan does not accelerate on the wrong signals.",
+  };
+  if (exact[normalized]) return exact[normalized];
+  return normalized
+    .replace("Næste uge er gjort lettere samlet set", "Next week is lighter overall")
+    .replace("Næste uge er gjort en smule mere krævende samlet set", "Next week is slightly more demanding overall")
+    .replace("Langturen er kortet ned fra ca.", "The long run has been shortened from about")
+    .replace("Langturen er justeret op fra ca.", "The long run has been adjusted up from about")
+    .replace(" i loadscore", " in load score")
+    .replace(" minutter.", " minutes.");
+}
 
 function abilityLine(profile: RunnerProfile): string {
   if (profile.currentRunsPerWeek >= 4 || profile.currentWeeklyVolumeKm >= 35) {
@@ -199,26 +249,26 @@ export function buildWorkoutRationales(plan: TrainingPlan): WorkoutRationale[] {
   return plan.sessions.map((session) => workoutSummary(session, plan.goal));
 }
 
-export function generatePlanExplanation(profile: RunnerProfile, plan: TrainingPlan): string[] {
+export function generatePlanExplanation(profile: RunnerProfile, plan: TrainingPlan, locale: SiteLocale = "da"): string[] {
   const rationale = plan.rationale?.plan ?? buildPlanRationale({ profile, plan });
   const lines = [...rationale.profileSummary, ...rationale.structureSummary, ...rationale.safetySummary];
   if (rationale.ambitionAdjustment?.applied) {
     lines.push(rationale.ambitionAdjustment.reason);
   }
-  return lines.slice(0, 4);
+  return lines.slice(0, 4).map((line) => translateCoachExplanationLine(line, locale));
 }
 
-export function explainPlanAdjustment(adjustment: PlanAdjustment): string {
+export function explainPlanAdjustment(adjustment: PlanAdjustment, locale: SiteLocale = "da"): string {
   if (adjustment.effect === "insert_recovery") {
-    return "Jeg lagde mere restitution ind, så kroppen får plads til at absorbere træningen.";
+    return locale === "en" ? "I added more recovery so the body has room to absorb the training." : "Jeg lagde mere restitution ind, så kroppen får plads til at absorbere træningen.";
   }
   if (adjustment.effect === "reduce_load") {
-    return "Jeg dæmpede belastningen lidt, så progressionen bliver mere stabil.";
+    return locale === "en" ? "I eased the load a little so the progression becomes more stable." : "Jeg dæmpede belastningen lidt, så progressionen bliver mere stabil.";
   }
   if (adjustment.effect === "increase") {
-    return "Jeg byggede en smule videre her, fordi den seneste udvikling peger på overskud.";
+    return locale === "en" ? "I built a little further here because recent development points to extra headroom." : "Jeg byggede en smule videre her, fordi den seneste udvikling peger på overskud.";
   }
-  return "Jeg holder denne del stabil, så du kan bygge videre uden at forcere noget.";
+  return locale === "en" ? "I am keeping this part steady so you can keep building without forcing anything." : "Jeg holder denne del stabil, så du kan bygge videre uden at forcere noget.";
 }
 
 export function buildAdaptationRationale(params: {
@@ -383,8 +433,10 @@ function progressionPreviewForMode(rationale: AdaptationRationale): string {
 export function buildFeedbackResponseCopy(params: {
   rationale: AdaptationRationale;
   feedback: FeedbackResponseInput;
+  locale?: SiteLocale;
 }): FeedbackResponseCopy {
   const { rationale, feedback } = params;
+  const locale = params.locale ?? "da";
   const caution = negativeFeedback(feedback);
 
   let interpretation = caution
@@ -417,10 +469,10 @@ export function buildFeedbackResponseCopy(params: {
   const learnedInsights = (rationale.learnedTendencies ?? []).filter((line) => (caution ? !positiveReadinessLanguage(line) : true));
 
   return {
-    interpretation,
-    adjustmentExplanation,
-    progressionPreview,
-    runnerFocus: rationale.runnerFocus,
-    learnedInsights,
+    interpretation: translateCoachExplanationLine(interpretation, locale),
+    adjustmentExplanation: translateCoachExplanationLine(adjustmentExplanation, locale),
+    progressionPreview: translateCoachExplanationLine(progressionPreview, locale),
+    runnerFocus: translateCoachExplanationLine(rationale.runnerFocus, locale),
+    learnedInsights: learnedInsights.map((line) => translateCoachExplanationLine(line, locale)),
   };
 }

@@ -196,6 +196,16 @@ function progressionMode(
     return { mode: "conservative", warnings, durationShift: 2 };
   }
 
+  if (ambition === "standard" && input.baseProgramTrack === "getting_started") {
+    warnings.push("Getting-started sporet holder progressionen lidt roligere i starten for at skabe stabilitet før mere fart og volumen.");
+    return { mode: "conservative", warnings, durationShift: 1 };
+  }
+
+  if (ambition === "standard" && input.baseProgramTrack === "returning") {
+    warnings.push("Returning-sporet giver lidt ekstra luft i planen, så rytmen kan bygges tilbage uden at forcere progressionen.");
+    return { mode: "conservative", warnings, durationShift: 1 };
+  }
+
   if (ambition === "ambitious") {
     const beginnerStretchSupported =
       input.goalType === "finish_without_walking" &&
@@ -237,6 +247,11 @@ function recommendedFrequency(
     return { start: 2, recommended: Math.min(3, available), peak: Math.min(3, available) };
   }
 
+  if (input.baseProgramTrack === "returning") {
+    const target = Math.min(Math.max(3, available), goal.demand === "completion_endurance" ? 4 : 3);
+    return { start: 2, recommended: target, peak: target };
+  }
+
   if (goal.demand === "completion_foundation" || goal.demand === "continuity_first") {
     const target = Math.min(3, available);
     return { start: Math.max(2, target - 1), recommended: target, peak: target };
@@ -247,7 +262,7 @@ function recommendedFrequency(
     return { start: Math.max(3, target - 1), recommended: target, peak: target };
   }
 
-  const target = Math.min(Math.max(4, available), 5);
+  const target = input.baseProgramTrack === "goal_focused" ? Math.min(Math.max(4, available), 5) : Math.min(Math.max(4, available), 4);
   return { start: Math.max(3, target - 1), recommended: target, peak: target };
 }
 

@@ -81,6 +81,7 @@ export function deriveCalendarWeekCount(startDateIso: string, endDateIso?: strin
 }
 
 export function sessionOccursOnOrAfterStart(startDateIso: string, session: WorkoutSession): boolean {
+  if (session.week === 0) return true;
   return sessionDateFromCalendarWeek(startDateIso, session).getTime() >= parseIsoDateLocal(startDateIso).getTime();
 }
 
@@ -88,4 +89,3 @@ export function visiblePlanSessions(plan: TrainingPlan, startDateIso?: string): 
   if (!startDateIso) return plan.sessions;
   return plan.sessions.filter((session) => sessionOccursOnOrAfterStart(startDateIso, session));
 }
-

@@ -1,0 +1,774 @@
+{
+  "generatedAt": "2026-04-13T19:37:58.418Z",
+  "totalCases": 24,
+  "cases": [
+    {
+      "caseId": "ultra_zero-2d-monday",
+      "scenarioId": "ultra_zero",
+      "scenarioLabel": "Ultra zero",
+      "daysPerWeek": 2,
+      "startLabel": "Monday",
+      "selectedStartDateIso": "2026-04-13",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Uge 1 - Run-walk",
+        "firstWorkoutDurationMin": 22.5,
+        "firstWorkoutTotalRunMin": 2.5,
+        "firstWorkoutMaxContinuousRunBlockMin": 0.5,
+        "firstWorkoutStructureSummary": "Walk 5 min / Run 0.5 min / Walk 2.5 min / Run 0.5 min / Walk 2.5 min / Run 0.5 min / Walk 2.5 min / Run 0.5 min / Walk 2.5 min / Run 0.5 min / Walk 5 min",
+        "firstWorkoutWeekKind": "full_week",
+        "week1SessionCount": 2,
+        "week1TotalLoad": 21,
+        "fullWeek1SessionCount": 2,
+        "fullWeek1TotalLoad": 21,
+        "stubWeekApplied": false
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0,
+        "possibleTooEasyReasons": []
+      }
+    },
+    {
+      "caseId": "ultra_zero-2d-friday",
+      "scenarioId": "ultra_zero",
+      "scenarioLabel": "Ultra zero",
+      "daysPerWeek": 2,
+      "startLabel": "Friday",
+      "selectedStartDateIso": "2026-04-17",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 14.5,
+        "firstWorkoutTotalRunMin": 4,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 10.5,
+        "fullWeek1SessionCount": 2,
+        "fullWeek1TotalLoad": 20.8,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0.5,
+        "possibleTooEasyReasons": [
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "ultra_zero-2d-saturday",
+      "scenarioId": "ultra_zero",
+      "scenarioLabel": "Ultra zero",
+      "daysPerWeek": 2,
+      "startLabel": "Saturday",
+      "selectedStartDateIso": "2026-04-18",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 14.5,
+        "firstWorkoutTotalRunMin": 4,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 10.5,
+        "fullWeek1SessionCount": 2,
+        "fullWeek1TotalLoad": 20.8,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0.5,
+        "possibleTooEasyReasons": [
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "ultra_zero-3d-monday",
+      "scenarioId": "ultra_zero",
+      "scenarioLabel": "Ultra zero",
+      "daysPerWeek": 3,
+      "startLabel": "Monday",
+      "selectedStartDateIso": "2026-04-13",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Uge 1 - Run-walk",
+        "firstWorkoutDurationMin": 22.5,
+        "firstWorkoutTotalRunMin": 2.5,
+        "firstWorkoutMaxContinuousRunBlockMin": 0.5,
+        "firstWorkoutStructureSummary": "Walk 5 min / Run 0.5 min / Walk 2.5 min / Run 0.5 min / Walk 2.5 min / Run 0.5 min / Walk 2.5 min / Run 0.5 min / Walk 2.5 min / Run 0.5 min / Walk 5 min",
+        "firstWorkoutWeekKind": "full_week",
+        "week1SessionCount": 3,
+        "week1TotalLoad": 31.5,
+        "fullWeek1SessionCount": 3,
+        "fullWeek1TotalLoad": 31.5,
+        "stubWeekApplied": false
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0,
+        "possibleTooEasyReasons": []
+      }
+    },
+    {
+      "caseId": "ultra_zero-3d-friday",
+      "scenarioId": "ultra_zero",
+      "scenarioLabel": "Ultra zero",
+      "daysPerWeek": 3,
+      "startLabel": "Friday",
+      "selectedStartDateIso": "2026-04-17",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 14.5,
+        "firstWorkoutTotalRunMin": 4,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 10.5,
+        "fullWeek1SessionCount": 3,
+        "fullWeek1TotalLoad": 31.2,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0.5,
+        "possibleTooEasyReasons": [
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "ultra_zero-3d-saturday",
+      "scenarioId": "ultra_zero",
+      "scenarioLabel": "Ultra zero",
+      "daysPerWeek": 3,
+      "startLabel": "Saturday",
+      "selectedStartDateIso": "2026-04-18",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 14.5,
+        "firstWorkoutTotalRunMin": 4,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 10.5,
+        "fullWeek1SessionCount": 3,
+        "fullWeek1TotalLoad": 31.2,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0.5,
+        "possibleTooEasyReasons": [
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "one_to_two_min-2d-monday",
+      "scenarioId": "one_to_two_min",
+      "scenarioLabel": "1-2 min",
+      "daysPerWeek": 2,
+      "startLabel": "Monday",
+      "selectedStartDateIso": "2026-04-13",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Uge 1 - Run-walk",
+        "firstWorkoutDurationMin": 21.5,
+        "firstWorkoutTotalRunMin": 2.5,
+        "firstWorkoutMaxContinuousRunBlockMin": 0.5,
+        "firstWorkoutStructureSummary": "Walk 5 min / Run 0.5 min / Walk 2.3 min / Run 0.5 min / Walk 2.3 min / Run 0.5 min / Walk 2.3 min / Run 0.5 min / Walk 2.3 min / Run 0.5 min / Walk 5 min",
+        "firstWorkoutWeekKind": "full_week",
+        "week1SessionCount": 2,
+        "week1TotalLoad": 15.5,
+        "fullWeek1SessionCount": 2,
+        "fullWeek1TotalLoad": 15.5,
+        "stubWeekApplied": false
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 1.25,
+        "possibleTooEasyReasons": [
+          "Max run block 0.5 min may be overly cautious for this band.",
+          "Total run time 2.5 min may be very light for this band."
+        ]
+      }
+    },
+    {
+      "caseId": "one_to_two_min-2d-friday",
+      "scenarioId": "one_to_two_min",
+      "scenarioLabel": "1-2 min",
+      "daysPerWeek": 2,
+      "startLabel": "Friday",
+      "selectedStartDateIso": "2026-04-17",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 14.5,
+        "firstWorkoutTotalRunMin": 4,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 5.3,
+        "fullWeek1SessionCount": 2,
+        "fullWeek1TotalLoad": 13.8,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0.5,
+        "possibleTooEasyReasons": [
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "one_to_two_min-2d-saturday",
+      "scenarioId": "one_to_two_min",
+      "scenarioLabel": "1-2 min",
+      "daysPerWeek": 2,
+      "startLabel": "Saturday",
+      "selectedStartDateIso": "2026-04-18",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 14.5,
+        "firstWorkoutTotalRunMin": 4,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 5.3,
+        "fullWeek1SessionCount": 2,
+        "fullWeek1TotalLoad": 13.8,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0.5,
+        "possibleTooEasyReasons": [
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "one_to_two_min-3d-monday",
+      "scenarioId": "one_to_two_min",
+      "scenarioLabel": "1-2 min",
+      "daysPerWeek": 3,
+      "startLabel": "Monday",
+      "selectedStartDateIso": "2026-04-13",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Uge 1 - Run-walk",
+        "firstWorkoutDurationMin": 24,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 5 min / Run 1 min / Walk 2.3 min / Run 1 min / Walk 2.3 min / Run 1 min / Walk 2.3 min / Run 1 min / Walk 2.3 min / Run 1 min / Walk 5 min",
+        "firstWorkoutWeekKind": "full_week",
+        "week1SessionCount": 3,
+        "week1TotalLoad": 39.3,
+        "fullWeek1SessionCount": 3,
+        "fullWeek1TotalLoad": 39.3,
+        "stubWeekApplied": false
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0,
+        "possibleTooEasyReasons": []
+      }
+    },
+    {
+      "caseId": "one_to_two_min-3d-friday",
+      "scenarioId": "one_to_two_min",
+      "scenarioLabel": "1-2 min",
+      "daysPerWeek": 3,
+      "startLabel": "Friday",
+      "selectedStartDateIso": "2026-04-17",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 14.5,
+        "firstWorkoutTotalRunMin": 4,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 13.1,
+        "fullWeek1SessionCount": 3,
+        "fullWeek1TotalLoad": 30,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0.5,
+        "possibleTooEasyReasons": [
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "one_to_two_min-3d-saturday",
+      "scenarioId": "one_to_two_min",
+      "scenarioLabel": "1-2 min",
+      "daysPerWeek": 3,
+      "startLabel": "Saturday",
+      "selectedStartDateIso": "2026-04-18",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 14.5,
+        "firstWorkoutTotalRunMin": 4,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 1.5 min / Run 1 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 13.1,
+        "fullWeek1SessionCount": 3,
+        "fullWeek1TotalLoad": 30,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0.5,
+        "possibleTooEasyReasons": [
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "five_min-2d-monday",
+      "scenarioId": "five_min",
+      "scenarioLabel": "3-5 min",
+      "daysPerWeek": 2,
+      "startLabel": "Monday",
+      "selectedStartDateIso": "2026-04-13",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Uge 1 - Run-walk",
+        "firstWorkoutDurationMin": 23,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 5 min / Run 1 min / Walk 2 min / Run 1 min / Walk 2 min / Run 1 min / Walk 2 min / Run 1 min / Walk 2 min / Run 1 min / Walk 5 min",
+        "firstWorkoutWeekKind": "full_week",
+        "week1SessionCount": 2,
+        "week1TotalLoad": 30.1,
+        "fullWeek1SessionCount": 2,
+        "fullWeek1TotalLoad": 30.1,
+        "stubWeekApplied": false
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 1,
+        "possibleTooEasyReasons": [
+          "Max run block 1 min may be overly cautious for this band.",
+          "Total run time 5 min may be very light for this band."
+        ]
+      }
+    },
+    {
+      "caseId": "five_min-2d-friday",
+      "scenarioId": "five_min",
+      "scenarioLabel": "3-5 min",
+      "daysPerWeek": 2,
+      "startLabel": "Friday",
+      "selectedStartDateIso": "2026-04-17",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 15.5,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1.3,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 17.3,
+        "fullWeek1SessionCount": 2,
+        "fullWeek1TotalLoad": 22,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 1.2,
+        "possibleTooEasyReasons": [
+          "Max run block 1.3 min may be overly cautious for this band.",
+          "Total run time 5 min may be very light for this band.",
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "five_min-2d-saturday",
+      "scenarioId": "five_min",
+      "scenarioLabel": "3-5 min",
+      "daysPerWeek": 2,
+      "startLabel": "Saturday",
+      "selectedStartDateIso": "2026-04-18",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 15.5,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1.3,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 17.3,
+        "fullWeek1SessionCount": 2,
+        "fullWeek1TotalLoad": 22,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 1.2,
+        "possibleTooEasyReasons": [
+          "Max run block 1.3 min may be overly cautious for this band.",
+          "Total run time 5 min may be very light for this band.",
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "five_min-3d-monday",
+      "scenarioId": "five_min",
+      "scenarioLabel": "3-5 min",
+      "daysPerWeek": 3,
+      "startLabel": "Monday",
+      "selectedStartDateIso": "2026-04-13",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Uge 1 - Run-walk",
+        "firstWorkoutDurationMin": 23,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 5 min / Run 1 min / Walk 2 min / Run 1 min / Walk 2 min / Run 1 min / Walk 2 min / Run 1 min / Walk 2 min / Run 1 min / Walk 5 min",
+        "firstWorkoutWeekKind": "full_week",
+        "week1SessionCount": 3,
+        "week1TotalLoad": 38.4,
+        "fullWeek1SessionCount": 3,
+        "fullWeek1TotalLoad": 38.4,
+        "stubWeekApplied": false
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 1,
+        "possibleTooEasyReasons": [
+          "Max run block 1 min may be overly cautious for this band.",
+          "Total run time 5 min may be very light for this band."
+        ]
+      }
+    },
+    {
+      "caseId": "five_min-3d-friday",
+      "scenarioId": "five_min",
+      "scenarioLabel": "3-5 min",
+      "daysPerWeek": 3,
+      "startLabel": "Friday",
+      "selectedStartDateIso": "2026-04-17",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 15.5,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1.3,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 12.8,
+        "fullWeek1SessionCount": 3,
+        "fullWeek1TotalLoad": 29.1,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 1.2,
+        "possibleTooEasyReasons": [
+          "Max run block 1.3 min may be overly cautious for this band.",
+          "Total run time 5 min may be very light for this band.",
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "five_min-3d-saturday",
+      "scenarioId": "five_min",
+      "scenarioLabel": "3-5 min",
+      "daysPerWeek": 3,
+      "startLabel": "Saturday",
+      "selectedStartDateIso": "2026-04-18",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 15.5,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1.3,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 12.8,
+        "fullWeek1SessionCount": 3,
+        "fullWeek1TotalLoad": 29.1,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 1.2,
+        "possibleTooEasyReasons": [
+          "Max run block 1.3 min may be overly cautious for this band.",
+          "Total run time 5 min may be very light for this band.",
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "half_km-2d-monday",
+      "scenarioId": "half_km",
+      "scenarioLabel": "Approx 0.5 km",
+      "daysPerWeek": 2,
+      "startLabel": "Monday",
+      "selectedStartDateIso": "2026-04-13",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Uge 1 - Run-walk",
+        "firstWorkoutDurationMin": 23,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 5 min / Run 1 min / Walk 2 min / Run 1 min / Walk 2 min / Run 1 min / Walk 2 min / Run 1 min / Walk 2 min / Run 1 min / Walk 5 min",
+        "firstWorkoutWeekKind": "full_week",
+        "week1SessionCount": 2,
+        "week1TotalLoad": 30.1,
+        "fullWeek1SessionCount": 2,
+        "fullWeek1TotalLoad": 30.1,
+        "stubWeekApplied": false
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0,
+        "possibleTooEasyReasons": []
+      }
+    },
+    {
+      "caseId": "half_km-2d-friday",
+      "scenarioId": "half_km",
+      "scenarioLabel": "Approx 0.5 km",
+      "daysPerWeek": 2,
+      "startLabel": "Friday",
+      "selectedStartDateIso": "2026-04-17",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 15.5,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1.3,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 17.3,
+        "fullWeek1SessionCount": 2,
+        "fullWeek1TotalLoad": 22,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0.5,
+        "possibleTooEasyReasons": [
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "half_km-2d-saturday",
+      "scenarioId": "half_km",
+      "scenarioLabel": "Approx 0.5 km",
+      "daysPerWeek": 2,
+      "startLabel": "Saturday",
+      "selectedStartDateIso": "2026-04-18",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 15.5,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1.3,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 17.3,
+        "fullWeek1SessionCount": 2,
+        "fullWeek1TotalLoad": 22,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0.5,
+        "possibleTooEasyReasons": [
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "half_km-3d-monday",
+      "scenarioId": "half_km",
+      "scenarioLabel": "Approx 0.5 km",
+      "daysPerWeek": 3,
+      "startLabel": "Monday",
+      "selectedStartDateIso": "2026-04-13",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Uge 1 - Run-walk",
+        "firstWorkoutDurationMin": 23,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1,
+        "firstWorkoutStructureSummary": "Walk 5 min / Run 1 min / Walk 2 min / Run 1 min / Walk 2 min / Run 1 min / Walk 2 min / Run 1 min / Walk 2 min / Run 1 min / Walk 5 min",
+        "firstWorkoutWeekKind": "full_week",
+        "week1SessionCount": 3,
+        "week1TotalLoad": 38.4,
+        "fullWeek1SessionCount": 3,
+        "fullWeek1TotalLoad": 38.4,
+        "stubWeekApplied": false
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0,
+        "possibleTooEasyReasons": []
+      }
+    },
+    {
+      "caseId": "half_km-3d-friday",
+      "scenarioId": "half_km",
+      "scenarioLabel": "Approx 0.5 km",
+      "daysPerWeek": 3,
+      "startLabel": "Friday",
+      "selectedStartDateIso": "2026-04-17",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 15.5,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1.3,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 12.8,
+        "fullWeek1SessionCount": 3,
+        "fullWeek1TotalLoad": 29.1,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0.5,
+        "possibleTooEasyReasons": [
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    },
+    {
+      "caseId": "half_km-3d-saturday",
+      "scenarioId": "half_km",
+      "scenarioLabel": "Approx 0.5 km",
+      "daysPerWeek": 3,
+      "startLabel": "Saturday",
+      "selectedStartDateIso": "2026-04-18",
+      "derived": {
+        "firstWorkoutType": "run-walk",
+        "firstWorkoutTitle": "Ease in",
+        "firstWorkoutDurationMin": 15.5,
+        "firstWorkoutTotalRunMin": 5,
+        "firstWorkoutMaxContinuousRunBlockMin": 1.3,
+        "firstWorkoutStructureSummary": "Walk 3 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 1.5 min / Run 1.3 min / Walk 3 min",
+        "firstWorkoutWeekKind": "stub_week",
+        "week1SessionCount": 1,
+        "week1TotalLoad": 12.8,
+        "fullWeek1SessionCount": 3,
+        "fullWeek1TotalLoad": 29.1,
+        "stubWeekApplied": true
+      },
+      "heuristics": {
+        "possibleTooHardScore": 0,
+        "possibleTooHardReasons": [],
+        "possibleTooEasyScore": 0.5,
+        "possibleTooEasyReasons": [
+          "Late-week start produces only one intro session in the opening calendar week."
+        ]
+      }
+    }
+  ],
+  "topPossiblyTooHard": [],
+  "topPossiblyTooEasy": [
+    {
+      "caseId": "one_to_two_min-2d-monday",
+      "score": 1.25,
+      "reasons": [
+        "Max run block 0.5 min may be overly cautious for this band.",
+        "Total run time 2.5 min may be very light for this band."
+      ]
+    },
+    {
+      "caseId": "five_min-2d-friday",
+      "score": 1.2,
+      "reasons": [
+        "Max run block 1.3 min may be overly cautious for this band.",
+        "Total run time 5 min may be very light for this band.",
+        "Late-week start produces only one intro session in the opening calendar week."
+      ]
+    },
+    {
+      "caseId": "five_min-2d-saturday",
+      "score": 1.2,
+      "reasons": [
+        "Max run block 1.3 min may be overly cautious for this band.",
+        "Total run time 5 min may be very light for this band.",
+        "Late-week start produces only one intro session in the opening calendar week."
+      ]
+    },
+    {
+      "caseId": "five_min-3d-friday",
+      "score": 1.2,
+      "reasons": [
+        "Max run block 1.3 min may be overly cautious for this band.",
+        "Total run time 5 min may be very light for this band.",
+        "Late-week start produces only one intro session in the opening calendar week."
+      ]
+    },
+    {
+      "caseId": "five_min-3d-saturday",
+      "score": 1.2,
+      "reasons": [
+        "Max run block 1.3 min may be overly cautious for this band.",
+        "Total run time 5 min may be very light for this band.",
+        "Late-week start produces only one intro session in the opening calendar week."
+      ]
+    }
+  ]
+}

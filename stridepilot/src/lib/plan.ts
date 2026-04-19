@@ -5,6 +5,84 @@ import { calendarWeekIndexFromDate, sessionDateFromCalendarWeek, visiblePlanSess
 
 export const DAYS: WorkoutSession["dayOfWeek"][] = ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lordag", "Sondag"];
 
+function dayIndex(day: WorkoutSession["dayOfWeek"]): number {
+  return DAYS.indexOf(day);
+}
+
+function pickClosestOpenIndex(length: number, target: number, used: Set<number>): number {
+  let bestIndex = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  for (let index = 0; index < length; index += 1) {
+    if (used.has(index)) continue;
+    const distance = Math.abs(index - target);
+    if (distance < bestDistance || (distance === bestDistance && index > bestIndex)) {
+      bestIndex = index;
+      bestDistance = distance;
+    }
+  }
+
+  return bestIndex;
+}
+
+function spacedDayTargets(count: number): number[] {
+  if (count <= 0) return [];
+  if (count === 1) return [0.35];
+  if (count === 2) return [0.25, 0.65];
+  if (count === 3) return [0, 0.4, 0.8];
+  return Array.from({ length: count }, (_, index) => index / (count - 1));
+}
+
+function pickSpacedDays(days: WorkoutSession["dayOfWeek"][], count: number): WorkoutSession["dayOfWeek"][] {
+  if (count <= 0) return [];
+  if (count >= days.length) return [...days];
+
+  const used = new Set<number>();
+  const picked = spacedDayTargets(count).map((fraction) => {
+    const target = fraction * Math.max(days.length - 1, 0);
+    const chosenIndex = pickClosestOpenIndex(days.length, target, used);
+    used.add(chosenIndex);
+    return chosenIndex;
+  });
+
+  return picked.sort((a, b) => a - b).map((index) => days[index]!);
+}
+
+function choosePreferredKeyDay(days: WorkoutSession["dayOfWeek"][]): WorkoutSession["dayOfWeek"] {
+  if (days.includes("Sondag")) return "Sondag";
+  if (days.includes("Lordag")) return "Lordag";
+  return days[days.length - 1] ?? "Sondag";
+}
+
+function sessionDayPriority(session: WorkoutSession): number {
+  const title = session.title.toLowerCase();
+  if (title.includes("lang")) return 5;
+  if (title.includes("recovery") || title.includes("restitution")) return 4;
+  if (title.includes("tempo") || title.includes("interval") || title.includes("bakke") || title.includes("progress")) return 3;
+  if (title.includes("roligt") || title.includes("easy") || title.includes("run-walk")) return 1;
+  return session.loadScore >= 7 ? 3 : 2;
+}
+
+function keySessionIndex(sessions: WorkoutSession[]): number {
+  return sessions.reduce((bestIndex, session, index, list) => {
+    const best = list[bestIndex];
+    const bestIsLong = best.title.toLowerCase().includes("lang");
+    const sessionIsLong = session.title.toLowerCase().includes("lang");
+    if (sessionIsLong && !bestIsLong) return index;
+    if (session.loadScore > best.loadScore) return index;
+    return bestIndex;
+  }, 0);
+}
+
+function alignedDaysForWeek(days: WorkoutSession["dayOfWeek"][], sessionCount: number): WorkoutSession["dayOfWeek"][] {
+  if (sessionCount >= days.length) return [...days];
+  const keyDay = choosePreferredKeyDay(days);
+  const supportCount = Math.max(0, sessionCount - 1);
+  const supportPool = days.filter((day) => day !== keyDay);
+  const supportDays = pickSpacedDays(supportPool, supportCount);
+  return [...supportDays, keyDay].sort((left, right) => dayIndex(left) - dayIndex(right));
+}
+
 function mapPreferredDays(days?: Goal["availableTrainingDays"]): CoachGoalConfig["preferredTrainingDays"] {
   if (!days || days.length === 0) return undefined;
   return days.map((day) => {
@@ -58,6 +136,7 @@ function toCoachGoalConfig(goal: Goal, profile: RunnerProfile): CoachGoalConfig 
     trainingDaysPerWeek: Math.max(2, Math.min(4, requestedRuns)) as 2 | 3 | 4,
     startDate: goal.startDate,
     targetTime: goal.targetTime,
+    targetPaceSecPerKm: goal.targetPaceSecPerKm,
     preferredTrainingDays: mapPreferredDays(goal.availableTrainingDays),
     preferredLongRunDay:
       goal.preferredLongRunDay === "both" || goal.preferredLongRunDay === "flexible" || !goal.preferredLongRunDay
@@ -98,6 +177,7 @@ export function sessionTrainingLoad(session: Pick<WorkoutSession, "steps">): num
 export function generateFallbackPlan(profile: RunnerProfile, goal: Goal, _signals?: PlanGenerationSignals): TrainingPlan {
   void _signals;
   const coachProfile = interpretCoachRunnerProfile({
+    onboardingTrack: profile.onboardingTrack,
     onboardingText: profile.userTrainingContext,
     injuryHistory: profile.injuryHistory,
     weakPoints: profile.weakPoints,
@@ -173,11 +253,29 @@ export function enforceAvailableTrainingDays(
       trimmedSessions = true;
     }
 
+    const selectedDays = alignedDaysForWeek(normalizedPreferred, limitedSessions.length);
+    const keyIndex = keySessionIndex(limitedSessions);
+    const keyDay = choosePreferredKeyDay(selectedDays);
+    const supportDays = selectedDays.filter((day) => day !== keyDay);
+    const supportAssignments = new Map<number, WorkoutSession["dayOfWeek"]>();
+    const orderedSupportSessions = limitedSessions
+      .map((session, index) => ({ session, index }))
+      .filter((entry) => entry.index !== keyIndex)
+      .sort((left, right) => {
+        const priorityDiff = sessionDayPriority(left.session) - sessionDayPriority(right.session);
+        if (priorityDiff !== 0) return priorityDiff;
+        return left.index - right.index;
+      });
+
+    orderedSupportSessions.forEach((entry, index) => {
+      supportAssignments.set(entry.index, supportDays[index] ?? selectedDays[index] ?? entry.session.dayOfWeek);
+    });
+
     limitedSessions.forEach((session, index) => {
       alignedSessions.push({
         ...session,
         week,
-        dayOfWeek: normalizedPreferred[index],
+        dayOfWeek: index === keyIndex ? keyDay : supportAssignments.get(index) ?? session.dayOfWeek,
       });
     });
   }

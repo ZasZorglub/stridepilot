@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 
+import { sessionDateFromCalendarWeek } from "../src/lib/calendar-week";
+import { enforceAvailableTrainingDays } from "../src/lib/plan";
 import {
+  buildGoalEventSessionLabel,
   buildWeekOverviewAction,
   buildNextWorkoutState,
   buildProgressGraphState,
@@ -10,11 +13,27 @@ import {
   buildProgramAdjustmentHighlights,
   buildProgramInsightState,
   buildProgressOverviewSummary,
+  findRelevantNextSession,
   getAdjustmentToneAppearance,
+  goalEventDistanceLabel,
   getProgramDayVisualState,
+  isGoalEventSession,
   PROGRAM_SCREEN_SECTION_ORDER,
   shouldHighlightNextWorkout,
+  translateVisibleSessionTitle,
 } from "../src/lib/program-screen";
+import { formatReadableDurationFromSeconds } from "../src/lib/duration";
+import type { TrainingPlan } from "../src/lib/types";
+
+const DAY_INDEX: Record<string, number> = {
+  Mandag: 0,
+  Tirsdag: 1,
+  Onsdag: 2,
+  Torsdag: 3,
+  Fredag: 4,
+  Lordag: 5,
+  Sondag: 6,
+};
 
 assert.deepEqual(
   PROGRAM_SCREEN_SECTION_ORDER,
@@ -37,6 +56,17 @@ assert.equal(
   "10 km · 18. maj · uge 4 af 12",
   "top status line should stay compact and human-readable",
 );
+assert.equal(
+  buildProgramStatusLine({
+    distance: "10 km",
+    goalDateLabel: "18 May",
+    displayWeek: 4,
+    totalWeeks: 12,
+    locale: "en",
+  }),
+  "10 km · 18 May · week 4 of 12",
+  "English beta locale should expose the compact status line in natural English",
+);
 
 const nextWorkoutState = buildNextWorkoutState({
   nextSession: { title: "Rolig tur" } as never,
@@ -45,6 +75,34 @@ const nextWorkoutState = buildNextWorkoutState({
 });
 assert.equal(nextWorkoutState.visible, true, "next workout should be surfaced early when it exists");
 assert.equal(nextWorkoutState.meta, "42 min · torsdag 3. apr.");
+assert.equal(
+  buildNextWorkoutState({
+    nextSession: { title: "Lang tur" } as never,
+    durationMin: 131,
+    dateLabel: "søndag 7. jun.",
+  }).meta,
+  "2 t 11 min · søndag 7. jun.",
+  "longer user-facing durations should be rendered as readable hours and minutes",
+);
+assert.equal(
+  buildNextWorkoutState({
+    nextSession: { title: "Roligt løb" } as never,
+    durationMin: 42,
+    dateLabel: "Thursday 3 Apr",
+    locale: "en",
+  }).title,
+  "Easy run",
+  "visible session titles sourced from plan data should render in English on the .eu path",
+);
+assert.equal(formatReadableDurationFromSeconds(4000), "1 t 7 min");
+assert.equal(formatReadableDurationFromSeconds(1170), "19,5 min");
+assert.equal(goalEventDistanceLabel("Halvmaraton"), "21,1 km");
+assert.equal(goalEventDistanceLabel("Halvmaraton", "en"), "21.1 km");
+assert.equal(isGoalEventSession({ title: "Halvmaraton måldag" } as never), true);
+assert.equal(buildGoalEventSessionLabel({ title: "Maraton måldag" } as never, "Marathon", "en"), "42.2 km race day");
+assert.equal(translateVisibleSessionTitle("Roligt løb", "en"), "Easy run");
+assert.equal(translateVisibleSessionTitle("Langt roligt pas", "en"), "Long easy run");
+assert.equal(translateVisibleSessionTitle("Roligt løb", "da"), "Roligt løb");
 
 assert.equal(
   "ctaLabel" in nextWorkoutState,
@@ -133,34 +191,168 @@ const emptyRestDayState = buildTodayActionState({
 });
 assert.equal(emptyRestDayState.mode, "rest_day_empty");
 assert.equal(emptyRestDayState.ctaLabel, "Se denne uge");
+assert.equal(
+  buildTodayActionState({
+    todaySession: null,
+    nextSession: { id: "next-english" } as never,
+    locale: "en",
+  }).ctaLabel,
+  "See week plan",
+  "English beta locale should keep the calm rest-day CTA readable for first-time users",
+);
+assert.equal(
+  buildProgramAdjustmentHighlights({
+    planWarnings: [],
+    safetyAdjustments: [],
+    savedAdaptations: [],
+    previousGoalDate: "2026-06-20",
+    currentGoalDate: "2026-06-20",
+    previousTotalWeeks: 12,
+    currentTotalWeeks: 12,
+    locale: "en",
+  }).toneLabel,
+  "On track",
+  "English beta locale should expose adaptation labels in English on the trust-critical program layer",
+);
+assert.deepEqual(
+  buildProgressOverviewSummary({
+    plan: { weeks: 12 } as never,
+    historySummary: { progressPct: 38 } as never,
+    displayWeek: 4,
+    currentWeekLoad: { load: 7.4 },
+    locale: "en",
+  }),
+  [
+    { label: "Current week", value: "Week 4 of 12" },
+    { label: "Progress", value: "38%" },
+    { label: "Weekly load", value: "7.4" },
+  ],
+  "English beta locale should expose chart and week summary labels in English",
+);
+
+const frontLoadedPlan: TrainingPlan = {
+  summary: "Testplan",
+  weeks: 3,
+  sessionsPerWeek: 4,
+  sessions: [
+    { id: "w3-a", title: "Run-walk", week: 3, dayOfWeek: "Mandag", loadScore: 3, steps: [{ type: "run", label: "Run", durationSec: 1200, cue: "" }] },
+    { id: "w3-b", title: "Langt roligt pas", week: 3, dayOfWeek: "Tirsdag", loadScore: 8, steps: [{ type: "run", label: "Run", durationSec: 2400, cue: "" }] },
+    { id: "w3-c", title: "Roligt løb", week: 3, dayOfWeek: "Onsdag", loadScore: 4, steps: [{ type: "run", label: "Run", durationSec: 1500, cue: "" }] },
+    { id: "w3-d", title: "Recovery-pas", week: 3, dayOfWeek: "Torsdag", loadScore: 2, steps: [{ type: "run", label: "Run", durationSec: 900, cue: "" }] },
+  ],
+};
+const spacedPlan = enforceAvailableTrainingDays(frontLoadedPlan, ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lordag", "Sondag"]).plan;
+const spacedWeekDays = [...spacedPlan.sessions.map((session) => session.dayOfWeek)].sort((left, right) => DAY_INDEX[left] - DAY_INDEX[right]);
+assert.deepEqual(
+  spacedWeekDays,
+  ["Mandag", "Onsdag", "Fredag", "Sondag"],
+  "the live legacy availability-alignment path should spread a 4-session week across the week instead of defaulting to Monday through Thursday",
+);
+assert.equal(
+  spacedPlan.sessions.find((session) => session.title === "Langt roligt pas")?.dayOfWeek,
+  "Sondag",
+  "the long run in the live plan path should land on the weekend when Sunday is available",
+);
+
+const threeRunPlan = enforceAvailableTrainingDays(
+  {
+    ...frontLoadedPlan,
+    sessionsPerWeek: 3,
+    sessions: frontLoadedPlan.sessions.slice(0, 3),
+  },
+  ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lordag", "Sondag"],
+).plan;
+assert.deepEqual(
+  [...threeRunPlan.sessions.map((session) => session.dayOfWeek)].sort((left, right) => DAY_INDEX[left] - DAY_INDEX[right]),
+  ["Tirsdag", "Torsdag", "Sondag"],
+  "three-session weeks should also be spaced meaningfully when all seven days are available",
+);
+
+const restrictedPlan = enforceAvailableTrainingDays(frontLoadedPlan, ["Mandag", "Onsdag", "Fredag", "Sondag"]).plan;
+assert.deepEqual(
+  [...restrictedPlan.sessions.map((session) => session.dayOfWeek)].sort((left, right) => DAY_INDEX[left] - DAY_INDEX[right]),
+  ["Mandag", "Onsdag", "Fredag", "Sondag"],
+  "restricted availability should still be respected exactly in the live alignment path",
+);
+
+const activeWeekPlan: TrainingPlan = {
+  summary: "Aktiv plan",
+  weeks: 4,
+  sessionsPerWeek: 2,
+  sessions: [
+    { id: "week-2", title: "Roligt løb", week: 2, dayOfWeek: "Mandag", loadScore: 3, steps: [{ type: "run", label: "Run", durationSec: 1500, cue: "" }] },
+    { id: "week-3", title: "Langt roligt pas", week: 3, dayOfWeek: "Mandag", loadScore: 7, steps: [{ type: "run", label: "Run", durationSec: 1800, cue: "" }] },
+    { id: "week-3b", title: "Recovery-pas", week: 3, dayOfWeek: "Onsdag", loadScore: 2, steps: [{ type: "run", label: "Run", durationSec: 900, cue: "" }] },
+  ],
+};
+const relevantNextSession = findRelevantNextSession({
+  sessions: activeWeekPlan.sessions.map((session) => ({
+    session,
+    date: sessionDateFromCalendarWeek("2026-03-30", session),
+  })),
+  activeWeek: 3,
+  today: new Date("2026-04-03T12:00:00"),
+});
+assert.equal(
+  relevantNextSession?.id,
+  "week-3",
+  "the top-card next planned workout should come from the same active plan week instead of surfacing an earlier stale week",
+);
+const relevantNextSessionDate = sessionDateFromCalendarWeek("2026-03-30", relevantNextSession as never);
+assert.equal(relevantNextSessionDate.getFullYear(), 2026);
+assert.equal(relevantNextSessionDate.getMonth(), 3);
+assert.equal(
+  relevantNextSessionDate.getDate(),
+  13,
+  "the next planned workout date should match the relevant upcoming session from the active plan source",
+);
 
 const adjustmentState = buildProgramAdjustmentHighlights({
   planWarnings: ["Du ligger tæt på din maksimale tilgængelige træningstid."],
   safetyAdjustments: ["Den næste lange tur er gjort lidt kortere for at holde ugen robust."],
   savedAdaptations: [{ id: "a1", reason: "Uge 4 blev holdt roligere efter hårdt pas", runnerFocus: "Mere restitution i næste blok" } as never],
+  previousGoalDate: "2026-05-18",
+  currentGoalDate: "2026-05-18",
 });
 assert.equal(adjustmentState.hasAdjustments, true, "adjustment section should surface real changes");
-assert.match(adjustmentState.summary, /Planen er justeret|næste skridt/, "adjustment summary should feel productized instead of raw");
+assert.match(adjustmentState.summary, /holdt roligere|næste skridt|restitution/, "adjustment summary should feel productized instead of raw");
 assert.ok(adjustmentState.highlights.length >= 1, "adjustment highlights should stay concise but useful");
+assert.equal(adjustmentState.timelineNote, "Måldatoen er uændret.", "adaptation messaging should always answer whether the date changed");
 
 const noChangeState = buildProgramAdjustmentHighlights({
   planWarnings: [],
   safetyAdjustments: [],
   savedAdaptations: [],
+  previousGoalDate: "2026-05-18",
+  currentGoalDate: "2026-05-18",
 });
 assert.equal(noChangeState.kind, "none", "no-change state should be explicit");
 assert.match(noChangeState.summary, /ikke noget lige nu|holde rytmen/, "no-change copy should still feel useful");
+assert.equal(noChangeState.timelineNote, "Måldatoen er uændret.");
 
-const holdState = buildProgramAdjustmentHighlights({
+const repeatWeekState = buildProgramAdjustmentHighlights({
   planWarnings: [],
   safetyAdjustments: [],
   savedAdaptations: [{ id: "hold-1", createdAt: "2026-03-27", mode: "hold", reason: "Jeg holder denne uge stabil efter et krævende pas", changeSummary: ["Jeg holder denne uge stabil efter et krævende pas"] } as never],
+  previousGoalDate: "2026-05-18",
+  currentGoalDate: "2026-05-18",
 });
-assert.equal(holdState.kind, "holding", "hold state should render distinctly");
-assert.equal(holdState.toneLabel, "Holdt rolig");
-assert.equal(getAdjustmentToneAppearance(holdState.kind), "steady", "hold state should map to a calm steady tone");
+assert.equal(repeatWeekState.kind, "holding", "hold state should render distinctly");
+assert.equal(repeatWeekState.headline, "Jeg gentager denne uge");
+assert.match(repeatWeekState.practicalConsequence, /samme struktur én uge mere|stabil/i, "repeat-current-week should explain what happens now");
+assert.equal(getAdjustmentToneAppearance(repeatWeekState.kind), "steady", "hold state should map to a calm steady tone");
 
-const meaningfulAdjustmentState = buildProgramAdjustmentHighlights({
+const downshiftState = buildProgramAdjustmentHighlights({
+  planWarnings: [],
+  safetyAdjustments: [],
+  savedAdaptations: [{ id: "down-1", createdAt: "2026-03-27", mode: "down_shift", reason: "Belastningen skal ned et trin for at holde planen robust", changeSummary: ["Næste uge er gjort lettere"] } as never],
+  previousGoalDate: "2026-05-18",
+  currentGoalDate: "2026-05-18",
+});
+assert.equal(downshiftState.headline, "Næste uge bliver lettere");
+assert.match(downshiftState.practicalConsequence, /lettere|bygger videre/i, "downshift should explain the immediate next step");
+
+const recoveryMicrocycleState = buildProgramAdjustmentHighlights({
   planWarnings: [],
   safetyAdjustments: ["Den næste uge er gjort roligere for at give mere luft."],
   savedAdaptations: [
@@ -176,16 +368,41 @@ const meaningfulAdjustmentState = buildProgramAdjustmentHighlights({
       ],
     } as never,
   ],
+  previousGoalDate: "2026-05-18",
+  currentGoalDate: "2026-05-18",
 });
-assert.equal(meaningfulAdjustmentState.kind, "conservative", "recovery/downshift should read as conservative");
+assert.equal(recoveryMicrocycleState.kind, "conservative", "recovery/downshift should read as conservative");
+assert.equal(recoveryMicrocycleState.headline, "Jeg lægger en kort recovery-uge ind");
 assert.equal(
-  getAdjustmentToneAppearance(meaningfulAdjustmentState.kind),
+  getAdjustmentToneAppearance(recoveryMicrocycleState.kind),
   "protective",
   "conservative adjustments should map to the more protective tone pill styling",
 );
 assert.ok(
-  new Set(meaningfulAdjustmentState.highlights).size === meaningfulAdjustmentState.highlights.length,
+  new Set(recoveryMicrocycleState.highlights).size === recoveryMicrocycleState.highlights.length,
   "duplicate adjustment bullets should be collapsed",
+);
+
+const movedDateState = buildProgramAdjustmentHighlights({
+  planWarnings: [],
+  safetyAdjustments: [],
+  savedAdaptations: [{ id: "move-1", createdAt: "2026-03-27", mode: "progress", reason: "Planen er justeret efter nye signaler", changeSummary: [] } as never],
+  previousGoalDate: "2026-05-18",
+  currentGoalDate: "2026-05-25",
+});
+assert.match(movedDateState.timelineNote, /Måldatoen er flyttet til/, "date changes should be made explicit when metadata indicates a moved goal date");
+
+const unknownPreviousDateState = buildProgramAdjustmentHighlights({
+  planWarnings: [],
+  safetyAdjustments: [],
+  savedAdaptations: [{ id: "move-2", createdAt: "2026-03-27", mode: "progress", reason: "Planen er justeret efter nye signaler", changeSummary: [] } as never],
+  previousGoalDate: null,
+  currentGoalDate: "2026-05-25",
+});
+assert.equal(
+  unknownPreviousDateState.timelineNote,
+  "Måldatoen er uændret.",
+  "moved-date copy should only appear when both previous and current dates are genuinely present and different",
 );
 
 const emptyInsightState = buildProgramInsightState([]);
@@ -194,6 +411,19 @@ assert.equal(emptyInsightState.readiness, "early");
 assert.match(emptyInsightState.summary, /flere loggede pas|går igen/, "insights empty state should explain why it is empty");
 assert.match(emptyInsightState.body, /logge træningen roligt og ærligt/, "insights empty state should feel intentional");
 assert.match(emptyInsightState.cta ?? "", /par pas mere|første mønstre/, "insights empty state should motivate continued logging");
+assert.deepEqual(
+  buildProgramInsightState([], "en"),
+  {
+    readiness: "early",
+    isEmpty: true,
+    title: "Insights appear once I have a little more to work from",
+    summary: "After a few more logged workouts, I start showing the patterns that are actually repeating.",
+    body: "For now, it is enough to log training calmly and honestly. The rest comes later.",
+    cta: "Log a few more workouts and the first patterns will become clearer.",
+    bullets: [],
+  },
+  "English beta locale should expose the insight empty state in natural English",
+);
 
 const populatedInsightState = buildProgramInsightState(["Du håndterer længere rolige pas godt."]);
 assert.equal(populatedInsightState.isEmpty, false, "insights section should switch once history exists");
@@ -277,6 +507,7 @@ const comparedProgressGraph = buildProgressGraphState({
 });
 assert.equal(comparedProgressGraph.showBaselineSeries, true, "graph should render the original-plan comparison when baseline data exists");
 assert.match(comparedProgressGraph.baselinePath, /^M /, "original-plan comparison should expose a visual series path");
+assert.equal(comparedProgressGraph.points.filter((point) => point.isCurrent).length, 1, "graph state should still expose exactly one current week marker");
 
 assert.deepEqual(
   buildProgressGraphWeekAction(12),

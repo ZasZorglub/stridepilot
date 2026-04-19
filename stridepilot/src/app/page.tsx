@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./page.module.css";
 import {
-  CurrentRunningAbility,
   FeedbackInsights,
   Goal,
   GoalType,
+  OnboardingTrack,
   PlanHistorySummary,
   PlanAmbition,
   PlanRecommendation,
@@ -21,51 +21,76 @@ import {
   WorkoutSession,
   WorkoutStep,
 } from "@/lib/types";
-import { APP_NAME } from "@/lib/app-config";
+import { APP_NAME, APP_VERSION } from "@/lib/app-config";
+import { formatReadableDurationFromSeconds } from "@/lib/duration";
+import { buildFeedbackMailto } from "@/lib/feedback-mail";
+import { getSiteCopy } from "@/lib/site-copy";
+import { getConfiguredSiteLocale, SiteLocale } from "@/lib/site-variant";
 import { cancelCue, initSpeech, isSpeechSupported, speakCue } from "@/lib/speech-coach";
 import { buildWeeklyLoad } from "@/lib/plan";
 import {
+  addWeeksToIsoDate,
+  applyDurationToRecommendationOption,
+  buildDurationEditBounds,
   buildRecommendationLeadCopy,
+  buildTrackRecommendationContext,
+  buildDurationAdjustmentState,
   buildPlanStartDateHelpText,
   buildRecentRaceTimeFromParts,
   buildRecentRaceTimes,
-  deriveBaselineLoadFromAbility,
+  buildLowFrequencyOverridePrompt,
+  CURRENT_CAPACITY_DISTANCE_QUICK_OPTIONS,
+  deriveBaselineLoadFromCapacity,
   getGoalTypeOptions,
+  getOnboardingTrackOptions,
   getOnboardingStepDefinition,
   getSuggestedPlanStartDate,
   hasRecentRaceEntry,
+  inferOnboardingTrackFromProfile,
+  isOnboardingStepReady,
+  parseCurrentCapacityDistanceKm,
+  shouldInitializeOnboardingProfileStage,
   isGoalTypeAllowed,
-  mapAbilityToRunningExperience,
+  ONBOARDING_STEPS,
   ONBOARDING_STEP_COUNT,
   recentRaceDraftFromEntries,
   recentRaceDraftSummaryLabel,
   recentRaceSummaryLabel,
+  resolvePlanStartDateForWeekRhythm,
   recentRaceTimePartsFromString,
+  trackCapacityHint,
 } from "@/lib/onboarding-flow";
 import {
   buildWeekOverviewAction,
+  buildGoalEventSessionLabel,
   buildNextWorkoutState,
   buildProgressGraphState,
   buildProgressGraphWeekAction,
-  buildProgramStatusLine,
   buildTodayActionState,
   buildProgramAdjustmentHighlights,
   buildProgramInsightState,
   buildProgressOverviewSummary,
+  findRelevantNextSession,
   getAdjustmentToneAppearance,
+  goalEventDistanceLabel,
   getProgramDayVisualState,
+  isGoalEventSession,
   shouldHighlightNextWorkout,
+  translateVisibleSessionTitle,
 } from "@/lib/program-screen";
-import { buildPulseGuidanceSummary, buildPulseGuidanceWarning, parseMaxHeartRateInput } from "@/lib/profile-settings";
+import {
+  buildAnalyticsPlanProperties,
+  captureAppEvent,
+  identifyAnalyticsUser,
+  resetAnalyticsUser,
+  sessionAnalyticsType,
+} from "@/lib/analytics";
+import { buildPulseGuidanceSummary, buildPulseGuidanceWarning, buildPulseZoneLegend, parseMaxHeartRateInput } from "@/lib/profile-settings";
+import { deriveWorkoutProfile } from "@/lib/workout-profile";
 import {
   buildWorkoutActionState,
   buildWorkoutCheckInState,
-  buildWorkoutCueState,
   buildWorkoutInterruptionNotice,
-  getNextWorkoutStep,
-  getWorkoutHeartRateGuidance,
-  getWorkoutAudioStatus,
-  getVisibleWorkoutSteps,
   hasRequiredWorkoutFeedback,
   shouldSpeakWorkoutCue,
 } from "@/lib/workout-screen";
@@ -83,7 +108,6 @@ import {
   createInitialRunnerState,
   createInitialSessionHistory,
   createInitialTrainingBlock,
-  getWorkoutPurpose,
   evaluateRunnerState,
   evaluateTrainingTrend,
   SessionHistory,
@@ -104,11 +128,20 @@ type AudioMode = "off" | "short" | "coach";
 type ThemePref = "dark";
 type InfoField = "targetPace" | "runningExperience" | "activityLevel" | "availableTrainingDays" | "currentRunningAbility" | "graph" | null;
 type OnboardingSelectionState = {
+  track: boolean;
   runningAbility: boolean;
   goalDistance: boolean;
   goalType: boolean;
   activityLevel: boolean;
   ambition: boolean;
+};
+
+type PendingLowFrequencyOverride =
+  | { intent: "recommendation" }
+  | { intent: "generation"; selectedRecommendation?: PlanRecommendationOption };
+
+type PendingDurationOverride = {
+  selectedRecommendation: PlanRecommendationOption;
 };
 
 type QuickFeedbackOption = NonNullable<WorkoutFeedbackInput["quickFeedback"]>;
@@ -162,6 +195,16 @@ const DAY_LABEL: Record<WorkoutSession["dayOfWeek"], string> = {
   Sondag: "Søndag",
 };
 
+const DAY_LABEL_EN: Record<WorkoutSession["dayOfWeek"], string> = {
+  Mandag: "Monday",
+  Tirsdag: "Tuesday",
+  Onsdag: "Wednesday",
+  Torsdag: "Thursday",
+  Fredag: "Friday",
+  Lordag: "Saturday",
+  Sondag: "Sunday",
+};
+
 const ACTIVITY_LEVEL_INFO: Record<RunnerProfile["activityLevel"], string> = {
   meget_lav: "Næsten ingen anden træning ud over det mest nødvendige i hverdagen.",
   lav: "Lidt anden træning eller bevægelse, fx 1-2 lette pas om ugen.",
@@ -170,13 +213,21 @@ const ACTIVITY_LEVEL_INFO: Record<RunnerProfile["activityLevel"], string> = {
   meget_høj: "Meget høj samlet træningsmængde med hyppige pas ud over løb.",
 };
 
-const CURRENT_RUNNING_ABILITY_OPTIONS: Array<{ value: CurrentRunningAbility; label: string }> = [
-  { value: "helt_ny", label: "Jeg er helt ny og kan ikke løbe sammenhængende endnu" },
-  { value: "fem_min", label: "Jeg kan løbe 5 minutter" },
-  { value: "ti_femten_min", label: "Jeg kan løbe 10–15 minutter" },
-  { value: "tyve_tredive_min", label: "Jeg kan løbe 20–30 minutter" },
-  { value: "mere_end_tredive_min", label: "Jeg kan løbe mere end 30 minutter" },
-];
+const ACTIVITY_LEVEL_INFO_EN: Record<RunnerProfile["activityLevel"], string> = {
+  meget_lav: "Almost no other training beyond the basics of daily life.",
+  lav: "A little other training or movement, for example 1–2 light sessions per week.",
+  moderat: "Regular other training, typically 2–4 sessions per week or an active daily life.",
+  høj: "Quite a bit of other training or sport during the week.",
+  meget_høj: "Very high total training load with frequent sessions beyond running.",
+};
+
+const CURRENT_RUNS_PER_WEEK_OPTIONS = [
+  { value: 0, label: "0 gange" },
+  { value: 1, label: "1 gang" },
+  { value: 2, label: "2 gange" },
+  { value: 3, label: "3 gange" },
+  { value: 4, label: "4+ gange" },
+] as const;
 
 const GOAL_DISTANCE_OPTIONS: Array<{ value: Goal["distance"]; label: string }> = [
   { value: "5K", label: "5 km" },
@@ -258,6 +309,10 @@ function requiredRunsPerWeek(distance: Goal["distance"]): number {
   return 3;
 }
 
+function defaultPlanAmbitionForTrack(track: OnboardingTrack): PlanAmbition {
+  return track === "getting_started" || track === "returning" ? "gentle" : "standard";
+}
+
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -312,7 +367,20 @@ function targetTimeFromPace(distance: Goal["distance"], targetPaceSecPerKm?: num
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-function goalPaceFieldHint(goal: Goal): string {
+function localizedGoalDistanceName(distance: Goal["distance"], locale: SiteLocale = "da"): string {
+  if (locale !== "en") return distance === "Marathon" ? "Maraton" : distance;
+  if (distance === "Halvmaraton") return "Half marathon";
+  if (distance === "Marathon") return "Marathon";
+  return distance;
+}
+
+function goalPaceFieldHint(goal: Goal, locale: SiteLocale = "da"): string {
+  if (locale === "en") {
+    if (goal.goalType === "pr") {
+      return `Choose the pace you want to be able to hold to set a PR for ${localizedGoalDistanceName(goal.distance, locale)}.`;
+    }
+    return `Choose the pace you are aiming for on ${localizedGoalDistanceName(goal.distance, locale)}.`;
+  }
   if (goal.goalType === "pr") {
     return `Vælg det tempo du gerne vil kunne holde for at sætte PR på ${goal.distance}.`;
   }
@@ -333,10 +401,59 @@ function sessionDateFromPlan(startDateIso: string, session: WorkoutSession): Dat
   return sessionDateFromCalendarWeek(startDateIso, session);
 }
 
-function formatDanishDateWithWeekday(date: Date): string {
-  const datePart = date.toLocaleDateString("da-DK", { day: "numeric", month: "long", year: "numeric" });
-  const weekDay = date.toLocaleDateString("da-DK", { weekday: "long" }).toLowerCase();
+function goalDateFromPlanSessions(plan: TrainingPlan | null, startDateIso: string): string | null {
+  if (!plan?.sessions.length) return null;
+  const destinationSession =
+    plan.sessions.find((session) => /Måldag|test/i.test(session.title)) ?? plan.sessions[plan.sessions.length - 1];
+  return sessionDateFromPlan(startDateIso, destinationSession).toISOString().slice(0, 10);
+}
+
+function formatDateWithWeekday(date: Date, locale: SiteLocale = "da"): string {
+  const localeCode = locale === "en" ? "en-GB" : "da-DK";
+  const datePart = date.toLocaleDateString(localeCode, { day: "numeric", month: "long", year: "numeric" });
+  const weekDay = date.toLocaleDateString(localeCode, { weekday: "long" }).toLowerCase();
   return `${datePart}: ${weekDay}`;
+}
+
+function formatDanishDateWithWeekday(date: Date): string {
+  return formatDateWithWeekday(date, "da");
+}
+
+function dayLabel(day: WorkoutSession["dayOfWeek"], locale: SiteLocale = "da"): string {
+  return locale === "en" ? DAY_LABEL_EN[day] : DAY_LABEL[day];
+}
+
+function formatDistanceLabel(distanceKm: number, locale: SiteLocale = "da"): string {
+  const rendered = Number.isInteger(distanceKm) ? String(distanceKm) : distanceKm.toFixed(1);
+  return locale === "en" ? rendered : rendered.replace(".", ",");
+}
+
+function sessionWeekBadge(week: number, locale: SiteLocale = "da"): string {
+  if (week <= 0) return locale === "en" ? "Intro week" : "Intro-uge";
+  return locale === "en" ? `Week ${week}` : `Uge ${week}`;
+}
+
+function translateTrainingDayRecommendationText(text: string, locale: SiteLocale = "da"): string {
+  if (locale !== "en") return text;
+  return text
+    .replace(/^Jeg anbefaler (\d+) træningsdage, fordi du lige nu løber (\d+) gange om ugen og har valgt (\d+) faste dage at træne på\.$/, "I recommend $1 training days because you are currently running $2 times per week and have chosen $3 fixed days to train on.")
+    .replace(/^Jeg anbefaler (\d+) korte træningsdage, fordi du stadig bygger selve løbevanen op, og hyppighed er vigtigere end lange pas lige nu\.$/, "I recommend $1 shorter training days because you are still building the habit of running itself, and frequency matters more than long sessions right now.")
+    .replace(/^Jeg anbefaler (\d+) træningsdage, fordi du går efter et mere konkret præstationsmål og allerede har noget at bygge videre på\.$/, "I recommend $1 training days because you are chasing a more concrete performance goal and already have something to build from.")
+    .replace(/^Jeg anbefaler (\d+) træningsdage, fordi planen også skal passe ind i en travl hverdag og stadig være realistisk at følge\.$/, "I recommend $1 training days because the plan still has to fit into a busy week and remain realistic to follow.")
+    .replace(/^Jeg anbefaler (\d+) træningsdage, fordi du allerede har en vis kontinuitet og derfor kan bære lidt mere rytme i ugen\.$/, "I recommend $1 training days because you already have some consistency and can therefore carry a little more rhythm through the week.")
+    .replace(/^Du har valgt færre dage end den anbefalede rytme, så planen skal enten være roligere eller have lidt længere tid til målet\.$/, "You have chosen fewer days than the recommended rhythm, so the plan either needs to be calmer or have a little more time to the goal.")
+    .replace(/^Jeg holder også øje med din øvrige træning, så løbeplanen ikke vælter den samlede belastning\.$/, "I also keep an eye on your other training so the running plan does not tip the total load too high.");
+}
+
+function recommendationRouteLabel(mode: PlanRecommendationOption["mode"], locale: SiteLocale = "da"): string {
+  if (locale === "en") {
+    if (mode === "gentle") return "Calmer route";
+    if (mode === "ambitious") return "Ambitious route";
+    return "Recommended route";
+  }
+  if (mode === "gentle") return "Rolig vej";
+  if (mode === "ambitious") return "Ambitiøs vej";
+  return "Anbefalet vej";
 }
 
 function isValidIsoDate(value: string): boolean {
@@ -352,14 +469,16 @@ function isValidIsoDate(value: string): boolean {
 }
 
 function formatStepDuration(step: WorkoutStep): string {
-  if (step.durationSec % 60 === 0) {
-    const min = step.durationSec / 60;
-    return `${min} ${min === 1 ? "minut" : "minutter"}`;
-  }
-  return `${step.durationSec} sekunder`;
+  return formatReadableDurationFromSeconds(step.durationSec);
 }
 
-function stepCueText(step: WorkoutStep): string {
+function stepCueText(step: WorkoutStep, locale: SiteLocale = "da"): string {
+  if (locale === "en") {
+    if (step.type === "warmup") return `Brisk walk for ${formatStepDuration(step)}`;
+    if (step.type === "run") return `Run for ${formatStepDuration(step)}`;
+    if (step.type === "walk") return `Walk for ${formatStepDuration(step)}`;
+    return `Cool down for ${formatStepDuration(step)}`;
+  }
   if (step.type === "warmup") return `Rask gang i ${formatStepDuration(step)}`;
   if (step.type === "run") return `Løb i ${formatStepDuration(step)}`;
   if (step.type === "walk") return `Gå i ${formatStepDuration(step)}`;
@@ -370,26 +489,46 @@ function shortSessionTitle(title: string): string {
   return title.replace(/^Uge \d+\s*-\s*/i, "").trim();
 }
 
-function phaseName(step: WorkoutStep): string {
+function visibleSessionTitle(title: string, locale: SiteLocale = "da"): string {
+  return translateVisibleSessionTitle(title, locale);
+}
+
+function phaseName(step: WorkoutStep, locale: SiteLocale = "da"): string {
+  if (locale === "en") {
+    if (step.type === "run") return "Run";
+    if (step.type === "walk") return "Walk";
+    if (step.type === "warmup") return "Warm-up";
+    return "Cool-down";
+  }
   if (step.type === "run") return "Løb";
   if (step.type === "walk") return "Gang";
   if (step.type === "warmup") return "Rask gang";
   return "Nedkøling";
 }
 
-function coachingHint(step: WorkoutStep): string {
+function coachingHint(step: WorkoutStep, locale: SiteLocale = "da"): string {
+  if (locale === "en") {
+    if (step.type === "warmup") return "Walk briskly and let your body warm up.";
+    if (step.type === "run") return "Run at a controlled effort. You should still manage short sentences.";
+    if (step.type === "walk") return "Ease the pace down and let your breathing settle.";
+    return "Let your heart rate come down calmly while you keep moving.";
+  }
   if (step.type === "warmup") return "Gå i rask tempo og bliv varm i kroppen.";
   if (step.type === "run") return "Løb i kontrolleret tempo. Du skal kunne tale i korte sætninger.";
   if (step.type === "walk") return "Sænk tempoet og træk vejret roligt.";
   return "Lad pulsen falde roligt og hold kroppen i bevægelse.";
 }
 
-function buildCue(step: WorkoutStep, mode: AudioMode): string {
-  const shortCue = stepCueText(step);
+function buildCue(step: WorkoutStep, mode: AudioMode, locale: SiteLocale = "da"): string {
+  const shortCue = stepCueText(step, locale);
   if (mode === "coach") {
-    return `${shortCue}. ${coachingHint(step)}`;
+    return `${shortCue}. ${coachingHint(step, locale)}`;
   }
   return shortCue;
+}
+
+function transitionNoticeForStep(step: WorkoutStep, locale: SiteLocale = "da"): string {
+  return locale === "en" ? `Now: ${phaseName(step, locale)}` : `Nu: ${phaseName(step, locale)}`;
 }
 
 function introSeenKey(userId: string): string {
@@ -426,29 +565,45 @@ function savedFeedbackStatus(completionPct: number): SavedWorkoutSessionFeedback
   return "completed";
 }
 
-function savedFeedbackStatusLabel(status: SavedWorkoutSessionFeedback["status"]): string {
+function savedFeedbackStatusLabel(status: SavedWorkoutSessionFeedback["status"], locale: SiteLocale = "da"): string {
+  if (locale === "en") {
+    if (status === "completed") return "Completed";
+    if (status === "shortened") return "Shortened";
+    return "Missed";
+  }
   if (status === "completed") return "Gennemført";
   if (status === "shortened") return "Afkortet";
   return "Missede";
 }
 
-function savedFeedbackEnergyLabel(value: number): string {
+function savedFeedbackEnergyLabel(value: number, locale: SiteLocale = "da"): string {
+  if (locale === "en") {
+    if (value <= 2) return "Low energy";
+    if (value >= 4) return "Good energy";
+    return "Okay energy";
+  }
   if (value <= 2) return "Lav energi";
   if (value >= 4) return "God energi";
   return "Okay energi";
 }
 
-function savedFeedbackPainLabel(value: number): string {
+function savedFeedbackPainLabel(value: number, locale: SiteLocale = "da"): string {
+  if (locale === "en") {
+    if (value <= 1) return "No pain";
+    if (value <= 3) return "Some soreness";
+    if (value <= 6) return "Pain";
+    return "High caution";
+  }
   if (value <= 1) return "Ingen smerte";
   if (value <= 3) return "Lidt ømhed";
   if (value <= 6) return "Smerte";
   return "Høj forsigtighed";
 }
 
-function formatSubmittedAt(value: string): string {
+function formatSubmittedAt(value: string, locale: SiteLocale = "da"): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("da-DK", {
+  return date.toLocaleString(locale === "en" ? "en-GB" : "da-DK", {
     day: "numeric",
     month: "short",
     hour: "2-digit",
@@ -456,7 +611,14 @@ function formatSubmittedAt(value: string): string {
   });
 }
 
-function sessionShortDescription(session: WorkoutSession): string {
+function sessionShortDescription(session: WorkoutSession, locale: SiteLocale = "da"): string {
+  if (locale === "en") {
+    if (/interval/i.test(session.title)) return "Interval session with short run reps and calm recovery walking.";
+    if (/udholdenhed/i.test(session.title)) return "Calm endurance session focused on continuity and steady rhythm.";
+    if (/roligt/i.test(session.title)) return "Easy session with even effort and a comfortable rhythm.";
+    if (/måldag|test/i.test(session.title)) return "Goal-specific session where you practise the form you have built.";
+    return "A guided workout adapted to your current plan.";
+  }
   if (/interval/i.test(session.title)) {
     return "Intervaltræningspas med korte løbeintervaller og rolige gangpauser.";
   }
@@ -473,46 +635,74 @@ function sessionShortDescription(session: WorkoutSession): string {
 }
 
 function formatMinutesLabel(totalSec: number): string {
-  if (totalSec <= 0) return "0 min";
-  const minutes = totalSec / 60;
-  if (minutes >= 60) {
-    const hours = Math.floor(minutes / 60);
-    const rest = Math.round(minutes % 60);
-    return rest > 0 ? `${hours} t ${rest} min` : `${hours} t`;
-  }
-  if (minutes % 1 === 0) return `${minutes} min`;
-  return `${minutes.toFixed(1).replace(".", ",")} min`;
+  return formatReadableDurationFromSeconds(totalSec);
 }
 
-function progressionTempoLabel(mode?: PlanRecommendationOption["progressionMode"]): string {
+function progressionTempoLabel(mode?: PlanRecommendationOption["progressionMode"], locale: SiteLocale = "da"): string {
+  if (locale === "en") {
+    if (mode === "conservative") return "Calm";
+    if (mode === "ambitious") return "Ambitious";
+    return "Standard";
+  }
   if (mode === "conservative") return "Roligt";
   if (mode === "ambitious") return "Ambitiøst";
   return "Standard";
 }
 
-function longRunPreferenceLabel(value?: Goal["preferredLongRunDay"]): string {
+function longRunPreferenceLabel(value?: Goal["preferredLongRunDay"], locale: SiteLocale = "da"): string {
+  if (locale === "en") {
+    if (value === "saturday") return "Saturday";
+    if (value === "sunday") return "Sunday";
+    if (value === "both") return "Either works";
+    return "Flexible";
+  }
   if (value === "saturday") return "Lørdag";
   if (value === "sunday") return "Søndag";
   if (value === "both") return "Begge dage passer";
   return "Fleksibel";
 }
 
-function goalTypeLabel(value?: GoalType): string {
+function goalTypeLabel(value?: GoalType, locale: SiteLocale = "da"): string {
+  if (locale === "en") {
+    if (value === "run_without_walking") return "Without stopping";
+    if (value === "target_time") return "Target pace";
+    if (value === "pr") return "Set a PR";
+    return "Complete";
+  }
   if (value === "run_without_walking") return "Løbe uden stop";
   if (value === "target_time") return "Måltempo";
   if (value === "pr") return "Forbedre tid";
   return "Gennemføre";
 }
 
-function sessionTypeLabel(session: WorkoutSession): string {
-  if (/måldag|test/i.test(session.title)) return "Måldag";
-  if (/lang/i.test(session.title)) return "Lang tur";
+function sessionTypeLabel(session: WorkoutSession, locale: SiteLocale = "da"): string {
+  if (isGoalEventSession(session)) return locale === "en" ? "Race day" : "Måldag";
+  if (/lang/i.test(session.title)) return locale === "en" ? "Long run" : "Lang tur";
   if (/run\/walk|udvikling/i.test(session.title)) return "Run/walk";
   if (/steady/i.test(session.title)) return "Steady";
   if (/progression/i.test(session.title)) return "Progression";
   if (/tempo/i.test(session.title)) return "Tempo";
   if (/recovery/i.test(session.title)) return "Recovery";
-  return shortSessionTitle(session.title);
+  return visibleSessionTitle(session.title, locale);
+}
+
+function sessionDisplayTitle(session: WorkoutSession, goalDistance: Goal["distance"], locale: SiteLocale = "da"): string {
+  if (isGoalEventSession(session)) return buildGoalEventSessionLabel(session, goalDistance, locale);
+  return visibleSessionTitle(session.title, locale);
+}
+
+function sessionStructureSummary(session: WorkoutSession, locale: SiteLocale = "da"): string {
+  const runSteps = session.steps.filter((step) => step.type === "run");
+  const walkSteps = session.steps.filter((step) => step.type === "walk");
+  if (runSteps.length > 1 && walkSteps.length > 0) {
+    const runLabel = formatMinutesLabel(runSteps[0].durationSec);
+    const walkLabel = formatMinutesLabel(walkSteps[0].durationSec);
+    return locale === "en" ? `${runSteps.length} x ${runLabel} run · ${walkLabel} walk` : `${runSteps.length} x ${runLabel} loeb · ${walkLabel} gang`;
+  }
+  if (runSteps.length === 1) {
+    return locale === "en" ? `${formatMinutesLabel(runSteps[0].durationSec)} continuous running` : `${formatMinutesLabel(runSteps[0].durationSec)} sammenhaengende loeb`;
+  }
+  return session.steps.map((step) => `${phaseName(step, locale)} ${formatStepDuration(step)}`).join(" · ");
 }
 
 function sessionStructureText(session: WorkoutSession): string {
@@ -634,18 +824,22 @@ function sessionTotalDurationSec(session: WorkoutSession): number {
   return session.steps.reduce((sum, step) => sum + step.durationSec, 0);
 }
 
-function intervalSummary(session: WorkoutSession): string {
+function intervalSummary(session: WorkoutSession, locale: SiteLocale = "da"): string {
   const runSteps = session.steps.filter((step) => step.type === "run");
   const walkSteps = session.steps.filter((step) => step.type === "walk");
   if (runSteps.length > 1) {
     const runDuration = formatClock(runSteps[0].durationSec).replace(/^00:/, "");
-    const walkDuration = walkSteps[0] ? ` · ${formatClock(walkSteps[0].durationSec).replace(/^00:/, "")} gangpause` : "";
-    return `${runSteps.length} × ${runDuration} løb${walkDuration}`;
+    const walkDuration = walkSteps[0]
+      ? locale === "en"
+        ? ` · ${formatClock(walkSteps[0].durationSec).replace(/^00:/, "")} walk recovery`
+        : ` · ${formatClock(walkSteps[0].durationSec).replace(/^00:/, "")} gangpause`
+      : "";
+    return locale === "en" ? `${runSteps.length} × ${runDuration} run${walkDuration}` : `${runSteps.length} × ${runDuration} løb${walkDuration}`;
   }
   if (runSteps.length === 1) {
-    return `${formatMinutesLabel(runSteps[0].durationSec)} sammenhængende løb`;
+    return locale === "en" ? `${formatMinutesLabel(runSteps[0].durationSec)} continuous running` : `${formatMinutesLabel(runSteps[0].durationSec)} sammenhængende løb`;
   }
-  return "Let bevægelse og rolig rytme";
+  return locale === "en" ? "Light movement and a calm rhythm" : "Let bevægelse og rolig rytme";
 }
 
 function quickFeedbackPreset(value: QuickFeedbackOption): Pick<WorkoutFeedbackInput, "effort" | "completionPct" | "energy" | "painLevel"> {
@@ -738,7 +932,7 @@ function mergeAdaptedUpcomingSessions(plan: TrainingPlan, activeSessionId: strin
   };
 }
 
-function detectAdaptivePlanChange(previousPlan: TrainingPlan, updatedPlan: TrainingPlan): { interpretation: string; adjustment: string; log?: string } {
+function detectAdaptivePlanChange(previousPlan: TrainingPlan, updatedPlan: TrainingPlan, locale: SiteLocale = "da"): { interpretation: string; adjustment: string; log?: string } {
   const previousById = new Map(previousPlan.sessions.map((session) => [session.id, session]));
 
   for (const updatedSession of updatedPlan.sessions) {
@@ -751,65 +945,65 @@ function detectAdaptivePlanChange(previousPlan: TrainingPlan, updatedPlan: Train
 
     if ((previousType === "interval" || previousType === "tempo") && updatedType === "easy") {
       return {
-        interpretation: "Træningspasset var mere krævende end planlagt, så det næste kvalitetstræningspas bliver gjort roligere.",
-        adjustment: "Jeg skifter det næste hårdere træningspas til et roligt træningspas og korter det lidt ned.",
-        log: "Jeg gør det næste kvalitetstræningspas roligere, så belastningen ikke bygger sig for hurtigt op.",
+        interpretation: locale === "en" ? "The workout was more demanding than planned, so the next quality session is being made easier." : "Træningspasset var mere krævende end planlagt, så det næste kvalitetstræningspas bliver gjort roligere.",
+        adjustment: locale === "en" ? "I am switching the next harder session to an easy run and shortening it slightly." : "Jeg skifter det næste hårdere træningspas til et roligt træningspas og korter det lidt ned.",
+        log: locale === "en" ? "I am making the next quality session easier so the load does not build too quickly." : "Jeg gør det næste kvalitetstræningspas roligere, så belastningen ikke bygger sig for hurtigt op.",
       };
     }
 
     if (minuteDelta <= -5 && updatedType === "long") {
       return {
-        interpretation: "Belastningen ser lidt høj ud lige nu, så den næste længere tur bliver kortet lidt ned.",
-        adjustment: "Jeg tager lidt tid af det længste træningspas, så progressionen forbliver realistisk.",
-        log: "Jeg korter den næste længere tur lidt ned, så den samlede belastning bliver mere overkommelig.",
+        interpretation: locale === "en" ? "The load looks a little high right now, so the next longer run is being shortened slightly." : "Belastningen ser lidt høj ud lige nu, så den næste længere tur bliver kortet lidt ned.",
+        adjustment: locale === "en" ? "I am taking a little time off the longest session so the progression stays realistic." : "Jeg tager lidt tid af det længste træningspas, så progressionen forbliver realistisk.",
+        log: locale === "en" ? "I am shortening the next longer run slightly so the overall load becomes more manageable." : "Jeg korter den næste længere tur lidt ned, så den samlede belastning bliver mere overkommelig.",
       };
     }
 
     if (minuteDelta < 0) {
       return {
-        interpretation: "Træningspasset så ud til at koste lidt mere i dag, så det næste træningspas holdes lidt roligere.",
-        adjustment: "Jeg tager en smule tid af den næste løbedel, så du kan holde rytmen med mere overskud.",
-        log: "Jeg holder det næste træningspas lidt roligere, så kroppen får bedre plads til at følge med.",
+        interpretation: locale === "en" ? "The workout looked a little more costly today, so the next session will stay slightly easier." : "Træningspasset så ud til at koste lidt mere i dag, så det næste træningspas holdes lidt roligere.",
+        adjustment: locale === "en" ? "I am taking a little time off the next running block so you can hold the rhythm with more headroom." : "Jeg tager en smule tid af den næste løbedel, så du kan holde rytmen med mere overskud.",
+        log: locale === "en" ? "I am keeping the next session a little easier so the body has more room to keep up." : "Jeg holder det næste træningspas lidt roligere, så kroppen får bedre plads til at følge med.",
       };
     }
 
     if (minuteDelta >= 3 && updatedType === "easy") {
       return {
-        interpretation: "Du havde fint overskud i dag, så det næste rolige træningspas får et par ekstra minutter.",
-        adjustment: "Jeg bygger en smule videre på det næste rolige træningspas, men holder stadig progressionen kontrolleret.",
-        log: "Jeg lægger et par ekstra minutter på det næste rolige træningspas, fordi du ser ud til at have overskud.",
+        interpretation: locale === "en" ? "You had good headroom today, so the next easy session gets a few extra minutes." : "Du havde fint overskud i dag, så det næste rolige træningspas får et par ekstra minutter.",
+        adjustment: locale === "en" ? "I am building a little further into the next easy session, while still keeping the progression controlled." : "Jeg bygger en smule videre på det næste rolige træningspas, men holder stadig progressionen kontrolleret.",
+        log: locale === "en" ? "I am adding a few extra minutes to the next easy session because you looked comfortable today." : "Jeg lægger et par ekstra minutter på det næste rolige træningspas, fordi du ser ud til at have overskud.",
       };
     }
   }
 
   return {
-    interpretation: "Træningspasset ramte et godt niveau, så planen kan fortsætte i et roligt og stabilt tempo.",
-    adjustment: "Jeg holder progressionen stabil, så du kan bygge videre uden at forcere noget.",
+    interpretation: locale === "en" ? "The workout landed at a good level, so the plan can keep moving at a calm and steady pace." : "Træningspasset ramte et godt niveau, så planen kan fortsætte i et roligt og stabilt tempo.",
+    adjustment: locale === "en" ? "I am keeping the progression steady so you can continue building without forcing anything." : "Jeg holder progressionen stabil, så du kan bygge videre uden at forcere noget.",
   };
 }
 
-function learnedInsightLines(capability: CapabilityState | null, plan: TrainingPlan | null): string[] {
+function learnedInsightLines(capability: CapabilityState | null, plan: TrainingPlan | null, locale: SiteLocale = "da"): string[] {
   const lines = [...(plan?.rationale?.adaptation?.learnedTendencies ?? [])];
   const traits = capability?.traits;
   if (!traits) return lines.slice(0, 3);
 
   if (traits.progressionTolerance >= 3.8 && traits.complianceTrend >= 3.5) {
-    lines.push("Du har håndteret de seneste ugers progression godt.");
+    lines.push(locale === "en" ? "You have handled the progression of the last few weeks well." : "Du har håndteret de seneste ugers progression godt.");
   }
   if (traits.longRunTolerance >= 3.8) {
-    lines.push("Dine længere ture ser mere stabile ud end tidligere.");
+    lines.push(locale === "en" ? "Your longer runs look more stable than before." : "Dine længere ture ser mere stabile ud end tidligere.");
   }
   if (traits.longRunTolerance <= 2.5) {
-    lines.push("Langturene bygges lidt mere forsigtigt lige nu.");
+    lines.push(locale === "en" ? "The long runs are being built a little more cautiously right now." : "Langturene bygges lidt mere forsigtigt lige nu.");
   }
   if (traits.qualityTolerance <= 2.5) {
-    lines.push("Kvalitetstræningspassene holdes mere kontrollerede, mens tolerancen bygger sig op.");
+    lines.push(locale === "en" ? "The quality sessions are being kept more controlled while tolerance builds." : "Kvalitetstræningspassene holdes mere kontrollerede, mens tolerancen bygger sig op.");
   }
   if (traits.cautionTrend >= 3.8) {
-    lines.push("De seneste signaler peger på, at planen skal være lidt mere forsigtig lige nu.");
+    lines.push(locale === "en" ? "Recent signals suggest that the plan should be a little more cautious right now." : "De seneste signaler peger på, at planen skal være lidt mere forsigtig lige nu.");
   }
   if (traits.complianceTrend >= 3.8 && traits.cautionTrend <= 2.6) {
-    lines.push("Du har været stabil flere uger i træk, så planen kan holde rytmen.");
+    lines.push(locale === "en" ? "You have been stable for several weeks in a row, so the plan can keep its rhythm." : "Du har været stabil flere uger i træk, så planen kan holde rytmen.");
   }
 
   return Array.from(new Set(lines)).slice(0, 3);
@@ -828,6 +1022,30 @@ function weekStateLabel(plan: TrainingPlan | null, weekNumber: number): { title:
   return { title: "Byggeuge", tone: "Ugen bygger roligt videre på din form." };
 }
 
+function localizedWeekStateLabel(plan: TrainingPlan | null, weekNumber: number, locale: SiteLocale = "da"): { title: string; tone: string } {
+  const state = weekStateLabel(plan, weekNumber);
+  if (locale !== "en") return state;
+  const titleMap: Record<string, string> = {
+    "Recovery-uge": "Recovery week",
+    "Kontrolleret uge": "Controlled week",
+    "Tilbage i build": "Back in build",
+    "Progressionsuge": "Progression week",
+    "Stabiliseringsuge": "Stabilization week",
+    "Skærpende uge": "Sharpening week",
+    "Byggeuge": "Build week",
+  };
+  const toneMap: Record<string, string> = {
+    "Vi holder ugen bevidst lettere.": "We are intentionally keeping the week lighter.",
+    "Ugen er dæmpet lidt for at holde belastningen bæredygtig.": "The week is eased slightly to keep the load sustainable.",
+    "Du er på vej tilbage i normal progression.": "You are moving back toward normal progression.",
+    "Ugen bygger lidt mere selvsikkert videre.": "This week builds a little more confidently.",
+    "Ugen giver plads til at absorbere træningen.": "This week gives you room to absorb the training.",
+    "Ugen holder dig frisk og målrettet.": "This week keeps you fresh and focused.",
+    "Ugen bygger roligt videre på din form.": "This week builds calmly on your current fitness.",
+  };
+  return { title: titleMap[state.title] ?? state.title, tone: toneMap[state.tone] ?? state.tone };
+}
+
 function revertUpcomingSessionsAfterWorkout(currentPlan: TrainingPlan, previousPlan: TrainingPlan, activeSessionId: string): TrainingPlan {
   const activeIndex = currentPlan.sessions.findIndex((session) => session.id === activeSessionId);
   if (activeIndex < 0) return currentPlan;
@@ -841,7 +1059,8 @@ function revertUpcomingSessionsAfterWorkout(currentPlan: TrainingPlan, previousP
   };
 }
 
-function coachAdjustmentCopy(text: string): string {
+function coachAdjustmentCopy(text: string, locale: SiteLocale = "da"): string {
+  if (locale === "en") return text;
   const cleaned = text.replace(/\ber er\b/gi, "er").replace(/\s+/g, " ").trim();
   const variant = Array.from(cleaned).reduce((sum, char) => sum + char.charCodeAt(0), 0);
 
@@ -881,40 +1100,6 @@ function coachAdjustmentCopy(text: string): string {
   return fallback[variant % fallback.length];
 }
 
-function postWorkoutCoachMessage(params: {
-  firstName?: string;
-  session: WorkoutSession | null;
-}): { title: string; body: string } {
-  const { firstName, session } = params;
-  const title = firstName?.trim() ? `Godt arbejde, ${firstName.trim()}` : "Godt arbejde";
-
-  if (!session) {
-    return {
-      title,
-      body: "Du har gennemført træningspasset. Det giver os et godt udgangspunkt for næste skridt i programmet.",
-    };
-  }
-
-  if (session.loadScore >= 7) {
-    return {
-      title,
-      body: "Det var et mere krævende træningspas i dag. Derfor holder jeg næste skridt kontrolleret, så du kan bygge videre med overskud.",
-    };
-  }
-
-  if (session.loadScore >= 4) {
-    return {
-      title,
-      body: "Du kom godt gennem træningspasset i dag. Det tyder på, at du bygger formen op i et tempo, der giver mening.",
-    };
-  }
-
-  return {
-    title,
-    body: "Du gennemførte et roligt og stabilt træningspas i dag. Det er præcis sådan, vi bygger kontinuitet og gode vaner op.",
-  };
-}
-
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [stage, setStage] = useState<Stage>("welcome");
@@ -926,6 +1111,7 @@ export default function Home() {
   const [effectiveTheme, setEffectiveTheme] = useState<"dark" | "light">("dark");
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboardingSelections, setOnboardingSelections] = useState<OnboardingSelectionState>({
+    track: false,
     runningAbility: false,
     goalDistance: false,
     goalType: false,
@@ -935,12 +1121,14 @@ export default function Home() {
 
   const [runnerProfile, setRunnerProfile] = useState<RunnerProfile>({
     firstName: "",
+    onboardingTrack: undefined,
     heightCm: 175,
     weightKg: 75,
     age: 30,
     activityLevel: "moderat",
     runningExperience: "nybegynder",
     currentRunningAbility: "helt_ny",
+    currentContinuousDistanceKm: undefined,
     gender: undefined,
     userTrainingContext: "",
     currentWeeklyVolumeKm: 0,
@@ -968,9 +1156,207 @@ export default function Home() {
     preferredLongRunDay: "both",
   });
   const [goalPaceDraft, setGoalPaceDraft] = useState<{ minute: string; second: string }>({ minute: "", second: "" });
+  const [capacityDistanceDraft, setCapacityDistanceDraft] = useState("");
   const [recentRaceDraft, setRecentRaceDraft] = useState<{ distance: Goal["distance"] | ""; time: string }>({ distance: "", time: "" });
   const [recentRaceTimeParts, setRecentRaceTimeParts] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [showRecentRaceFields, setShowRecentRaceFields] = useState(false);
+  const siteLocale = useMemo<SiteLocale>(() => {
+    if (typeof window !== "undefined") {
+      return getConfiguredSiteLocale(window.location.host);
+    }
+    return getConfiguredSiteLocale();
+  }, []);
+  const siteCopy = useMemo(() => getSiteCopy(siteLocale), [siteLocale]);
+  const currentHost = useMemo(() => (typeof window !== "undefined" ? window.location.host : undefined), []);
+  const ui = useMemo(
+    () => ({
+      onboardingLabel: siteLocale === "en" ? "Onboarding" : "Onboarding",
+      onboardingStep: siteLocale === "en" ? `Step ${onboardingStep} of ${ONBOARDING_STEP_COUNT}` : `Trin ${onboardingStep} af ${ONBOARDING_STEP_COUNT}`,
+      back: siteLocale === "en" ? "Back" : "Forrige",
+      skip: siteLocale === "en" ? "Skip for now" : "Spring over",
+      showMyPlan: siteLocale === "en" ? "Show my plan" : "Se min plan",
+      loadingPlan: siteLocale === "en" ? "Getting your plan..." : "Henter plan...",
+      recommendation: {
+        title: siteLocale === "en" ? "My recommendation" : "Min anbefaling",
+        recommendedDuration: siteLocale === "en" ? "Recommended duration" : "Anbefalet varighed",
+        realisticRange: siteLocale === "en" ? "Realistic range" : "Realistisk spænd",
+        selectedPath: siteLocale === "en" ? "Selected route" : "Valgt vej",
+        recommendedPath: siteLocale === "en" ? "Recommended route" : "Anbefalet vej",
+        selectedDuration: siteLocale === "en" ? "Your selected duration" : "Din valgte varighed",
+        trainingRhythm: siteLocale === "en" ? "Training rhythm" : "Træningsrytme",
+        progressionTempo: siteLocale === "en" ? "Progression pace" : "Progressionstempo",
+        planLevel: siteLocale === "en" ? "Plan level" : "Planens niveau",
+        realistic: siteLocale === "en" ? "Realistic" : "Realistisk",
+        adjustDuration: siteLocale === "en" ? "Adjust duration" : "Tilpas varighed",
+        adjustLead: siteLocale === "en" ? "I recommend this duration, but you can adjust it if you want to." : "Jeg anbefaler denne varighed, men du kan justere, hvis du vil.",
+        weeks: siteLocale === "en" ? "Weeks" : "Uger",
+        minusWeek: siteLocale === "en" ? "− 1 week" : "− 1 uge",
+        plusWeek: siteLocale === "en" ? "+ 1 week" : "+ 1 uge",
+        endDate: siteLocale === "en" ? "Target date" : "Slutdato",
+        adjustment: siteLocale === "en" ? "Adjustment" : "Justering",
+      },
+      program: {
+        introFallback: siteLocale === "en" ? "The key points are at the top. The rest is only there for context." : "Det vigtigste står øverst. Resten er kun baggrund.",
+        progress: siteLocale === "en" ? "Progress" : "Fremdrift",
+        selectedWeek: siteLocale === "en" ? `Selected week: W${displayWeek}` : `Valgt uge: U${displayWeek}`,
+        weekRange: (start: number, end: number) => (siteLocale === "en" ? `Weeks ${start}–${end}` : `Uge ${start}–${end}`),
+        tapWeekHint: siteLocale === "en" ? "Tap a week to open it in the plan" : "Tryk på en uge for at åbne den i programmet",
+        viewWeek: (week: number) => (siteLocale === "en" ? `Show week ${week}` : `Vis uge ${week}`),
+        originalPlan: siteLocale === "en" ? "Original plan" : "Oprindelig plan",
+        fromStart: siteLocale === "en" ? "From the start" : "Fra start",
+        currentPlan: siteLocale === "en" ? "Current plan" : "Nuværende plan",
+        afterAdjustments: siteLocale === "en" ? "After adjustments" : "Efter justeringer",
+        currentWeek: siteLocale === "en" ? "Current week" : "Aktuel uge",
+        selectedNow: siteLocale === "en" ? "Selected now" : "Valgt nu",
+        planAdjustment: siteLocale === "en" ? "Plan adjustment" : "Planjustering",
+        showMore: siteLocale === "en" ? "Show more" : "Vis mere",
+        showLess: siteLocale === "en" ? "Show less" : "Vis mindre",
+        weekOverviewNotes: siteLocale === "en" ? "Week overview and notes" : "Ugeoverblik og noter",
+        focusNow: siteLocale === "en" ? "Current focus" : "Fokus lige nu",
+        currentWeekTitle: siteLocale === "en" ? "Current week" : "Nuværende uge",
+        overviewOfWeek: (week: number) => (siteLocale === "en" ? `Overview of week ${week}` : `Overblik over uge ${week}`),
+        weeklyLoad: siteLocale === "en" ? "Weekly load" : "Ugens load",
+        longestRun: siteLocale === "en" ? "Longest continuous run" : "Længste sammenhængende løb",
+        nextGoalDay: siteLocale === "en" ? "Next race day" : "Næste måldag",
+        previousWeek: siteLocale === "en" ? "Previous week" : "Forrige uge",
+        nextWeek: siteLocale === "en" ? "Next week" : "Næste uge",
+        about: siteLocale === "en" ? "about" : "ca.",
+        nextWorkout: siteLocale === "en" ? "Next workout" : "Næste pas",
+        restDayText: siteLocale === "en" ? "Recovery day, light movement, and space to absorb the week." : "Hvile, let bevægelse og plads til at lande ugen.",
+        recoveryDay: siteLocale === "en" ? "Recovery day" : "Restitutionsdag",
+        noRunToday: siteLocale === "en" ? "No run is planned today. Would you like a few light ideas instead?" : "Ingen planlagt løbetræning. Vil du have et par lette forslag i stedet?",
+        showIdeas: siteLocale === "en" ? "Show ideas" : "Vis forslag",
+        close: siteLocale === "en" ? "Close" : "Luk",
+        ideas: siteLocale === "en" ? ["20–30 min walk", "10 min mobility", "Light strength or core", "Easy cycling without pushing"] : ["20-30 min gåtur", "10 min mobilitet", "Let styrke eller core", "Rolig cykling uden at presse"],
+        programAdjustments: siteLocale === "en" ? "Plan adjustments" : "Programjusteringer",
+        seeAllAdjustments: siteLocale === "en" ? "See all adjustments" : "Se alle justeringer",
+        yourNotes: siteLocale === "en" ? "Your notes" : "Egne noter",
+        notesLead: siteLocale === "en" ? "Save short notes about sleep, load, or anything you want to remember for next week." : "Gem korte noter om søvn, belastning eller noget du vil huske til næste uge.",
+        notesPlaceholder: siteLocale === "en" ? "For example: legs felt a little heavy after week 4, but sleep was poor too." : "Fx: lidt tunge ben efter uge 4, men søvnen var også dårlig.",
+        saving: siteLocale === "en" ? "Saving..." : "Gemmer...",
+        saved: siteLocale === "en" ? "Saved" : "Gemt",
+        saveNote: siteLocale === "en" ? "Save note" : "Gem note",
+        trainingInsights: siteLocale === "en" ? "Training insights" : "Træningsindsigter",
+      },
+      workout: {
+        chooseWorkout: siteLocale === "en" ? "Choose a workout in the plan first." : "Vælg et træningspas i programmet først.",
+        closeWorkoutAria: siteLocale === "en" ? "Close workout" : "Luk træningspas",
+        savedFeedback: siteLocale === "en" ? "Saved feedback" : "Gemt feedback",
+        alreadyLogged: siteLocale === "en" ? "This workout has already been logged" : "Dette træningspas er allerede logget",
+        load: siteLocale === "en" ? "Load" : "Belastning",
+        rating: siteLocale === "en" ? "Rating" : "Vurdering",
+        savedSignals: siteLocale === "en" ? "Saved signals" : "Gemte signaler",
+        note: siteLocale === "en" ? "Note" : "Note",
+        completed: siteLocale === "en" ? "Workout completed" : "Pas afsluttet",
+        completionTitle: siteLocale === "en" ? "Nice run 👏" : "Godt løbet 👏",
+        completionRegistered: siteLocale === "en" ? "Your run is registered" : "Din tur er registreret",
+        completionPrompt: siteLocale === "en" ? "How did it feel?" : "Hvordan føltes den?",
+        continueToCheckIn: siteLocale === "en" ? "Continue" : "Fortsæt",
+        quickCheckIn: siteLocale === "en" ? "Quick check-in" : "Kort check-in",
+        quickCheckInLead: siteLocale === "en" ? "Your answer helps the plan adjust over time." : "Dit svar hjælper planen med at justere sig over tid.",
+        confirmationTitle: siteLocale === "en" ? "Thanks 👍" : "Tak 👍",
+        confirmationBadge: siteLocale === "en" ? "Plan update" : "Planopdatering",
+        confirmationBody: siteLocale === "en" ? "We use your runs to keep the plan adjusted over time." : "Vi bruger dine ture til at justere planen løbende.",
+        nextRunSoon: siteLocale === "en" ? "Next run is taking shape." : "Næste tur er ved at falde på plads.",
+        nextRunLabel: siteLocale === "en" ? "Next run" : "Næste tur",
+        seeNextRun: siteLocale === "en" ? "See next run" : "Se næste tur",
+        niceWork: siteLocale === "en" ? "Nice work" : "Godt arbejde",
+        howFelt: siteLocale === "en" ? "Tell me briefly how the workout felt." : "Fortæl kort hvordan passet føltes.",
+        intervalsCompleted: (count: number) => siteLocale === "en" ? `${count} intervals completed` : `${count} intervaller gennemført`,
+        coachResponse: siteLocale === "en" ? "Coach response" : "Coach-respons",
+        yourFeedback: siteLocale === "en" ? "Your feedback" : "Din feedback",
+        thanks: siteLocale === "en" ? "Thanks for your feedback." : "Tak for din feedback.",
+        adjustedNextStep: siteLocale === "en" ? "I have reviewed your feedback and adjusted the next step in the plan." : "Jeg har set din feedback og justeret det næste skridt i planen.",
+        whatINoticed: siteLocale === "en" ? "What I noticed" : "Det lagde jeg mærke til",
+        whatIChange: siteLocale === "en" ? "What I am changing" : "Det ændrer jeg",
+        nextStep: siteLocale === "en" ? "Next step" : "Næste skridt",
+        focusNow: siteLocale === "en" ? "Focus now" : "Fokus nu",
+        whatILearn: siteLocale === "en" ? "What I am learning about you" : "Det lærer jeg om dig",
+        agree: siteLocale === "en" ? "Agree" : "Enig",
+        disagree: siteLocale === "en" ? "Disagree" : "Ikke enig",
+        clarifyPlaceholder: siteLocale === "en" ? "A short note if you want to add context" : "Kort forklaring, hvis du vil nuancere vurderingen",
+        sendClarification: siteLocale === "en" ? "Send clarification" : "Send afklaring",
+        yourNote: siteLocale === "en" ? "Your note" : "Din note",
+        updatedProgram: siteLocale === "en" ? "See updated plan" : "Se opdateret program",
+        completionQuestion: siteLocale === "en" ? "1. Did the workout go as planned?" : "1. Gik passet som planlagt?",
+        chooseBest: siteLocale === "en" ? "Choose the option that fits best." : "Vælg den, der passer bedst.",
+        feelingQuestion: siteLocale === "en" ? "2. How did it feel?" : "2. Hvordan føltes det?",
+        quickSignals: siteLocale === "en" ? "3. Quick signals" : "3. Hurtige signaler",
+        energyPainOnly: siteLocale === "en" ? "Only energy and pain. The rest is optional." : "Kun energi og smerte. Resten er valgfrit.",
+        energy: siteLocale === "en" ? "Energy" : "Energi",
+        pain: siteLocale === "en" ? "Pain" : "Smerte",
+        perceivedLoad: siteLocale === "en" ? "Perceived load (1–10)" : "Oplevet belastning (1–10)",
+        completionPct: siteLocale === "en" ? "Completed %" : "Gennemført %",
+        shortNote: siteLocale === "en" ? "Short note" : "Kort note",
+        shortNotePlaceholder: siteLocale === "en" ? "Anything specific I should know?" : "Noget særligt jeg skal vide?",
+        feedbackSaved: siteLocale === "en" ? "Feedback saved ✓" : "Feedback gemt ✓",
+        fewTaps: siteLocale === "en" ? "You can be done in just a few taps." : "Du kan være færdig på få tryk.",
+      },
+      overlay: {
+        important: siteLocale === "en" ? "Important to confirm" : "Vigtigt at bekræfte",
+        adjustTrainingDays: siteLocale === "en" ? "Adjust training days" : "Ret træningsdage",
+        useRecommendedDuration: siteLocale === "en" ? "Use recommended duration" : "Brug anbefalet varighed",
+        building: siteLocale === "en" ? "Building your plan..." : "Jeg bygger dit program...",
+        assembling: siteLocale === "en" ? "Putting your plan together..." : "Jeg samler dit program...",
+        finalSummary: siteLocale === "en" ? "Finishing the final coach summary." : "Gør den sidste coach-opsummering klar.",
+        firstWeeks: siteLocale === "en" ? "I am laying out your first weeks from your goal and current level." : "Jeg lægger dine første uger på plads ud fra dit mål og dit nuværende niveau.",
+      },
+    }),
+    [displayWeek, onboardingStep, siteLocale],
+  );
+  const localizedGoalDistanceOptions = useMemo(
+    () => GOAL_DISTANCE_OPTIONS.map((option) => ({ ...option, label: option.value === "Halvmaraton" ? (siteLocale === "en" ? "Half marathon" : "Halvmaraton") : option.value === "Marathon" ? (siteLocale === "en" ? "Marathon" : "Maraton") : option.label })),
+    [siteLocale],
+  );
+  const localizedCurrentRunsPerWeekOptions = useMemo(
+    () => CURRENT_RUNS_PER_WEEK_OPTIONS.map((option) => ({ ...option, label: siteLocale === "en" ? (option.value === 0 ? "0 runs" : option.value === 1 ? "1 run" : option.value === 4 ? "4+ runs" : `${option.value} runs`) : option.label })),
+    [siteLocale],
+  );
+  const localizedActivityLevelOptions = useMemo(
+    () => ACTIVITY_LEVEL_OPTIONS.map((option, index) => ({ ...option, label: siteLocale === "en" ? ["Almost no other training", "A little other training", "Regular other training", "Quite a bit of other training", "Very high total training"][index] ?? option.label : option.label })),
+    [siteLocale],
+  );
+  const localizedGenderOptions = useMemo(
+    () => GENDER_OPTIONS.map((option, index) => ({ ...option, label: siteLocale === "en" ? ["Female", "Male", "Other", "Prefer not to say"][index] ?? option.label : option.label })),
+    [siteLocale],
+  );
+  const localizedAmbitionOptions = useMemo(
+    () => AMBITION_OPTIONS.map((option, index) => siteLocale === "en"
+      ? [
+          { ...option, label: "Calmer route", help: "A calmer, slightly longer route with more room for recovery and steady habits." },
+          { ...option, label: "Recommended route", help: "StridePilot's standard recommendation and usually the most realistic route." },
+          { ...option, label: "Ambitious route", help: "A shorter route, but only when your current level supports it safely." },
+        ][index] ?? option
+      : option),
+    [siteLocale],
+  );
+  const localizedLongRunDayOptions = useMemo(
+    () => LONG_RUN_DAY_OPTIONS.map((option, index) => siteLocale === "en"
+      ? [
+          { ...option, label: "Saturday", help: "StridePilot first tries to place the long run on Saturday." },
+          { ...option, label: "Sunday", help: "StridePilot first tries to place the long run on Sunday." },
+          { ...option, label: "Either works", help: "StridePilot chooses the weekend day that fits recovery best." },
+          { ...option, label: "Flexible", help: "StridePilot chooses the day that gives the most robust week." },
+        ][index] ?? option
+      : option),
+    [siteLocale],
+  );
+  const localizedQuickFeedbackOptions = useMemo(
+    () => QUICK_FEEDBACK_OPTIONS.map((option, index) => ({ ...option, label: siteLocale === "en" ? ["Too easy", "About right", "A bit too hard", "Too hard"][index] ?? option.label : option.label })),
+    [siteLocale],
+  );
+  const localizedCompletionOptions = useMemo(
+    () => COMPLETION_OPTIONS.map((option, index) => ({ ...option, label: siteLocale === "en" ? ["Completed", "Shortened", "Missed"][index] ?? option.label : option.label })),
+    [siteLocale],
+  );
+  const localizedEnergyOptions = useMemo(
+    () => ENERGY_OPTIONS.map((option, index) => ({ ...option, label: siteLocale === "en" ? ["Low energy", "Okay energy", "Good energy"][index] ?? option.label : option.label })),
+    [siteLocale],
+  );
+  const localizedPainOptions = useMemo(
+    () => PAIN_OPTIONS.map((option, index) => ({ ...option, label: siteLocale === "en" ? ["No pain", "Some soreness", "Pain"][index] ?? option.label : option.label })),
+    [siteLocale],
+  );
   const [pulseDraft, setPulseDraft] = useState({ maxHeartRate: "" });
   const pulseSettingsHydratedUserRef = useRef<string | null>(null);
   const [planAmbition, setPlanAmbition] = useState<PlanAmbition>("standard");
@@ -986,6 +1372,11 @@ export default function Home() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [openInfoField, setOpenInfoField] = useState<InfoField>(null);
+  const [pendingLowFrequencyOverride, setPendingLowFrequencyOverride] = useState<PendingLowFrequencyOverride | null>(null);
+  const [acceptedLowFrequencyOverrideKey, setAcceptedLowFrequencyOverrideKey] = useState<string | null>(null);
+  const [selectedRecommendationDurationWeeks, setSelectedRecommendationDurationWeeks] = useState<number | null>(null);
+  const [pendingDurationOverride, setPendingDurationOverride] = useState<PendingDurationOverride | null>(null);
+  const [acceptedDurationOverrideKey, setAcceptedDurationOverrideKey] = useState<string | null>(null);
 
   const [profileId, setProfileId] = useState<string>("");
   const [baselinePlan, setBaselinePlan] = useState<TrainingPlan | null>(null);
@@ -1008,6 +1399,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
+  const [focusedProgramDayIso, setFocusedProgramDayIso] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(false);
   const [audioMode, setAudioMode] = useState<AudioMode>("coach");
@@ -1016,6 +1408,8 @@ export default function Home() {
   const [stepIndex, setStepIndex] = useState(0);
   const [remainingSec, setRemainingSec] = useState(0);
   const [workoutCompleted, setWorkoutCompleted] = useState(false);
+  const [workoutStartCountdown, setWorkoutStartCountdown] = useState<number | null>(null);
+  const [showWorkoutCheckIn, setShowWorkoutCheckIn] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [stepNotice, setStepNotice] = useState("");
   const [workoutInterruptionNotice, setWorkoutInterruptionNotice] = useState<string | null>(null);
@@ -1030,7 +1424,6 @@ export default function Home() {
   const [showProgramIntro, setShowProgramIntro] = useState(false);
   const [isProgramTransitioning, setIsProgramTransitioning] = useState(false);
   const [showDetailedFeedback, setShowDetailedFeedback] = useState(false);
-  const [showFullWorkoutStructure, setShowFullWorkoutStructure] = useState(false);
   const [clarificationDraft, setClarificationDraft] = useState("");
 
   const [feedback, setFeedback] = useState<WorkoutFeedbackInput>({
@@ -1058,13 +1451,16 @@ export default function Home() {
   const wasRunningBeforeHideRef = useRef(false);
   const programWeekRef = useRef<HTMLDivElement | null>(null);
   const nextWorkoutDayRef = useRef<HTMLButtonElement | null>(null);
-  const todayPrimaryCtaRef = useRef<HTMLButtonElement | null>(null);
+  const previousStageRef = useRef(stage);
   const preAdaptationPlanRef = useRef<TrainingPlan | null>(null);
   const recentFeedbackRef = useRef<CoachWorkoutFeedback[]>([]);
   const recentCapabilityRef = useRef<CapabilityState[]>([]);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const landingTrackedRef = useRef(false);
+  const onboardingStartedTrackedRef = useRef(false);
+  const lastWorkoutStartedRef = useRef<string | null>(null);
+  const lastWorkoutCompletedRef = useRef<string | null>(null);
   const [restDayPrompt, setRestDayPrompt] = useState<{ dateLabel: string; showIdeas: boolean } | null>(null);
-  const [showStickyProgramCta, setShowStickyProgramCta] = useState(true);
 
   const resetProgramState = useCallback(() => {
     setHasSetup(false);
@@ -1084,6 +1480,7 @@ export default function Home() {
     setRunnerState(null);
     setSessionHistory(createInitialSessionHistory());
     setTrainingBlock(createInitialTrainingBlock());
+    setFocusedProgramDayIso(null);
     setSessionFeedbackMap({});
     setAdjustmentLog([]);
     setSelectedSessionId("");
@@ -1097,6 +1494,8 @@ export default function Home() {
     recentCapabilityRef.current = [];
     setClarificationDraft("");
     setWorkoutCompleted(false);
+    setWorkoutStartCountdown(null);
+    setShowWorkoutCheckIn(false);
     setCompletedSteps([]);
     setStepNotice("");
     setDisplayWeek(1);
@@ -1116,6 +1515,7 @@ export default function Home() {
     cancelCue();
     resetProgramState();
     setMenuOpen(false);
+    resetAnalyticsUser();
     setAuthUser(null);
     setIsDemoMode(false);
     setStage("welcome");
@@ -1133,6 +1533,7 @@ export default function Home() {
     setWorkoutInterruptionNotice(null);
     setOnboardingStep(1);
     setOnboardingSelections({
+      track: false,
       runningAbility: false,
       goalDistance: false,
       goalType: false,
@@ -1142,10 +1543,14 @@ export default function Home() {
     setOpenInfoField(null);
     setRestDayPrompt(null);
     setShowAllSafety(false);
-    setShowStickyProgramCta(true);
     setPlanFeasibilityStatus("feasible");
     setPlanAmbition("standard");
     setPlanRecommendation(null);
+    setPendingLowFrequencyOverride(null);
+    setAcceptedLowFrequencyOverrideKey(null);
+    setSelectedRecommendationDurationWeeks(null);
+    setPendingDurationOverride(null);
+    setAcceptedDurationOverrideKey(null);
     setShowDetailedFeedback(false);
     setFeedbackSubmitState("idle");
     setFeedback({
@@ -1164,12 +1569,14 @@ export default function Home() {
     });
     setRunnerProfile({
       firstName: "",
+      onboardingTrack: undefined,
       heightCm: 175,
       weightKg: 75,
       age: 30,
       activityLevel: "moderat",
       runningExperience: "nybegynder",
       currentRunningAbility: "helt_ny",
+      currentContinuousDistanceKm: undefined,
       gender: undefined,
       userTrainingContext: "",
       currentWeeklyVolumeKm: 0,
@@ -1184,6 +1591,7 @@ export default function Home() {
       pulseGuidanceEnabled: false,
       maxHeartRate: null,
     });
+    setCapacityDistanceDraft("");
     setPulseDraft({ maxHeartRate: "" });
     setProfileDraft({
       heightCm: "175",
@@ -1231,19 +1639,28 @@ export default function Home() {
     [activeSession, sessionFeedbackMap],
   );
   const currentStep = activeSession?.steps[stepIndex];
-  const nextWorkoutStep = useMemo(() => (activeSession ? getNextWorkoutStep(activeSession.steps, stepIndex) : null), [activeSession, stepIndex]);
-  const visibleWorkoutSteps = useMemo(
-    () => (activeSession ? getVisibleWorkoutSteps(activeSession.steps, stepIndex, completedSteps, showFullWorkoutStructure) : []),
-    [activeSession, stepIndex, completedSteps, showFullWorkoutStructure],
-  );
   const activeUserId = authUser?.id ?? (isDemoMode ? "demo-user" : profileId || "");
   const goalDestinationSession = useMemo(() => {
     if (!plan?.sessions.length) return null;
-    return plan.sessions.find((session) => /Måldag|test/i.test(session.title)) ?? plan.sessions[plan.sessions.length - 1];
+    return plan.sessions.find((session) => isGoalEventSession(session) || /test/i.test(session.title)) ?? plan.sessions[plan.sessions.length - 1];
   }, [plan]);
+  const baselineGoalDate = useMemo(() => {
+    if (!baselinePlan || baselinePlan === plan) return null;
+    return goalDateFromPlanSessions(baselinePlan, goal.startDate);
+  }, [baselinePlan, goal.startDate, plan]);
+  const currentPlanGoalDate = useMemo(
+    () => goalDateFromPlanSessions(plan, goal.startDate) ?? goal.endDate ?? null,
+    [goal.endDate, goal.startDate, plan],
+  );
   const trainingDayRecommendation = useMemo(
     () => recommendTrainingDays(runnerProfile, goal),
     [goal, runnerProfile],
+  );
+  const capacityDistanceKm = useMemo(() => parseCurrentCapacityDistanceKm(capacityDistanceDraft), [capacityDistanceDraft]);
+  const lowFrequencyOverridePrompt = useMemo(() => buildLowFrequencyOverridePrompt(goal, siteLocale), [goal, siteLocale]);
+  const weeklyStructureStep = useMemo(
+    () => ONBOARDING_STEPS.find((step) => step.id === "weekly_structure")?.index ?? 6,
+    [],
   );
   const feedbackSubmitted = Boolean(feedbackConfirmation);
   const currentWeeklyLoad = useMemo(() => (plan ? buildWeeklyLoad(plan, goal.startDate) : []), [goal.startDate, plan]);
@@ -1282,12 +1699,42 @@ export default function Home() {
     setIsRunning(false);
     void releaseWakeLock();
     setWorkoutCompleted(true);
+    setWorkoutStartCountdown(null);
+    setShowWorkoutCheckIn(false);
+    if (activeSession && lastWorkoutCompletedRef.current !== activeSession.id) {
+      lastWorkoutCompletedRef.current = activeSession.id;
+      captureAppEvent("workout_completed", {
+        locale: siteLocale,
+        session_type: sessionAnalyticsType(activeSession),
+        session_title: activeSession.title,
+        week: activeSession.week,
+      });
+    }
     const cue = "Godt løbet. Passet er gennemført.";
     setCueFallbackText(cue);
     if (audioMode !== "off" && ttsSupported && speechEnabled) {
       speakCue(cue);
     }
-  }, [audioMode, releaseWakeLock, speechEnabled, ttsSupported]);
+  }, [activeSession, audioMode, releaseWakeLock, siteLocale, speechEnabled, ttsSupported]);
+
+  useEffect(() => {
+    if (landingTrackedRef.current) return;
+    landingTrackedRef.current = true;
+    captureAppEvent("landing_view", { locale: siteLocale });
+  }, [siteLocale]);
+
+  useEffect(() => {
+    if (stage !== "profile" || hasSetup || onboardingStartedTrackedRef.current) return;
+    onboardingStartedTrackedRef.current = true;
+    captureAppEvent(
+      "onboarding_started",
+      buildAnalyticsPlanProperties({
+        locale: siteLocale,
+        goal,
+        track: runnerProfile.onboardingTrack,
+      }),
+    );
+  }, [goal, hasSetup, runnerProfile.onboardingTrack, siteLocale, stage]);
 
   useEffect(() => {
     return () => {
@@ -1327,18 +1774,17 @@ export default function Home() {
   }, [goal.startDate, plan, displayWeek]);
 
   const nextSession = useMemo(() => {
-    if (!plan) return null;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const sorted = [...visiblePlanSessions(plan, goal.startDate)].sort((a, b) => {
-      return sessionDateFromPlan(goal.startDate, a).getTime() - sessionDateFromPlan(goal.startDate, b).getTime();
+    const datedSessions = plan
+      ? visiblePlanSessions(plan, goal.startDate).map((session) => ({
+          session,
+          date: sessionDateFromPlan(goal.startDate, session),
+        }))
+      : [];
+    return findRelevantNextSession({
+      sessions: datedSessions,
+      activeWeek: weekNumber,
     });
-
-    const upcoming = sorted.find((session) => sessionDateFromPlan(goal.startDate, session).getTime() > today.getTime());
-    return upcoming ?? null;
-  }, [goal.startDate, plan]);
+  }, [goal.startDate, plan, weekNumber]);
   const nextSessionWeek = useMemo(() => {
     if (!nextSession) return null;
     return calendarWeekIndexFromDate(goal.startDate, sessionDateFromPlan(goal.startDate, nextSession));
@@ -1657,16 +2103,28 @@ export default function Home() {
   }, [stage, activeUserId]);
 
   useEffect(() => {
-    if (stage === "profile") {
+    const previousStage = previousStageRef.current;
+    if (shouldInitializeOnboardingProfileStage(previousStage, stage)) {
+      const inferredTrack = runnerProfile.onboardingTrack ?? inferOnboardingTrackFromProfile({
+        currentRunsPerWeek: runnerProfile.currentRunsPerWeek,
+        runningExperience: runnerProfile.runningExperience,
+        currentRunningAbility: runnerProfile.currentRunningAbility,
+        contextText: runnerProfile.userTrainingContext,
+      });
       setOnboardingStep(1);
       setOnboardingSelections({
+        track: Boolean(inferredTrack),
         runningAbility: hasSetup,
         goalDistance: hasSetup,
         goalType: hasSetup,
         activityLevel: hasSetup,
         ambition: true,
       });
+      if (!runnerProfile.onboardingTrack) {
+        setRunnerProfile((current) => ({ ...current, onboardingTrack: inferredTrack }));
+      }
     }
+    previousStageRef.current = stage;
   }, [stage, hasSetup]);
 
   useEffect(() => {
@@ -1681,12 +2139,27 @@ export default function Home() {
   }, [goal.distance, goal.goalType, runnerProfile.currentRunningAbility]);
 
   useEffect(() => {
+    if (!lowFrequencyOverridePrompt) {
+      setAcceptedLowFrequencyOverrideKey(null);
+      setPendingLowFrequencyOverride(null);
+      return;
+    }
+    if (acceptedLowFrequencyOverrideKey === lowFrequencyOverridePrompt.overrideKey) return;
+    setPendingLowFrequencyOverride(null);
+  }, [acceptedLowFrequencyOverrideKey, lowFrequencyOverridePrompt]);
+
+  useEffect(() => {
     setProfileDraft({
       heightCm: String(runnerProfile.heightCm),
       weightKg: String(runnerProfile.weightKg),
       age: String(runnerProfile.age),
     });
   }, [runnerProfile.heightCm, runnerProfile.weightKg, runnerProfile.age]);
+
+  useEffect(() => {
+    const nextValue = runnerProfile.currentContinuousDistanceKm ? String(runnerProfile.currentContinuousDistanceKm).replace(".", ",") : "";
+    setCapacityDistanceDraft((current) => (current === nextValue ? current : nextValue));
+  }, [runnerProfile.currentContinuousDistanceKm]);
 
   useEffect(() => {
     if (hasRecentRaceEntry(runnerProfile.recentRaceTimes)) {
@@ -1761,11 +2234,13 @@ export default function Home() {
     setRemainingSec(activeSession.steps[0].durationSec);
     setIsRunning(false);
     setWorkoutCompleted(false);
+    setShowWorkoutCheckIn(false);
     setCompletedSteps([]);
     setStepNotice("");
     setFeedbackConfirmation(null);
     setFeedbackSubmitState("idle");
     setShowDetailedFeedback(false);
+    setShowWorkoutCheckIn(false);
     setWorkoutInterruptionNotice(null);
     lastSpokenStepKey.current = "";
     thirtySecCueKey.current = "";
@@ -1794,9 +2269,45 @@ export default function Home() {
   }, [workoutInterruptionNotice]);
 
   useEffect(() => {
+    if (stage !== "workout" || !activeSession || workoutCompleted || workoutStartCountdown === null) return;
+
+    if (workoutStartCountdown <= 1) {
+      setWorkoutStartCountdown(null);
+      if (!speechEnabled && audioMode !== "off") {
+        const initialized = initSpeech();
+        setSpeechEnabled(initialized);
+        setTtsSupported(isSpeechSupported());
+      }
+      if (audioMode === "off") {
+        setSpeechEnabled(false);
+      }
+      if (lastWorkoutStartedRef.current !== activeSession.id) {
+        lastWorkoutStartedRef.current = activeSession.id;
+        captureAppEvent("workout_started", {
+          locale: siteLocale,
+          goal_type: goal.goalType ?? null,
+          session_type: sessionAnalyticsType(activeSession),
+          session_title: activeSession.title,
+          week: activeSession.week,
+        });
+      }
+      setWorkoutInterruptionNotice(null);
+      lastTickAtRef.current = Date.now();
+      setIsRunning(true);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setWorkoutStartCountdown((current) => (current === null ? null : current - 1));
+    }, 1000);
+    return () => window.clearTimeout(timeout);
+  }, [activeSession, audioMode, goal.goalType, siteLocale, speechEnabled, stage, ttsSupported, workoutCompleted, workoutStartCountdown]);
+
+  useEffect(() => {
     if (stage !== "workout") {
       cancelCue();
       void releaseWakeLock();
+      setWorkoutStartCountdown(null);
     }
   }, [releaseWakeLock, stage]);
 
@@ -1820,7 +2331,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!activeSession || !currentStep || audioMode === "off") return;
-    const cue = buildCue(currentStep, audioMode);
+    const cue = buildCue(currentStep, audioMode, siteLocale);
     setCueFallbackText(cue);
 
     if (!isRunning) {
@@ -1844,9 +2355,9 @@ export default function Home() {
     }
     if (!speakCue(cue)) {
       setCueFallbackText(cue);
-      setWorkoutInterruptionNotice(buildWorkoutInterruptionNotice({ reason: "audio_interrupted" }));
+      setWorkoutInterruptionNotice(buildWorkoutInterruptionNotice({ reason: "audio_interrupted", locale: siteLocale }));
     }
-  }, [activeSession, audioMode, currentStep, isRunning, speechEnabled, stepIndex, ttsSupported]);
+  }, [activeSession, audioMode, currentStep, isRunning, siteLocale, speechEnabled, stepIndex, ttsSupported]);
 
   useEffect(() => {
     if (!activeSession || !currentStep || audioMode === "off" || remainingSec !== 30 || !isRunning) return;
@@ -1866,7 +2377,7 @@ export default function Home() {
       })
     ) {
       if (!speakCue(cue)) {
-        setWorkoutInterruptionNotice(buildWorkoutInterruptionNotice({ reason: "audio_interrupted" }));
+        setWorkoutInterruptionNotice(buildWorkoutInterruptionNotice({ reason: "audio_interrupted", locale: siteLocale }));
       }
     }
   }, [activeSession, audioMode, currentStep, isRunning, remainingSec, speechEnabled, stepIndex, ttsSupported]);
@@ -1883,7 +2394,8 @@ export default function Home() {
 
     setStepIndex(nextStep);
     setRemainingSec(activeSession.steps[nextStep].durationSec);
-  }, [remainingSec, stepIndex, activeSession, finishWorkout]);
+    setStepNotice(transitionNoticeForStep(activeSession.steps[nextStep], siteLocale));
+  }, [remainingSec, stepIndex, activeSession, finishWorkout, siteLocale]);
 
   useEffect(() => {
     if (stage !== "workout" || !isRunning || workoutCompleted) {
@@ -1922,6 +2434,7 @@ export default function Home() {
         buildWorkoutInterruptionNotice({
           reason: "hidden",
           secondsAway,
+          locale: siteLocale,
         }),
       );
       setCueFallbackText("Passet er sat på pause. Tryk start, når du er klar igen.");
@@ -1947,8 +2460,12 @@ export default function Home() {
 
   async function register() {
     setError(null);
+    captureAppEvent("signup_started", {
+      locale: siteLocale,
+      auth_mode: "signup",
+    });
     if (password.length < 8) {
-      setError("Adgangskoden skal være mindst 8 tegn.");
+      setError(siteLocale === "en" ? "Your password must be at least 8 characters." : "Adgangskoden skal være mindst 8 tegn.");
       return;
     }
 
@@ -1961,14 +2478,14 @@ export default function Home() {
     if (!res.ok) {
       const payload = (await res.json().catch(() => null)) as { error?: string } | null;
       if (res.status === 409) {
-        setError("Der findes allerede en konto med denne e-mail. Prøv at logge ind.");
+        setError(siteLocale === "en" ? "An account already exists for this email. Try logging in instead." : "Der findes allerede en konto med denne e-mail. Prøv at logge ind.");
         return;
       }
       if (res.status === 400) {
-        setError("Ugyldig e-mail eller adgangskode. Adgangskoden skal være mindst 8 tegn.");
+        setError(siteLocale === "en" ? "Invalid email or password. Your password must be at least 8 characters." : "Ugyldig e-mail eller adgangskode. Adgangskoden skal være mindst 8 tegn.");
         return;
       }
-      setError(payload?.error ? `Kunne ikke oprette konto: ${payload.error}` : "Kunne ikke oprette konto lige nu.");
+      setError(payload?.error ? (siteLocale === "en" ? `Could not create account: ${payload.error}` : `Kunne ikke oprette konto: ${payload.error}`) : siteLocale === "en" ? "Could not create account right now." : "Kunne ikke oprette konto lige nu.");
       return;
     }
 
@@ -1976,6 +2493,14 @@ export default function Home() {
     resetProgramState();
     setIsDemoMode(false);
     setAuthUser(data.user);
+    identifyAnalyticsUser(data.user.id, {
+      locale: siteLocale,
+      signup_method: "email",
+    });
+    captureAppEvent("signup_completed", {
+      locale: siteLocale,
+      auth_mode: "signup",
+    });
     window.localStorage.removeItem("stridepilotDemoMode");
     window.localStorage.removeItem(setupKey(data.user.id));
     window.localStorage.removeItem(profileKey(data.user.id));
@@ -1991,7 +2516,7 @@ export default function Home() {
     });
 
     if (!res.ok) {
-      setError("Login fejlede.");
+      setError(siteLocale === "en" ? "Login failed." : "Login fejlede.");
       return;
     }
 
@@ -1999,6 +2524,10 @@ export default function Home() {
     resetProgramState();
     setIsDemoMode(false);
     setAuthUser(data.user);
+    identifyAnalyticsUser(data.user.id, {
+      locale: siteLocale,
+      login_method: "email",
+    });
     window.localStorage.removeItem("stridepilotDemoMode");
     const savedName = window.localStorage.getItem(firstNameKey(data.user.id));
     if (savedName) {
@@ -2034,6 +2563,7 @@ export default function Home() {
     }
     const userId = authUser?.id;
     resetProgramState();
+    resetAnalyticsUser();
     setAuthUser(null);
     setIsDemoMode(false);
     if (userId) {
@@ -2058,7 +2588,7 @@ export default function Home() {
     setStage(window.localStorage.getItem(introSeenKey("demo-user")) === "1" ? "profile" : "intro");
   }
 
-  async function requestPlanRecommendation() {
+  async function requestPlanRecommendation(options?: { skipLowFrequencyGuardrail?: boolean }) {
     setError(null);
     setFeedbackConfirmation(null);
     setPlanTradeoff(null);
@@ -2070,32 +2600,47 @@ export default function Home() {
     }
 
     if (!goal.availableTrainingDays || goal.availableTrainingDays.length === 0) {
-      setError("Vælg mindst én træningsdag for at generere programmet.");
+      setError(siteLocale === "en" ? "Choose at least one training day to generate the plan." : "Vælg mindst én træningsdag for at generere programmet.");
       return;
     }
 
     if (!isValidIsoDate(goal.startDate)) {
-      setError("Vælg en gyldig startdato, før jeg beder StridePilot om en anbefaling.");
+      setError(siteLocale === "en" ? "Choose a valid start date before I ask StridePilot for a recommendation." : "Vælg en gyldig startdato, før jeg beder StridePilot om en anbefaling.");
       return;
     }
 
     if ((goal.goalType === "target_time" || goal.goalType === "pr") && !goal.targetPaceSecPerKm) {
-      setError("Vælg et ønsket tempo, hvis du går efter et bestemt tempo eller en PR.");
+      setError(siteLocale === "en" ? "Choose a target pace if you are aiming for a specific pace or a PR." : "Vælg et ønsket tempo, hvis du går efter et bestemt tempo eller en PR.");
+      return;
+    }
+
+    if (
+      !options?.skipLowFrequencyGuardrail &&
+      lowFrequencyOverridePrompt &&
+      !lowFrequencyOverrideAccepted(lowFrequencyOverridePrompt.overrideKey)
+    ) {
+      setPendingLowFrequencyOverride({ intent: "recommendation" });
       return;
     }
 
     setIsLoading(true);
 
     try {
+      const selectedStartDate = goal.startDate;
+      const effectiveGoal = {
+        ...goal,
+        startDate: startDateWeekRhythm.startDateIso,
+        targetTime: shouldShowGoalPaceInput(goal.goalType) ? targetTimeFromPace(goal.distance, goal.targetPaceSecPerKm) : "",
+      };
+
       const res = await fetch("/api/recommend-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           runnerProfile,
-          goal: {
-            ...goal,
-            targetTime: shouldShowGoalPaceInput(goal.goalType) ? targetTimeFromPace(goal.distance, goal.targetPaceSecPerKm) : "",
-          },
+          goal: effectiveGoal,
+          selectedStartDate,
+          locale: siteLocale,
           ambition: planAmbition,
         }),
       });
@@ -2106,10 +2651,22 @@ export default function Home() {
 
       const data = (await res.json()) as PlanRecommendation;
       setPlanRecommendation(data);
+      setSelectedRecommendationDurationWeeks(null);
+      setAcceptedDurationOverrideKey(null);
+      setPendingDurationOverride(null);
       setPlanAmbition(data.selectedOption.mode);
       setStage("intermezzo");
+      captureAppEvent(
+        "onboarding_completed",
+        buildAnalyticsPlanProperties({
+          locale: siteLocale,
+          goal: effectiveGoal,
+          track: runnerProfile.onboardingTrack,
+          durationWeeks: data.selectedOption.durationWeeks,
+        }),
+      );
     } catch {
-      setError("Kunne ikke hente en anbefaling lige nu.");
+      setError(siteLocale === "en" ? "Could not fetch a recommendation right now." : "Kunne ikke hente en anbefaling lige nu.");
     } finally {
       setIsLoading(false);
     }
@@ -2133,38 +2690,57 @@ export default function Home() {
     setPlanAmbition(mode);
   }
 
-  async function generatePlan(selectedRecommendation?: PlanRecommendationOption) {
+  async function generatePlan(
+    selectedRecommendation?: PlanRecommendationOption,
+    options?: { skipLowFrequencyGuardrail?: boolean; skipDurationGuardrail?: boolean },
+  ) {
     setError(null);
     setFeedbackConfirmation(null);
     setPlanTradeoff(null);
     setIsProgramTransitioning(true);
     const trimmedFirstName = runnerProfile.firstName?.trim() ?? "";
-    const resolvedRecommendation = selectedRecommendation ?? planRecommendation?.selectedOption ?? null;
+    const resolvedRecommendation = selectedRecommendation ?? activeRecommendationOption ?? null;
 
     if (trimmedFirstName !== runnerProfile.firstName) {
       setRunnerProfile((current) => ({ ...current, firstName: trimmedFirstName }));
     }
 
     if (!goal.availableTrainingDays || goal.availableTrainingDays.length === 0) {
-      setError("Vælg mindst én træningsdag for at generere programmet.");
+      setError(siteLocale === "en" ? "Choose at least one training day to generate the plan." : "Vælg mindst én træningsdag for at generere programmet.");
       setIsProgramTransitioning(false);
       return;
     }
 
     if (!isValidIsoDate(goal.startDate)) {
-      setError("Vælg en gyldig startdato, før jeg bygger programmet.");
+      setError(siteLocale === "en" ? "Choose a valid start date before I build the plan." : "Vælg en gyldig startdato, før jeg bygger programmet.");
       setIsProgramTransitioning(false);
       return;
     }
 
     if (!resolvedRecommendation) {
-      setError("Hent først en anbefaling, så StridePilot kan bygge planen ud fra en realistisk tidslinje.");
+      setError(siteLocale === "en" ? "Fetch a recommendation first so StridePilot can build the plan from a realistic timeline." : "Hent først en anbefaling, så StridePilot kan bygge planen ud fra en realistisk tidslinje.");
       setIsProgramTransitioning(false);
       return;
     }
 
     if ((goal.goalType === "target_time" || goal.goalType === "pr") && !goal.targetPaceSecPerKm) {
-      setError("Vælg et ønsket tempo, hvis du går efter et bestemt tempo eller en PR.");
+      setError(siteLocale === "en" ? "Choose a target pace if you are aiming for a specific pace or a PR." : "Vælg et ønsket tempo, hvis du går efter et bestemt tempo eller en PR.");
+      setIsProgramTransitioning(false);
+      return;
+    }
+
+    if (
+      !options?.skipLowFrequencyGuardrail &&
+      lowFrequencyOverridePrompt &&
+      !lowFrequencyOverrideAccepted(lowFrequencyOverridePrompt.overrideKey)
+    ) {
+      setPendingLowFrequencyOverride({ intent: "generation", selectedRecommendation });
+      setIsProgramTransitioning(false);
+      return;
+    }
+
+    if (!options?.skipDurationGuardrail && durationOverridePrompt && !durationOverrideAccepted(durationOverridePrompt.overrideKey)) {
+      setPendingDurationOverride({ selectedRecommendation: resolvedRecommendation });
       setIsProgramTransitioning(false);
       return;
     }
@@ -2172,17 +2748,23 @@ export default function Home() {
     setIsLoading(true);
 
     try {
+      const selectedStartDate = goal.startDate;
+      const effectiveGoal = {
+        ...goal,
+        startDate: startDateWeekRhythm.startDateIso,
+        targetTime: shouldShowGoalPaceInput(goal.goalType) ? targetTimeFromPace(goal.distance, goal.targetPaceSecPerKm) : "",
+        weeks: resolvedRecommendation.durationWeeks,
+        endDate: resolvedRecommendation.goalDate,
+      };
+
       const res = await fetch("/api/generate-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           runnerProfile,
-          goal: {
-            ...goal,
-            targetTime: shouldShowGoalPaceInput(goal.goalType) ? targetTimeFromPace(goal.distance, goal.targetPaceSecPerKm) : "",
-            weeks: resolvedRecommendation.durationWeeks,
-            endDate: resolvedRecommendation.goalDate,
-          },
+          goal: effectiveGoal,
+          selectedStartDate,
+          locale: siteLocale,
           profileId: isDemoMode ? undefined : profileId || undefined,
           recommendationSelection: resolvedRecommendation,
           runsPerWeek: resolvedRecommendation.sessionsPerWeek,
@@ -2218,6 +2800,7 @@ export default function Home() {
       const nextCurrent = data.currentPlanView ?? data.plan;
       setGoal((current) => ({
         ...current,
+        startDate: effectiveGoal.startDate,
         weeks: resolvedRecommendation.durationWeeks,
         endDate: resolvedRecommendation.goalDate,
       }));
@@ -2271,8 +2854,20 @@ export default function Home() {
       setStage("program");
       setShowProgramIntro(true);
       setIsProgramTransitioning(false);
+      captureAppEvent(
+        "plan_generated",
+        buildAnalyticsPlanProperties({
+          locale: siteLocale,
+          goal: {
+            ...goal,
+            weeks: resolvedRecommendation.durationWeeks,
+          },
+          track: runnerProfile.onboardingTrack,
+          durationWeeks: resolvedRecommendation.durationWeeks,
+        }),
+      );
     } catch {
-      setError("Kunne ikke generere plan lige nu.");
+      setError(siteLocale === "en" ? "Could not generate the plan right now." : "Kunne ikke generere plan lige nu.");
     } finally {
       setIsProgramTransitioning(false);
       setIsLoading(false);
@@ -2281,7 +2876,7 @@ export default function Home() {
 
   async function submitFeedback() {
     if (!activeSession || !plan) {
-      setError("Mangler aktivt træningspas eller program.");
+      setError(siteLocale === "en" ? "Missing active workout or plan." : "Mangler aktivt træningspas eller program.");
       return;
     }
 
@@ -2314,7 +2909,7 @@ export default function Home() {
 
     const adapted = adaptPlanFromFeedback(upcomingPlan, coachFeedback, currentCapability);
     const updatedPlan = mergeAdaptedUpcomingSessions(plan, activeSession.id, adapted.plan);
-    const adaptiveCopy = detectAdaptivePlanChange(plan, updatedPlan);
+    const adaptiveCopy = detectAdaptivePlanChange(plan, updatedPlan, siteLocale);
     const responseCopy = buildFeedbackResponseCopy({
       rationale: adapted.rationale,
       feedback: {
@@ -2324,6 +2919,7 @@ export default function Home() {
         energy: feedback.energy,
         painLevel: feedback.painLevel,
       },
+      locale: siteLocale,
     });
     const savedEntry: SavedWorkoutSessionFeedback = {
       sessionId: activeSession.id,
@@ -2349,14 +2945,27 @@ export default function Home() {
     }));
     recentFeedbackRef.current = nextRecentFeedback;
     recentCapabilityRef.current = [...recentCapabilityRef.current, adapted.capability].slice(-3);
+    captureAppEvent("checkin_submitted", {
+      locale: siteLocale,
+      goal_type: goal.goalType ?? null,
+      session_type: sessionAnalyticsType(activeSession),
+      completion_pct: feedback.completionPct,
+      effort: feedback.effort,
+      energy: feedback.energy,
+      pain_level: feedback.painLevel,
+    });
     setFeedbackConfirmation({
-      title: runnerProfile.firstName?.trim() ? `Tak for din feedback, ${runnerProfile.firstName.trim()}.` : "Tak for din feedback.",
-      updatedLabel: "Opdateret efter din feedback",
+      title: runnerProfile.firstName?.trim()
+        ? siteLocale === "en"
+          ? `Thanks for your feedback, ${runnerProfile.firstName.trim()}.`
+          : `Tak for din feedback, ${runnerProfile.firstName.trim()}.`
+        : ui.workout.thanks,
+      updatedLabel: siteLocale === "en" ? "Updated after your feedback" : "Opdateret efter din feedback",
       interpretation: responseCopy.interpretation,
       adjustment: responseCopy.adjustmentExplanation,
       progressionPreview: responseCopy.progressionPreview,
       focus: responseCopy.runnerFocus,
-      learnedInsights: responseCopy.learnedInsights.length > 0 ? responseCopy.learnedInsights : learnedInsightLines(adapted.capability, updatedPlan),
+      learnedInsights: responseCopy.learnedInsights.length > 0 ? responseCopy.learnedInsights : learnedInsightLines(adapted.capability, updatedPlan, siteLocale),
     });
     if (adaptiveCopy.log) {
       setAdjustmentLog((prev) => [...prev, adaptiveCopy.log!]);
@@ -2444,7 +3053,7 @@ export default function Home() {
       window.setTimeout(() => setNoteSaveState("idle"), 1800);
     } catch {
       setNoteSaveState("idle");
-      setError("Kunne ikke gemme note lige nu.");
+      setError(siteLocale === "en" ? "Could not save the note right now." : "Kunne ikke gemme note lige nu.");
     }
   }
 
@@ -2457,7 +3066,7 @@ export default function Home() {
           ? {
               ...current,
               reply,
-              resolution: "Godt — så holder jeg den justering.",
+              resolution: siteLocale === "en" ? "Understood. I will keep that adjustment in place." : "Godt — så holder jeg den justering.",
             }
           : current,
       );
@@ -2473,8 +3082,8 @@ export default function Home() {
           ? {
               ...current,
               reply,
-              updatedLabel: "Opdateret efter din afklaring",
-              resolution: "Forstået — jeg ruller den seneste justering tilbage og holder planen uændret for nu.",
+              updatedLabel: siteLocale === "en" ? "Updated after your clarification" : "Opdateret efter din afklaring",
+              resolution: siteLocale === "en" ? "Understood. I am rolling back the latest adjustment and keeping the plan unchanged for now." : "Forstået — jeg ruller den seneste justering tilbage og holder planen uændret for nu.",
             }
           : current,
       );
@@ -2486,8 +3095,8 @@ export default function Home() {
         ? {
             ...current,
             reply,
-            updatedLabel: "Opdateret efter din afklaring",
-            resolution: "Tak — jeg har opdateret vurderingen med din note og holder næste skridt forsigtigt og konsistent.",
+            updatedLabel: siteLocale === "en" ? "Updated after your clarification" : "Opdateret efter din afklaring",
+            resolution: siteLocale === "en" ? "Thanks. I have updated the assessment with your note and will keep the next step cautious and consistent." : "Tak — jeg har opdateret vurderingen med din note og holder næste skridt forsigtigt og konsistent.",
           }
         : current,
     );
@@ -2509,7 +3118,7 @@ export default function Home() {
     });
 
     if (!res.ok) {
-      setError("Kunne ikke oprette kalenderfil.");
+      setError(siteLocale === "en" ? "Could not create the calendar file." : "Kunne ikke oprette kalenderfil.");
       return;
     }
 
@@ -2560,7 +3169,12 @@ export default function Home() {
   function openWorkoutSession(sessionId: string) {
     window.scrollTo({ top: 0, behavior: "smooth" });
     setSelectedSessionId(sessionId);
+    setFocusedProgramDayIso(null);
+    lastWorkoutStartedRef.current = null;
+    lastWorkoutCompletedRef.current = null;
     setWorkoutInterruptionNotice(null);
+    setWorkoutStartCountdown(5);
+    setShowWorkoutCheckIn(false);
     setStage("workout");
   }
 
@@ -2569,6 +3183,8 @@ export default function Home() {
     cancelCue();
     void releaseWakeLock();
     setWorkoutInterruptionNotice(null);
+    setWorkoutStartCountdown(null);
+    setShowWorkoutCheckIn(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
     setStage("program");
   }
@@ -2584,6 +3200,41 @@ export default function Home() {
     });
   }
 
+  function applyCapacityBaseline(nextDistanceKm: number, nextRunsPerWeek: number) {
+    const baseline = deriveBaselineLoadFromCapacity(nextDistanceKm, nextRunsPerWeek);
+    setRunnerProfile((current) => ({
+      ...current,
+      currentContinuousDistanceKm: nextDistanceKm,
+      currentRunningAbility: baseline.currentRunningAbility,
+      runningExperience: baseline.runningExperience,
+      currentWeeklyVolumeKm: baseline.currentWeeklyVolumeKm,
+      currentRunsPerWeek: baseline.currentRunsPerWeek,
+      longestCurrentRunMin: baseline.longestCurrentRunMin,
+    }));
+    setOnboardingSelections((current) => ({ ...current, runningAbility: true }));
+  }
+
+  function lowFrequencyOverrideAccepted(promptKey?: string | null): boolean {
+    return Boolean(promptKey && acceptedLowFrequencyOverrideKey === promptKey);
+  }
+
+  function durationOverrideAccepted(promptKey?: string | null): boolean {
+    return Boolean(promptKey && acceptedDurationOverrideKey === promptKey);
+  }
+
+  function updateRecommendationDuration(nextWeeks: number) {
+    if (!planRecommendation || !baseRecommendationOption || !durationEditBounds) return;
+    if (!Number.isFinite(nextWeeks)) return;
+    const safeWeeks = clampInt(nextWeeks, durationEditBounds.editableMinWeeks, durationEditBounds.editableMaxWeeks);
+    setSelectedRecommendationDurationWeeks(safeWeeks === baseRecommendationOption.durationWeeks ? null : safeWeeks);
+    if (planRecommendation.recommendedOption.durationWeeks === safeWeeks) {
+      setAcceptedDurationOverrideKey(null);
+      setPendingDurationOverride(null);
+    } else if (durationOverridePrompt && acceptedDurationOverrideKey !== durationOverridePrompt.overrideKey) {
+      setPendingDurationOverride(null);
+    }
+  }
+
   function goToStep(index: number) {
     if (!activeSession) return;
     const safeIndex = clampInt(index, 0, activeSession.steps.length - 1);
@@ -2593,7 +3244,7 @@ export default function Home() {
     setStepIndex(safeIndex);
     setRemainingSec(activeSession.steps[safeIndex].durationSec);
     setWorkoutCompleted(false);
-    setCueFallbackText(buildCue(activeSession.steps[safeIndex], audioMode));
+    setCueFallbackText(buildCue(activeSession.steps[safeIndex], audioMode, siteLocale));
     lastSpokenStepKey.current = "";
     thirtySecCueKey.current = "";
     lastTickAtRef.current = null;
@@ -2609,10 +3260,10 @@ export default function Home() {
     }
     cancelCue();
     const next = stepIndex + 1;
-    setStepNotice("Interval afsluttet");
+    setStepNotice(transitionNoticeForStep(activeSession.steps[next], siteLocale));
     setStepIndex(next);
     setRemainingSec(activeSession.steps[next].durationSec);
-    setCueFallbackText(buildCue(activeSession.steps[next], audioMode));
+    setCueFallbackText(buildCue(activeSession.steps[next], audioMode, siteLocale));
     lastSpokenStepKey.current = "";
     thirtySecCueKey.current = "";
     lastTickAtRef.current = null;
@@ -2651,74 +3302,158 @@ export default function Home() {
     }
   }
 
+  const onboardingTrackOptions = useMemo(() => getOnboardingTrackOptions(siteLocale), [siteLocale]);
+  const feedbackMailto = useMemo(() => {
+    const trackLabel =
+      onboardingTrackOptions.find((option) => option.value === runnerProfile.onboardingTrack)?.label
+      ?? runnerProfile.onboardingTrack
+      ?? null;
+    const goalLabel = goal.goalType
+      ? `${localizedGoalDistanceName(goal.distance, siteLocale)} · ${goalTypeLabel(goal.goalType, siteLocale)}`
+      : localizedGoalDistanceName(goal.distance, siteLocale);
+
+    return buildFeedbackMailto({
+      locale: siteLocale,
+      host: currentHost,
+      track: trackLabel,
+      goal: goalLabel,
+      daysPerWeek: goal.availableTrainingDays?.length ?? null,
+    });
+  }, [currentHost, goal.availableTrainingDays, goal.distance, goal.goalType, onboardingTrackOptions, runnerProfile.onboardingTrack, siteLocale]);
+  const openFeedbackMail = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.location.href = feedbackMailto;
+    }
+  }, [feedbackMailto]);
+
   const contextualHeader =
     stage === "program"
-      ? { title: "Dit program", subtitle: `Uge ${displayWeek}` }
+      ? { title: siteLocale === "en" ? "Your plan" : "Dit program", subtitle: siteLocale === "en" ? `Week ${displayWeek}` : `Uge ${displayWeek}` }
       : stage === "workout"
         ? {
-            title: activeSession ? `Uge ${activeSession.week} · ${shortSessionTitle(activeSession.title)}` : "Intervalpas",
-            subtitle: "Fokusér på næste interval",
+            title: activeSession
+              ? `${sessionWeekBadge(activeSession.week, siteLocale)} · ${visibleSessionTitle(activeSession.title, siteLocale)}`
+              : siteLocale === "en"
+                ? "Interval workout"
+                : "Intervalpas",
+            subtitle: siteLocale === "en" ? "Focus on the next interval" : "Fokusér på næste interval",
           }
         : stage === "auth"
           ? {
-              title: `Velkommen til ${APP_NAME}`,
-              subtitle: "Et adaptivt løbeprogram, der følger din træning roligt.",
+              title: siteCopy.welcomeTitle,
+              subtitle: siteCopy.authSubtitle,
             }
         : {
             title: APP_NAME,
-            subtitle: "Din adaptive løbeapp",
+            subtitle: siteCopy.welcomeSubhead,
           };
   const programAdjustments = useMemo(() => [...safetyAdjustments, ...adjustmentLog], [safetyAdjustments, adjustmentLog]);
   const hasMoreSafetyAdjustments = programAdjustments.length > 3;
   const isLastWorkoutStep = Boolean(activeSession && stepIndex === activeSession.steps.length - 1);
   const onboardingSteps = ONBOARDING_STEP_COUNT;
-  const currentOnboardingStep = getOnboardingStepDefinition(onboardingStep);
-  const activeRecommendationOption = planRecommendation?.selectedOption ?? null;
+  const currentOnboardingStep = getOnboardingStepDefinition(onboardingStep, siteLocale);
+  const baseRecommendationOption = planRecommendation?.selectedOption ?? null;
   const recommendedRecommendationOption = planRecommendation?.recommendedOption ?? null;
-  const recommendationWarnings =
-    activeRecommendationOption && recommendedRecommendationOption && activeRecommendationOption.mode !== recommendedRecommendationOption.mode
-      ? activeRecommendationOption.warnings
-      : [];
-  const recommendationLeadCopy = buildRecommendationLeadCopy(
-    activeRecommendationOption?.summary ?? planRecommendation?.summary ?? "",
-    activeRecommendationOption?.planLevelExplanation,
+  const resolvedRecommendationDurationWeeks = useMemo(() => {
+    if (!baseRecommendationOption) return null;
+    return selectedRecommendationDurationWeeks ?? baseRecommendationOption.durationWeeks;
+  }, [baseRecommendationOption, selectedRecommendationDurationWeeks]);
+  const activeRecommendationOption = useMemo(() => {
+    if (!baseRecommendationOption || !recommendedRecommendationOption || !resolvedRecommendationDurationWeeks) return null;
+    return applyDurationToRecommendationOption({
+      goal,
+      option: baseRecommendationOption,
+      recommendedWeeks: recommendedRecommendationOption.durationWeeks,
+      selectedWeeks: resolvedRecommendationDurationWeeks,
+      realisticMinWeeks: planRecommendation?.minDurationWeeks,
+      realisticMaxWeeks: planRecommendation?.maxDurationWeeks,
+      locale: siteLocale,
+    });
+  }, [baseRecommendationOption, goal, planRecommendation?.maxDurationWeeks, planRecommendation?.minDurationWeeks, recommendedRecommendationOption, resolvedRecommendationDurationWeeks, siteLocale]);
+  const durationEditBounds = useMemo(
+    () =>
+      planRecommendation
+        ? buildDurationEditBounds({
+            recommendedWeeks: planRecommendation.recommendedDurationWeeks,
+            realisticMinWeeks: planRecommendation.minDurationWeeks,
+            realisticMaxWeeks: planRecommendation.maxDurationWeeks,
+          })
+        : null,
+    [planRecommendation],
   );
-  const recommendationProgressionLabel = progressionTempoLabel(activeRecommendationOption?.progressionMode);
+  const durationAdjustmentState = useMemo(
+    () =>
+      recommendedRecommendationOption && resolvedRecommendationDurationWeeks
+        ? buildDurationAdjustmentState({
+            goal,
+            recommendedWeeks: recommendedRecommendationOption.durationWeeks,
+            selectedWeeks: resolvedRecommendationDurationWeeks,
+            realisticMinWeeks: planRecommendation?.minDurationWeeks,
+            realisticMaxWeeks: planRecommendation?.maxDurationWeeks,
+            locale: siteLocale,
+          })
+        : null,
+    [goal, planRecommendation?.maxDurationWeeks, planRecommendation?.minDurationWeeks, recommendedRecommendationOption, resolvedRecommendationDurationWeeks, siteLocale],
+  );
+  const durationOverridePrompt = durationAdjustmentState?.overridePrompt ?? null;
+  const recommendationWarnings = activeRecommendationOption?.warnings ?? [];
+  const trackRecommendationContext = useMemo(() => buildTrackRecommendationContext(runnerProfile.onboardingTrack, siteLocale), [runnerProfile.onboardingTrack, siteLocale]);
+  useEffect(() => {
+    if (!durationOverridePrompt) {
+      setAcceptedDurationOverrideKey(null);
+      setPendingDurationOverride(null);
+      return;
+    }
+    if (acceptedDurationOverrideKey === durationOverridePrompt.overrideKey) return;
+    setPendingDurationOverride(null);
+  }, [acceptedDurationOverrideKey, durationOverridePrompt]);
+  const recommendationLeadCopy = useMemo(() => {
+    const summaryWithTrack = buildRecommendationLeadCopy(
+      activeRecommendationOption?.summary ?? planRecommendation?.summary ?? "",
+      trackRecommendationContext ?? undefined,
+    );
+    return buildRecommendationLeadCopy(summaryWithTrack, activeRecommendationOption?.planLevelExplanation);
+  }, [activeRecommendationOption?.planLevelExplanation, activeRecommendationOption?.summary, planRecommendation?.summary, trackRecommendationContext]);
+  const recommendationProgressionLabel = progressionTempoLabel(activeRecommendationOption?.progressionMode, siteLocale);
   const goalSummaryDate =
     goalDestinationSession &&
-    sessionDateFromPlan(goal.startDate, goalDestinationSession).toLocaleDateString("da-DK", {
+    sessionDateFromPlan(goal.startDate, goalDestinationSession).toLocaleDateString(siteLocale === "en" ? "en-GB" : "da-DK", {
       day: "numeric",
       month: "short",
     });
   const todayDuration = todaySession ? Math.round(sessionTotalDurationSec(todaySession) / 60) : 0;
   const nextDuration = nextSession ? Math.round(sessionTotalDurationSec(nextSession) / 60) : 0;
   const activeSessionDuration = activeSession ? Math.round(sessionTotalDurationSec(activeSession) / 60) : 0;
-  const profileInsightSummary =
-    runnerProfileInsights?.progressionStrategy.style === "conservative"
-      ? "Jeg har lagt planen roligt ud, så du kan bygge sikkert op fra start."
-      : runnerProfileInsights?.progressionStrategy.style === "aggressive"
-        ? "Jeg har lagt planen an med lidt mere fart i progressionen, men stadig inden for en kontrolleret ramme."
-        : runnerProfileInsights
-          ? "Jeg har lagt planen an med en stabil progression, der passer til dit udgangspunkt."
-          : null;
-  const stickyProgramCtaLabel = todaySession ? "Start dagens træningspas" : null;
   const suggestedPlanStartDate = useMemo(() => getSuggestedPlanStartDate(), []);
+  const startDateWeekRhythm = useMemo(
+    () =>
+      resolvePlanStartDateForWeekRhythm({
+        startDateIso: goal.startDate,
+        availableTrainingDays: goal.availableTrainingDays,
+      }),
+    [goal.availableTrainingDays, goal.startDate],
+  );
   const planStartDateHelpText = useMemo(
-    () => buildPlanStartDateHelpText(goal.startDate, suggestedPlanStartDate),
-    [goal.startDate, suggestedPlanStartDate],
+    () => buildPlanStartDateHelpText(goal.startDate, suggestedPlanStartDate, siteLocale, goal.availableTrainingDays),
+    [goal.availableTrainingDays, goal.startDate, siteLocale, suggestedPlanStartDate],
   );
   const weekRationale = plan?.rationale?.weeks?.find((week) => week.weekNumber === displayWeek) ?? null;
-  const weekState = weekStateLabel(plan, displayWeek);
-  const learnedInsights = useMemo(() => learnedInsightLines(capabilityState, plan ?? null), [capabilityState, plan]);
-  const programInsightState = useMemo(() => buildProgramInsightState(learnedInsights), [learnedInsights]);
+  const weekState = localizedWeekStateLabel(plan, displayWeek, siteLocale);
+  const learnedInsights = useMemo(() => learnedInsightLines(capabilityState, plan ?? null, siteLocale), [capabilityState, plan, siteLocale]);
+  const programInsightState = useMemo(() => buildProgramInsightState(learnedInsights, siteLocale), [learnedInsights, siteLocale]);
   const programAdjustmentState = useMemo(
     () =>
       buildProgramAdjustmentHighlights({
         planWarnings,
         safetyAdjustments: programAdjustments,
         savedAdaptations,
+        previousGoalDate: baselineGoalDate,
+        currentGoalDate: currentPlanGoalDate,
+        previousTotalWeeks: baselinePlan?.weeks ?? null,
+        currentTotalWeeks: plan?.weeks ?? null,
+        locale: siteLocale,
       }),
-    [planWarnings, programAdjustments, savedAdaptations],
+    [baselineGoalDate, currentPlanGoalDate, baselinePlan?.weeks, plan?.weeks, planWarnings, programAdjustments, savedAdaptations, siteLocale],
   );
   const programAdjustmentToneAppearance = useMemo(
     () => getAdjustmentToneAppearance(programAdjustmentState.kind),
@@ -2728,27 +3463,33 @@ export default function Home() {
     const all = programAdjustmentState.highlights;
     return showAllSafety ? all : all.slice(0, 3);
   }, [programAdjustmentState.highlights, showAllSafety]);
+  const showVisibleAdaptationCard = programAdjustmentState.hasAdjustments;
   const todayActionState = useMemo(
     () =>
       buildTodayActionState({
         todaySession,
         nextSession,
+        locale: siteLocale,
       }),
-    [todaySession, nextSession],
+    [nextSession, siteLocale, todaySession],
   );
-  const recentRaceSummary = useMemo(() => recentRaceSummaryLabel(runnerProfile.recentRaceTimes), [runnerProfile.recentRaceTimes]);
-  const recentRaceDraftSummary = useMemo(() => recentRaceDraftSummaryLabel(recentRaceDraft), [recentRaceDraft]);
+  const recentRaceSummary = useMemo(() => recentRaceSummaryLabel(runnerProfile.recentRaceTimes, siteLocale), [runnerProfile.recentRaceTimes, siteLocale]);
+  const recentRaceDraftSummary = useMemo(() => recentRaceDraftSummaryLabel(recentRaceDraft, siteLocale), [recentRaceDraft, siteLocale]);
   const pulseGuidanceSummary = useMemo(
     () =>
       buildPulseGuidanceSummary({
         enabled: Boolean(runnerProfile.pulseGuidanceEnabled),
         maxHeartRate: runnerProfile.maxHeartRate ?? null,
-      }),
-    [runnerProfile.maxHeartRate, runnerProfile.pulseGuidanceEnabled],
+      }, siteLocale),
+    [runnerProfile.maxHeartRate, runnerProfile.pulseGuidanceEnabled, siteLocale],
   );
   const pulseGuidanceWarning = useMemo(
-    () => buildPulseGuidanceWarning(pulseDraft.maxHeartRate, Boolean(runnerProfile.pulseGuidanceEnabled)),
-    [pulseDraft.maxHeartRate, runnerProfile.pulseGuidanceEnabled],
+    () => buildPulseGuidanceWarning(pulseDraft.maxHeartRate, Boolean(runnerProfile.pulseGuidanceEnabled), siteLocale),
+    [pulseDraft.maxHeartRate, runnerProfile.pulseGuidanceEnabled, siteLocale],
+  );
+  const pulseZoneLegend = useMemo(
+    () => buildPulseZoneLegend(runnerProfile.maxHeartRate ?? null),
+    [runnerProfile.maxHeartRate],
   );
   const updateRecentRaceTimeParts = useCallback(
     (part: "hours" | "minutes" | "seconds", value: number) => {
@@ -2770,8 +3511,9 @@ export default function Home() {
         historySummary,
         displayWeek,
         currentWeekLoad,
+        locale: siteLocale,
       }),
-    [plan, historySummary, displayWeek, currentWeekLoad],
+    [plan, historySummary, displayWeek, currentWeekLoad, siteLocale],
   );
   const progressGraphState = useMemo(
     () =>
@@ -2783,29 +3525,51 @@ export default function Home() {
       }),
     [baselineWeeklyLoad, currentWeeklyLoad, displayWeek, isCompactProgramViewport],
   );
-  const weeklyFocusSummary = feedbackConfirmation?.adjustment ?? plan?.rationale?.adaptation?.reason ?? weekRationale?.focus ?? "Hold rytmen og lad ugen gøre sit arbejde.";
+  const weeklyFocusSummary = feedbackConfirmation?.adjustment ?? plan?.rationale?.adaptation?.reason ?? weekRationale?.focus ?? (siteLocale === "en" ? "Keep the rhythm and let the week do its work." : "Hold rytmen og lad ugen gøre sit arbejde.");
   const weeklyFocusSupport = feedbackConfirmation?.focus ?? plan?.rationale?.adaptation?.runnerFocus ?? weekState.tone;
-  const programStatusLine = useMemo(
-    () =>
-      plan
-        ? buildProgramStatusLine({
-            distance: goal.distance,
-            goalDateLabel: goalSummaryDate,
-            displayWeek,
-            totalWeeks: plan.weeks,
-          })
-        : "",
-    [displayWeek, goal.distance, goalSummaryDate, plan],
-  );
   const nextWorkoutState = useMemo(
     () =>
       buildNextWorkoutState({
         nextSession,
         durationMin: nextDuration,
-        dateLabel: nextSession ? formatDanishDateWithWeekday(sessionDateFromPlan(goal.startDate, nextSession)) : null,
+        dateLabel: nextSession ? formatDateWithWeekday(sessionDateFromPlan(goal.startDate, nextSession), siteLocale) : null,
+        locale: siteLocale,
       }),
-    [goal.startDate, nextDuration, nextSession],
+    [goal.startDate, nextDuration, nextSession, siteLocale],
   );
+  const workoutFeelingOptions = useMemo(
+    () => [
+      { value: "very_easy" as QuickFeedbackOption, label: siteLocale === "en" ? "Easy" : "Let" },
+      { value: "good" as QuickFeedbackOption, label: siteLocale === "en" ? "About right" : "Passende" },
+      { value: "hard" as QuickFeedbackOption, label: siteLocale === "en" ? "Hard" : "Hård" },
+    ],
+    [siteLocale],
+  );
+  const nextWorkoutDayLabel = useMemo(
+    () => (nextSession ? formatDateWithWeekday(sessionDateFromPlan(goal.startDate, nextSession), siteLocale) : siteLocale === "en" ? "To be decided" : "Kommer snart"),
+    [goal.startDate, nextSession, siteLocale],
+  );
+  const todayWorkoutProfile = useMemo(
+    () => deriveWorkoutProfile(todaySession),
+    [todaySession],
+  );
+  const focusedProgramSession = useMemo(
+    () => (focusedProgramDayIso && plan ? plan.sessions.find((session) => session.id === selectedSessionId) ?? null : null),
+    [focusedProgramDayIso, plan, selectedSessionId],
+  );
+  const focusedProgramDate = useMemo(
+    () => (focusedProgramDayIso ? new Date(focusedProgramDayIso) : null),
+    [focusedProgramDayIso],
+  );
+  const workoutCheckInMicroCopy = useMemo(() => {
+    if (feedback.quickFeedback === "hard") {
+      return siteLocale === "en" ? "We will ease it a little next time." : "Vi tager lidt hensyn næste gang.";
+    }
+    if (feedback.quickFeedback === "very_easy") {
+      return siteLocale === "en" ? "We will turn it up a little next time." : "Vi skruer en smule op næste gang.";
+    }
+    return null;
+  }, [feedback.quickFeedback, siteLocale]);
   const weekOverviewAction = useMemo(
     () =>
       buildWeekOverviewAction({
@@ -2816,68 +3580,33 @@ export default function Home() {
     [displayWeek, nextSessionWeek, showProgramMore],
   );
   const filteredGoalTypeOptions = useMemo(
-    () => getGoalTypeOptions(goal.distance, runnerProfile.currentRunningAbility),
-    [goal.distance, runnerProfile.currentRunningAbility],
+    () => getGoalTypeOptions(goal.distance, runnerProfile.currentRunningAbility, siteLocale),
+    [goal.distance, runnerProfile.currentRunningAbility, siteLocale],
   );
-  const isOnboardingStepValid =
-    onboardingStep === 1
-      ? Boolean(runnerProfile.firstName?.trim()) && Boolean(runnerProfile.userTrainingContext?.trim())
-      : onboardingStep === 2
-        ? onboardingSelections.runningAbility
-        : onboardingStep === 3
-          ? onboardingSelections.goalDistance
-          : onboardingStep === 4
-            ? onboardingSelections.goalType && (!shouldShowGoalPaceInput(goal.goalType) || Boolean(goal.targetPaceSecPerKm))
-            : onboardingStep === 5
-              ? Boolean(runnerProfile.typicalWorkoutMinutes) &&
-                Boolean(goal.availableTrainingDays?.length) &&
-                Boolean(goal.preferredLongRunDay) &&
-                isValidIsoDate(goal.startDate)
-              : onboardingStep === 6
-                ? onboardingSelections.activityLevel && onboardingSelections.ambition
-                : true;
-  const completedWorkoutCoach = useMemo(
-    () =>
-      postWorkoutCoachMessage({
-        firstName: runnerProfile.firstName,
-        session: activeSession,
-      }),
-    [activeSession, runnerProfile.firstName],
-  );
-  const activeWorkoutPurpose = useMemo(() => (activeSession ? getWorkoutPurpose(activeSession) : ""), [activeSession]);
+  const isOnboardingStepValid = isOnboardingStepReady({
+    onboardingStep,
+    selections: onboardingSelections,
+    firstName: runnerProfile.firstName,
+    trainingContext: runnerProfile.userTrainingContext,
+    goalType: goal.goalType,
+    targetPaceSecPerKm: goal.targetPaceSecPerKm,
+    typicalWorkoutMinutes: runnerProfile.typicalWorkoutMinutes,
+    availableTrainingDaysCount: goal.availableTrainingDays?.length ?? 0,
+    preferredLongRunDay: goal.preferredLongRunDay,
+    hasValidStartDate: isValidIsoDate(goal.startDate),
+  });
   const workoutActionState = useMemo(
     () =>
       buildWorkoutActionState({
         isRunning,
         isLastStep: isLastWorkoutStep,
+        locale: siteLocale,
       }),
-    [isLastWorkoutStep, isRunning],
-  );
-  const workoutCueState = useMemo(
-    () =>
-      buildWorkoutCueState({
-        nextStepTitle: nextWorkoutStep ? phaseName(nextWorkoutStep) : null,
-        nextStepDetail: nextWorkoutStep ? `${formatClock(nextWorkoutStep.durationSec)} · ${coachingHint(nextWorkoutStep)}` : null,
-        nextStepHeartRateDetail: getWorkoutHeartRateGuidance(nextWorkoutStep, Boolean(runnerProfile.pulseGuidanceEnabled)),
-        cueFallbackText,
-        isLastStep: isLastWorkoutStep,
-        audioMode,
-        ttsSupported,
-        speechEnabled,
-      }),
-    [audioMode, cueFallbackText, isLastWorkoutStep, nextWorkoutStep, runnerProfile.pulseGuidanceEnabled, speechEnabled, ttsSupported],
-  );
-  const currentStepHeartRateGuidance = useMemo(
-    () => getWorkoutHeartRateGuidance(currentStep, Boolean(runnerProfile.pulseGuidanceEnabled)),
-    [currentStep, runnerProfile.pulseGuidanceEnabled],
-  );
-  const workoutAudioStatus = useMemo(
-    () => getWorkoutAudioStatus(audioMode, ttsSupported, speechEnabled),
-    [audioMode, speechEnabled, ttsSupported],
+    [isLastWorkoutStep, isRunning, siteLocale],
   );
   const workoutCheckInState = useMemo(
-    () => buildWorkoutCheckInState(showDetailedFeedback),
-    [showDetailedFeedback],
+    () => buildWorkoutCheckInState(showDetailedFeedback, siteLocale),
+    [showDetailedFeedback, siteLocale],
   );
 
   useEffect(() => {
@@ -2895,69 +3624,6 @@ export default function Home() {
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
 
-  useEffect(() => {
-    if (stage !== "program" || !stickyProgramCtaLabel) {
-      setShowStickyProgramCta(false);
-      return;
-    }
-
-    if (typeof window === "undefined") return;
-
-    const mediaQuery = window.matchMedia("(max-width: 720px)");
-    const ctaNode = todayPrimaryCtaRef.current;
-
-    if (!mediaQuery.matches) {
-      setShowStickyProgramCta(false);
-      return;
-    }
-
-    if (!ctaNode) {
-      setShowStickyProgramCta(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const shouldShow = !entry.isIntersecting;
-        setShowStickyProgramCta((current) => (current === shouldShow ? current : shouldShow));
-      },
-      {
-        root: null,
-        rootMargin: "0px 0px 120px 0px",
-        threshold: 0.12,
-      },
-    );
-
-    observer.observe(ctaNode);
-
-    function syncStickyVisibility(matches: boolean) {
-      if (!matches) {
-        setShowStickyProgramCta(false);
-        return;
-      }
-      if (!ctaNode) {
-        setShowStickyProgramCta(true);
-        return;
-      }
-      const rect = ctaNode.getBoundingClientRect();
-      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-      const shouldShow = rect.top > viewportHeight - 120 || rect.bottom < 0;
-      setShowStickyProgramCta((current) => (current === shouldShow ? current : shouldShow));
-    }
-
-    function handleMediaChange(event: MediaQueryListEvent) {
-      syncStickyVisibility(event.matches);
-    }
-
-    syncStickyVisibility(mediaQuery.matches);
-    mediaQuery.addEventListener("change", handleMediaChange);
-
-    return () => {
-      observer.disconnect();
-      mediaQuery.removeEventListener("change", handleMediaChange);
-    };
-  }, [stage, stickyProgramCtaLabel, todaySession?.id, nextSession?.id]);
-
   return (
     <main
       className={[
@@ -2972,7 +3638,7 @@ export default function Home() {
       <section ref={menuRef} className={styles.menuContainer}>
         <button
           className={styles.burgerBtn}
-          aria-label={menuOpen ? "Luk menu" : "Åbn menu"}
+          aria-label={menuOpen ? (siteLocale === "en" ? "Close menu" : "Luk menu") : siteLocale === "en" ? "Open menu" : "Åbn menu"}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((v) => !v)}
         >
@@ -2981,40 +3647,40 @@ export default function Home() {
         {menuOpen && (
           <div className={styles.menuDropdown}>
             <div className={styles.menuHeader}>
-              <p className={styles.menuLabel}>Menu</p>
-              <button type="button" className={styles.menuCloseBtn} aria-label="Luk menu" onClick={() => setMenuOpen(false)}>
-                Luk
+              <p className={styles.menuLabel}>{siteLocale === "en" ? "Menu" : "Menu"}</p>
+              <button type="button" className={styles.menuCloseBtn} aria-label={siteLocale === "en" ? "Close menu" : "Luk menu"} onClick={() => setMenuOpen(false)}>
+                {siteLocale === "en" ? "Close" : "Luk"}
               </button>
             </div>
             <button className={stage === "welcome" ? styles.menuBtnActive : styles.menuBtn} onClick={() => openStage("welcome")}>
-              Velkomst
+              {siteLocale === "en" ? "Welcome" : "Velkomst"}
             </button>
             <button className={stage === "auth" ? styles.menuBtnActive : styles.menuBtn} onClick={() => openStage("auth")}>
-              Konto
+              {siteLocale === "en" ? "Account" : "Konto"}
             </button>
             <button
               className={stage === "profile" ? styles.menuBtnActive : styles.menuBtn}
               onClick={() => openStage("profile")}
               disabled={!canOpenAuthenticatedPages}
             >
-              Rediger profil og mål
+              {siteLocale === "en" ? "Edit profile and goal" : "Rediger profil og mål"}
             </button>
             <button
               className={stage === "program" ? styles.menuBtnActive : styles.menuBtn}
               onClick={() => openStage("program")}
               disabled={!canOpenProgram}
             >
-              Program
+              {siteLocale === "en" ? "Plan" : "Program"}
             </button>
             <button
               className={stage === "workout" ? styles.menuBtnActive : styles.menuBtn}
               onClick={() => openStage("workout")}
               disabled={!canOpenWorkout}
             >
-              Pas
+              {siteLocale === "en" ? "Workout" : "Pas"}
             </button>
             <div className={styles.audioSettings}>
-              <p className={styles.menuLabel}>Tale-cues</p>
+              <p className={styles.menuLabel}>{siteLocale === "en" ? "Voice cues" : "Tale-cues"}</p>
               <div className={styles.audioModeRow}>
                 <button className={audioMode === "off" ? styles.audioModeActive : styles.audioModeBtn} onClick={() => setAudioMode("off")} type="button">
                   Off
@@ -3028,32 +3694,32 @@ export default function Home() {
               </div>
             </div>
             <div className={styles.audioSettings}>
-              <p className={styles.menuLabel}>Puls som ekstra guide</p>
-              <p className={styles.menuHint}>Valgfrit. Hvis du kender din makspuls, kan jeg bruge den som ekstra guide på relevante pas.</p>
+              <p className={styles.menuLabel}>{siteLocale === "en" ? "Heart rate as extra guidance" : "Puls som ekstra guide"}</p>
+              <p className={styles.menuHint}>{siteLocale === "en" ? "Optional. If you know your max heart rate, I can use it as an extra guide in relevant workouts." : "Valgfrit. Hvis du kender din makspuls, kan jeg bruge den som ekstra guide på relevante pas."}</p>
               <div className={styles.menuToggleRow}>
                 <button
                   className={!runnerProfile.pulseGuidanceEnabled ? styles.audioModeActive : styles.audioModeBtn}
                   onClick={() => setRunnerProfile((current) => ({ ...current, pulseGuidanceEnabled: false }))}
                   type="button"
                 >
-                  Fra
+                    {siteLocale === "en" ? "Off" : "Fra"}
                 </button>
                 <button
                   className={runnerProfile.pulseGuidanceEnabled ? styles.audioModeActive : styles.audioModeBtn}
                   onClick={() => setRunnerProfile((current) => ({ ...current, pulseGuidanceEnabled: true }))}
                   type="button"
                 >
-                  Brug puls
+                    {siteLocale === "en" ? "Use heart rate" : "Brug puls"}
                 </button>
               </div>
               {runnerProfile.pulseGuidanceEnabled && (
                 <label className={styles.menuFieldGroup}>
-                  <span>Makspuls</span>
+                  <span>{siteLocale === "en" ? "Max heart rate" : "Makspuls"}</span>
                   <input
                     className={styles.menuFieldInput}
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    placeholder="Fx 190"
+                    placeholder={siteLocale === "en" ? "E.g. 190" : "Fx 190"}
                     value={pulseDraft.maxHeartRate}
                     onChange={(event) => {
                       const rawValue = event.target.value.replace(/[^\d]/g, "").slice(0, 3);
@@ -3067,16 +3733,27 @@ export default function Home() {
                 </label>
               )}
               <p className={styles.subtleInline}>{pulseGuidanceSummary}</p>
+              {runnerProfile.pulseGuidanceEnabled && pulseZoneLegend.length > 0 && (
+                <div className={styles.zoneLegendGrid}>
+                  {pulseZoneLegend.map((entry) => (
+                    <div key={entry.zoneLabel} className={styles.zoneLegendCard}>
+                      <strong>{entry.zoneLabel}</strong>
+                      <span>{entry.rangeLabel}</span>
+                      <small>{entry.description}</small>
+                    </div>
+                  ))}
+                </div>
+              )}
               {pulseGuidanceWarning && <p className={styles.menuWarning}>{pulseGuidanceWarning}</p>}
             </div>
             <div className={styles.audioSettings}>
-              <p className={styles.menuLabel}>Udseende</p>
+              <p className={styles.menuLabel}>{siteLocale === "en" ? "Appearance" : "Udseende"}</p>
               <div className={styles.audioModeRow}>
                 <button className={styles.audioModeActive} type="button" disabled>
-                  Mørk
+                  {siteLocale === "en" ? "Dark" : "Mørk"}
                 </button>
               </div>
-              <p className={styles.subtleInline}>StridePilot bruger mørk tilstand som fast visning i betaen.</p>
+              <p className={styles.subtleInline}>{siteLocale === "en" ? "StridePilot uses dark mode as the default beta view." : "StridePilot bruger mørk tilstand som fast visning i betaen."}</p>
             </div>
             <button
               className={styles.menuBtn}
@@ -3086,7 +3763,7 @@ export default function Home() {
               }}
               disabled={!plan}
             >
-              Hent .ics
+              {siteLocale === "en" ? "Download .ics" : "Hent .ics"}
             </button>
             <button
               className={styles.menuBtn}
@@ -3096,7 +3773,16 @@ export default function Home() {
               }}
               disabled={!plan}
             >
-              Hent program
+              {siteLocale === "en" ? "Download plan" : "Hent program"}
+            </button>
+            <button
+              className={styles.menuBtn}
+              onClick={() => {
+                openFeedbackMail();
+                setMenuOpen(false);
+              }}
+            >
+              Send feedback
             </button>
             {authUser && (
               <button
@@ -3106,7 +3792,7 @@ export default function Home() {
                   setMenuOpen(false);
                 }}
               >
-                Log ud
+                {siteLocale === "en" ? "Log out" : "Log ud"}
               </button>
             )}
             <button
@@ -3116,7 +3802,7 @@ export default function Home() {
                 void resetAppState();
               }}
             >
-              Nulstil app
+              {siteLocale === "en" ? "Reset app" : "Nulstil app"}
             </button>
           </div>
         )}
@@ -3126,7 +3812,7 @@ export default function Home() {
         <section className={styles.hero}>
           <h1>{contextualHeader.title}</h1>
           <p className={styles.heroSub}>{contextualHeader.subtitle}</p>
-          {isDemoMode && <p className={styles.demoBadge}>Demo-tilstand · data gemmes ikke permanent</p>}
+          {isDemoMode && <p className={styles.demoBadge}>{siteLocale === "en" ? "Demo mode · data is not stored permanently" : "Demo-tilstand · data gemmes ikke permanent"}</p>}
         </section>
       )}
 
@@ -3135,13 +3821,22 @@ export default function Home() {
           <div className={styles.welcomeOverlay}>
             <div className={styles.welcomeBody}>
               <h1>{APP_NAME}</h1>
-              <p>Din adaptive løbeapp</p>
+              <p>{siteCopy.welcomeSubhead}</p>
+              <p className={styles.subtle}>
+                {siteCopy.welcomeExplainerLines[0]}
+                <br />
+                {siteCopy.welcomeExplainerLines[1]}
+              </p>
               <button className={styles.primaryBtn} onClick={startFlow}>
-                Kom i gang
+                {siteCopy.startLabel}
               </button>
               <button className={styles.secondaryBtn} onClick={startDemoMode}>
-                Prøv demo
+                {siteCopy.demoLabel}
               </button>
+              <p className={styles.subtleInline}>{siteCopy.betaTesterInstructions}</p>
+              <p className={styles.authVersionLabel}>
+                {APP_NAME} {APP_VERSION}
+              </p>
             </div>
           </div>
         </section>
@@ -3151,16 +3846,20 @@ export default function Home() {
         <section className={styles.authHero}>
           <div className={styles.authOverlay}>
             <section className={styles.centerCard}>
-              <h2>Velkommen til {APP_NAME}</h2>
-              <p className={styles.subtle}>Et adaptivt løbeprogram, der følger din træning roligt.</p>
+              <h2>{siteCopy.welcomeTitle}</h2>
+              <p className={styles.subtle}>
+                {siteCopy.authSubtitle}
+                <br />
+                {siteCopy.welcomeExplainerLines[1]}
+              </p>
 
               <div className={styles.formGrid}>
                 <label>
-                  E-mailadresse
+                  {siteCopy.emailLabel}
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </label>
                 <label>
-                  Adgangskode
+                  {siteCopy.passwordLabel}
                   <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                 </label>
               </div>
@@ -3168,36 +3867,40 @@ export default function Home() {
               {authMode === "signup" ? (
                 <div className={styles.authActions}>
                   <button className={styles.primaryBtn} onClick={register}>
-                    Opret gratis konto
+                    {siteCopy.signUpLabel}
                   </button>
                   <p className={styles.authDivider}>eller</p>
                   <button className={styles.secondaryBtn} onClick={startDemoMode}>
-                    Prøv demo
+                    {siteCopy.demoLabel}
                   </button>
                   <p className={styles.subtleInline}>
-                    Har du allerede en konto?{" "}
+                    {siteCopy.alreadyAccount}{" "}
                     <button className={styles.textBtn} onClick={() => setAuthMode("login")}>
-                      Log ind
+                      {siteCopy.loginLabel}
                     </button>
                   </p>
                 </div>
               ) : (
                 <div className={styles.authActions}>
                   <button className={styles.primaryBtn} onClick={login}>
-                    Log ind
+                    {siteCopy.loginLabel}
                   </button>
                   <p className={styles.authDivider}>eller</p>
                   <button className={styles.secondaryBtn} onClick={startDemoMode}>
-                    Prøv demo
+                    {siteCopy.demoLabel}
                   </button>
                   <p className={styles.subtleInline}>
-                    Ny her?{" "}
+                    {siteCopy.newHere}{" "}
                     <button className={styles.textBtn} onClick={() => setAuthMode("signup")}>
-                      Opret gratis konto
+                      {siteCopy.signUpLabel}
                     </button>
                   </p>
                 </div>
               )}
+
+              <p className={styles.authVersionLabel}>
+                {APP_NAME} {APP_VERSION}
+              </p>
             </section>
           </div>
         </section>
@@ -3205,16 +3908,13 @@ export default function Home() {
 
       {stage === "intro" && (
         <section className={`${styles.centerCard} ${styles.introCard}`}>
-          <h2>Klar til et program, der faktisk passer til dig?</h2>
-          <p className={styles.subtle}>StridePilot starter ud fra dit niveau nu og justerer stille videre, når din træning viser hvad du responderer bedst på.</p>
-          <ul className={styles.bulletList}>
-            <li>Startniveauet matcher det du realistisk kan løbe lige nu</li>
-            <li>De næste uger justeres ud fra din feedback efter dine træningspas</li>
-            <li>Du får korte forklaringer, så planen føles gennemtænkt</li>
-          </ul>
+          <h2>{siteCopy.introTitle}</h2>
+          <p className={styles.subtle}>{siteCopy.introBody}</p>
+          <p className={styles.subtleInline}>{siteCopy.introBullets[0]}</p>
+          <p className={styles.subtleInline}>{siteCopy.introBullets[1]}</p>
           <div className={styles.topActions}>
             <button className={styles.primaryBtn} onClick={completeIntro}>
-              Kom i gang
+              {siteCopy.startLabel}
             </button>
           </div>
         </section>
@@ -3223,12 +3923,12 @@ export default function Home() {
       {stage === "profile" && (
         <section className={`${styles.card} ${styles.onboardingCard}`}>
           <div className={styles.onboardingHeader}>
-            <p className={styles.nextLabel}>Onboarding</p>
+            <p className={styles.nextLabel}>{ui.onboardingLabel}</p>
             <h2>{currentOnboardingStep.title}</h2>
-            <p className={styles.onboardingIntro}>{currentOnboardingStep.subtitle}</p>
+            {currentOnboardingStep.subtitle ? <p className={styles.onboardingIntro}>{currentOnboardingStep.subtitle}</p> : null}
           </div>
           <div className={styles.onboardingProgress}>
-            <p className={styles.nextLabel}>Trin {onboardingStep} af {onboardingSteps}</p>
+            <p className={styles.nextLabel}>{ui.onboardingStep}</p>
             <div className={styles.progressTrack}>
               <div className={styles.progressFill} style={{ width: `${(onboardingStep / onboardingSteps) * 100}%` }} />
             </div>
@@ -3237,54 +3937,25 @@ export default function Home() {
 
           {onboardingStep === 1 && (
             <div className={styles.sectionBlock}>
-              <h3>Navn og en kort note</h3>
-              <div className={styles.formGrid}>
-                <label>
-                  <span>Hvad skal jeg kalde dig?</span>
-                  <input
-                    type="text"
-                    value={runnerProfile.firstName ?? ""}
-                    onChange={(e) => setRunnerProfile((current) => ({ ...current, firstName: e.target.value.trimStart() }))}
-                    onBlur={(e) => setRunnerProfile((current) => ({ ...current, firstName: e.target.value.trim() }))}
-                    placeholder="Fx Anders"
-                  />
-                  <small className={styles.fieldHint}>Brug fornavn eller kaldenavn.</small>
-                </label>
-                <label>
-                  <span>Kort om dig lige nu</span>
-                  <textarea
-                    rows={3}
-                    className={styles.compactTextarea}
-                    value={runnerProfile.userTrainingContext ?? ""}
-                    onChange={(e) => setRunnerProfile((p) => ({ ...p, userTrainingContext: e.target.value }))}
-                    placeholder="Fx: Jeg vil gerne tilbage i rytme og bygge roligt op igen."
-                  />
-                  <small className={styles.fieldHint}>Et par ord er nok.</small>
-                </label>
-              </div>
-            </div>
-          )}
-
-          {onboardingStep === 2 && (
-            <div className={styles.sectionBlock}>
-              <h3>Hvad føles realistisk lige nu?</h3>
-              <div className={styles.abilityGrid}>
-                {CURRENT_RUNNING_ABILITY_OPTIONS.map((option) => {
-                  const active = onboardingSelections.runningAbility && runnerProfile.currentRunningAbility === option.value;
+              <div className={styles.choiceGrid}>
+                {onboardingTrackOptions.map((option) => {
+                  const active = onboardingSelections.track && runnerProfile.onboardingTrack === option.value;
                   return (
                     <button
                       key={option.value}
                       type="button"
-                      className={active ? styles.abilityCardActive : styles.abilityCard}
+                      className={active ? styles.choiceCardActive : styles.choiceCard}
                       onClick={() => {
-                        const derivedBaseline = deriveBaselineLoadFromAbility(option.value);
-                        setRunnerProfile((p) => ({
-                          ...p,
-                          currentRunningAbility: option.value,
-                          runningExperience: mapAbilityToRunningExperience(option.value),
-                          ...derivedBaseline,
+                        setRunnerProfile((current) => ({
+                          ...current,
+                          onboardingTrack: option.value,
+                          preferredGuidance:
+                            option.value === "getting_started" || option.value === "returning"
+                              ? current.preferredGuidance ?? "simple"
+                              : current.preferredGuidance,
                         }));
-                        setOnboardingSelections((current) => ({ ...current, runningAbility: true }));
+                        setPlanAmbition(defaultPlanAmbitionForTrack(option.value));
+                        setOnboardingSelections((current) => ({ ...current, track: true }));
                       }}
                     >
                       <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
@@ -3293,38 +3964,133 @@ export default function Home() {
                   );
                 })}
               </div>
-              <small className={styles.fieldHint}>Det hjælper mig med at ramme et roligt og realistisk udgangspunkt.</small>
+            </div>
+          )}
+
+          {onboardingStep === 2 && (
+            <div className={styles.sectionBlock}>
+              <div className={styles.formGrid}>
+                <label>
+                  <span>{siteLocale === "en" ? "Name" : "Navn"}</span>
+                  <input
+                    type="text"
+                    value={runnerProfile.firstName ?? ""}
+                    onChange={(e) => setRunnerProfile((current) => ({ ...current, firstName: e.target.value.trimStart() }))}
+                    onBlur={(e) => setRunnerProfile((current) => ({ ...current, firstName: e.target.value.trim() }))}
+                    placeholder={siteLocale === "en" ? "For example Alex" : "Fx Anders"}
+                  />
+                </label>
+              </div>
             </div>
           )}
 
           {onboardingStep === 3 && (
             <div className={styles.sectionBlock}>
-              <h3>Hvilken distance vil du bygge op til?</h3>
-              <div className={styles.choiceGrid}>
-                {GOAL_DISTANCE_OPTIONS.map((option) => {
-                  const active = onboardingSelections.goalDistance && goal.distance === option.value;
-                  return (
-                    <button
-                      key={option.value}
+              <div className={styles.formGrid}>
+                <label>
+                  <span>{siteLocale === "en" ? "How far can you run without stopping?" : "Hvor langt kan du realistisk løbe nu uden stop?"}</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder={siteLocale === "en" ? "For example 6.5 km" : "Fx 6,5 km"}
+                    value={capacityDistanceDraft}
+                    onChange={(event) => {
+                      const rawValue = event.target.value.replace(/[^\d,.-]/g, "").replace(".", ",");
+                      setCapacityDistanceDraft(rawValue);
+                      const parsedDistance = parseCurrentCapacityDistanceKm(rawValue);
+                      if (parsedDistance !== null) {
+                        applyCapacityBaseline(parsedDistance, runnerProfile.currentRunsPerWeek ?? 0);
+                      } else {
+                        setOnboardingSelections((current) => ({ ...current, runningAbility: false }));
+                      }
+                    }}
+                    aria-invalid={capacityDistanceDraft.length > 0 && capacityDistanceKm === null ? true : undefined}
+                  />
+                  <div className={styles.quickChipRow}>
+                    {CURRENT_CAPACITY_DISTANCE_QUICK_OPTIONS.map((distanceKm) => {
+                      const active = capacityDistanceKm === distanceKm;
+                      return (
+                        <button
+                          key={`capacity-${distanceKm}`}
+                          type="button"
+                          className={active ? styles.quickChipActive : styles.quickChip}
+                          onClick={() => {
+                            const nextDraft = String(distanceKm).replace(".", ",");
+                            setCapacityDistanceDraft(nextDraft);
+                            applyCapacityBaseline(distanceKm, runnerProfile.currentRunsPerWeek ?? 0);
+                          }}
+                        >
+                      {distanceKm >= 10 ? `${distanceKm}+ km` : `${distanceKm} km`}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {capacityDistanceDraft.length > 0 && capacityDistanceKm === null && (
+                    <small className={styles.warningText}>{siteLocale === "en" ? "Enter a realistic number between 0.5 and 30 km." : "Skriv et realistisk tal mellem 0,5 og 30 km."}</small>
+                  )}
+                </label>
+              </div>
+              <div className={styles.trainingDays}>
+                <p className={styles.daysLabel}>{siteLocale === "en" ? "How often do you run now?" : "Hvor mange gange løber du typisk nu?"}</p>
+                <div className={styles.choiceGrid}>
+                  {localizedCurrentRunsPerWeekOptions.map((option) => {
+                    const active = (runnerProfile.currentRunsPerWeek ?? 0) === option.value;
+                    return (
+                      <button
+                        key={`current-runs-${option.value}`}
                         type="button"
                         className={active ? styles.choiceCardActive : styles.choiceCard}
                         onClick={() => {
-                          setGoal((g) => ({ ...g, distance: option.value }));
-                          setOnboardingSelections((current) => ({ ...current, goalDistance: true, goalType: false }));
+                          const nextRuns = option.value;
+                          if (capacityDistanceKm !== null) {
+                            applyCapacityBaseline(capacityDistanceKm, nextRuns);
+                          } else {
+                            setRunnerProfile((current) => ({ ...current, currentRunsPerWeek: nextRuns }));
+                          }
                         }}
                       >
                         <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
                         <span className={styles.choiceText}>{option.label}</span>
                       </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {capacityDistanceKm !== null && (
+                <div className={styles.optionalSavedState}>
+                  <span className={styles.optionalSavedChip}>{siteLocale === "en" ? "Starting point" : "Udgangspunkt"}</span>
+                  <strong>{siteLocale === "en" ? `${formatDistanceLabel(capacityDistanceKm, siteLocale)} km without stopping` : `${formatDistanceLabel(capacityDistanceKm, siteLocale)} km uden stop`}</strong>
+                </div>
+              )}
+            </div>
+          )}
+
+          {onboardingStep === 4 && (
+            <div className={styles.sectionBlock}>
+              <div className={styles.choiceGrid}>
+                {localizedGoalDistanceOptions.map((option) => {
+                  const active = onboardingSelections.goalDistance && goal.distance === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={active ? styles.choiceCardActive : styles.choiceCard}
+                      onClick={() => {
+                        setGoal((g) => ({ ...g, distance: option.value }));
+                        setOnboardingSelections((current) => ({ ...current, goalDistance: true, goalType: false }));
+                      }}
+                    >
+                      <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
+                      <span className={styles.choiceText}>{option.label}</span>
+                    </button>
                   );
                 })}
               </div>
             </div>
           )}
 
-          {onboardingStep === 4 && (
+          {onboardingStep === 6 && (
             <div className={styles.sectionBlock}>
-              <h3>Hvad vil du gerne kunne på den distance?</h3>
               <div className={styles.choiceGrid}>
                 {filteredGoalTypeOptions.map((option) => {
                   const active = onboardingSelections.goalType && goal.goalType === option.value;
@@ -3348,14 +4114,11 @@ export default function Home() {
                   );
                 })}
               </div>
-              {filteredGoalTypeOptions.length < 4 && (
-                <small className={styles.fieldHint}>Jeg holder kun de mål åbne, der passer til dit niveau lige nu.</small>
-              )}
               <div className={styles.formGrid}>
                 {shouldShowGoalPaceInput(goal.goalType) && (
                   <label>
                     <span className={styles.labelRow}>
-                      Ønsket tempo (min/km)
+                      {siteLocale === "en" ? "Target pace (min/km)" : "Ønsket tempo (min/km)"}
                       <button type="button" className={styles.infoBtn} onClick={() => setOpenInfoField((field) => (field === "targetPace" ? null : "targetPace"))}>
                         i
                       </button>
@@ -3370,7 +4133,7 @@ export default function Home() {
                           setGoal((current) => updateGoalPace(current, "minute", nextDraft.minute, nextDraft));
                         }}
                       >
-                        <option value="">Min</option>
+                        <option value="">{siteLocale === "en" ? "Min" : "Min"}</option>
                         {PACE_MINUTE_OPTIONS.map((minute) => (
                           <option key={`pace-minute-${minute}`} value={String(minute)}>
                             {String(minute).padStart(2, "0")}
@@ -3387,7 +4150,7 @@ export default function Home() {
                           setGoal((current) => updateGoalPace(current, "second", nextDraft.second, nextDraft));
                         }}
                       >
-                        <option value="">Sek</option>
+                        <option value="">{siteLocale === "en" ? "Sec" : "Sek"}</option>
                         {PACE_SECOND_OPTIONS.map((second) => (
                           <option key={`pace-second-${second}`} value={String(second).padStart(2, "0")}>
                             {String(second).padStart(2, "0")}
@@ -3396,36 +4159,34 @@ export default function Home() {
                       </select>
                       <span className={styles.paceSuffix}>min/km</span>
                     </div>
-                    <small className={styles.fieldHint}>{goalPaceFieldHint(goal)}</small>
-                    {goal.targetPaceSecPerKm && <small className={styles.fieldHint}>Svarende til ca. {targetTimeFromPace(goal.distance, goal.targetPaceSecPerKm)} for {goal.distance}.</small>}
+                    {goal.targetPaceSecPerKm && <small className={styles.fieldHint}>{siteLocale === "en" ? `About ${targetTimeFromPace(goal.distance, goal.targetPaceSecPerKm)} for ${localizedGoalDistanceName(goal.distance, siteLocale)}.` : `Svarende til ca. ${targetTimeFromPace(goal.distance, goal.targetPaceSecPerKm)} for ${goal.distance}.`}</small>}
                     {openInfoField === "targetPace" && <small className={styles.infoTextBox}>{INFO_TEXT.targetPace}</small>}
                   </label>
                 )}
               </div>
               {(goal.goalType === "target_time" || goal.goalType === "pr") && !goal.targetPaceSecPerKm && (
-                <p className={styles.warningText}>Vælg et tempo for at fortsætte.</p>
+                <p className={styles.warningText}>{siteLocale === "en" ? "Choose a pace to continue." : "Vælg et tempo for at fortsætte."}</p>
               )}
             </div>
           )}
 
           {onboardingStep === 5 && (
             <div className={styles.sectionBlock}>
-              <h3>Rammerne for din uge</h3>
               <div className={styles.formGrid}>
                 <label>
-                  Typisk tid til et pas
+                  {siteLocale === "en" ? "Typical workout length" : "Typisk tid til et pas"}
                   <select
                     value={String(runnerProfile.typicalWorkoutMinutes ?? 45)}
                     onChange={(e) => setRunnerProfile((current) => ({ ...current, typicalWorkoutMinutes: Number(e.target.value) }))}
                   >
-                    <option value="30">Ca. 30 min</option>
-                    <option value="45">Ca. 45 min</option>
-                    <option value="60">Ca. 60 min</option>
+                    <option value="30">{siteLocale === "en" ? "About 30 min" : "Ca. 30 min"}</option>
+                    <option value="45">{siteLocale === "en" ? "About 45 min" : "Ca. 45 min"}</option>
+                    <option value="60">{siteLocale === "en" ? "About 60 min" : "Ca. 60 min"}</option>
                     <option value="75">75+ min</option>
                   </select>
                 </label>
                 <label>
-                  Hvornår vil du gerne starte?
+                  {siteLocale === "en" ? "Start date" : "Hvornår vil du gerne starte?"}
                   <input
                     type="date"
                     value={goal.startDate}
@@ -3436,32 +4197,26 @@ export default function Home() {
                 </label>
               </div>
               <div className={styles.trainingDays}>
-                <p className={styles.daysLabel}>Træningsdage</p>
-                <p className={styles.subtleInline}>Vælg de dage, der normalt passer bedst.</p>
-                <p className={styles.recommendationText}>{trainingDayRecommendation.reason}</p>
-                {trainingDayRecommendation.caution && <p className={styles.fieldHint}>{trainingDayRecommendation.caution}</p>}
+                <p className={styles.daysLabel}>{siteLocale === "en" ? "Training days" : "Træningsdage"}</p>
                 <div className={styles.daysGrid}>
                   {WEEK_DAY_NAMES.map((day) => {
                     const active = goal.availableTrainingDays?.includes(day);
                     return (
                       <button key={`day-${day}`} type="button" className={active ? styles.dayChipActive : styles.dayChip} onClick={() => toggleTrainingDay(day)}>
                         <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
-                        <span className={styles.choiceText}>{DAY_LABEL[day]}</span>
+                        <span className={styles.choiceText}>{dayLabel(day, siteLocale)}</span>
                       </button>
                     );
                   })}
                 </div>
-                {(goal.availableTrainingDays?.length ?? 0) < requiredRunsPerWeek(goal.distance) && (
-                  <p className={styles.warningText}>Du har valgt færre træningsdage, end planen normalt arbejder bedst med.</p>
-                )}
-                {(goal.availableTrainingDays?.length ?? 0) < trainingDayRecommendation.recommendedDays && (
-                  <p className={styles.warningText}>Det kan stadig fungere, men ofte med roligere fremgang eller lidt længere tidshorisont.</p>
+                {lowFrequencyOverridePrompt && (
+                  <p className={styles.warningText}>{siteLocale === "en" ? "For half marathon and marathon, I ask for an extra confirmation if you want to stay at 2 runs per week." : "Til halvmaraton og maraton beder jeg om en ekstra bekræftelse, hvis du vil holde dig til 2 pas om ugen."}</p>
                 )}
               </div>
               <div className={styles.trainingDays}>
-                <p className={styles.daysLabel}>Lang tur</p>
+                <p className={styles.daysLabel}>{siteLocale === "en" ? "Long run day" : "Lang tur"}</p>
                 <div className={styles.choiceGrid}>
-                  {LONG_RUN_DAY_OPTIONS.map((option) => {
+                  {localizedLongRunDayOptions.map((option) => {
                     const active = (goal.preferredLongRunDay ?? "both") === option.value;
                     return (
                       <button
@@ -3476,21 +4231,16 @@ export default function Home() {
                     );
                   })}
                 </div>
-                <small className={styles.fieldHint}>
-                  {LONG_RUN_DAY_OPTIONS.find((option) => option.value === (goal.preferredLongRunDay ?? "both"))?.help}
-                </small>
-                <small className={styles.fieldHint}>Det hjælper mig med at placere ugens længste pas dér, hvor det er lettest at få til at hænge sammen.</small>
               </div>
             </div>
           )}
 
-          {onboardingStep === 6 && (
+          {onboardingStep === 7 && (
             <div className={styles.sectionBlock}>
-              <h3>Tempoet i planen</h3>
               <div className={styles.trainingDays}>
-                <p className={styles.daysLabel}>Anden træning i hverdagen</p>
+                <p className={styles.daysLabel}>{siteLocale === "en" ? "Other training in your week" : "Anden træning i hverdagen"}</p>
                 <div className={styles.choiceGrid}>
-                  {ACTIVITY_LEVEL_OPTIONS.map((option) => {
+                  {localizedActivityLevelOptions.map((option) => {
                     const active = onboardingSelections.activityLevel && runnerProfile.activityLevel === option.value;
                     return (
                       <button
@@ -3508,26 +4258,13 @@ export default function Home() {
                   );
                 })}
                 </div>
-                <small className={styles.fieldHint}>{ACTIVITY_LEVEL_INFO[runnerProfile.activityLevel]}</small>
-              </div>
-              <div className={`${styles.formGrid} ${styles.secondarySetupBlock}`}>
-                <label>
-                  Andet jeg skal vide? (valgfrit)
-                  <textarea
-                    rows={2}
-                    className={styles.compactTextarea}
-                    value={runnerProfile.otherTraining ?? ""}
-                    onChange={(e) => setRunnerProfile((current) => ({ ...current, otherTraining: e.target.value }))}
-                    placeholder="Fx styrke, cykling eller en travl uge med lidt overskud"
-                  />
-                </label>
               </div>
               <div className={styles.formGrid}>
                 <label>
-                  Hvordan vil du helst bygge op?
+                  {siteLocale === "en" ? "Plan style" : "Hvordan vil du helst bygge op?"}
                 </label>
                 <div className={styles.choiceGrid}>
-                  {AMBITION_OPTIONS.map((option) => {
+                  {localizedAmbitionOptions.map((option) => {
                     const active = onboardingSelections.ambition && planAmbition === option.value;
                     return (
                       <button
@@ -3545,53 +4282,54 @@ export default function Home() {
                     );
                   })}
                 </div>
-                <small className={styles.fieldHint}>
-                  {AMBITION_OPTIONS.find((option) => option.value === planAmbition)?.help}
-                </small>
-              </div>
-            </div>
-          )}
-
-          {onboardingStep === 7 && (
-            <div className={styles.sectionBlock}>
-              <h3>Hensyn (valgfrit)</h3>
-              <div className={styles.formGrid}>
-                <label>
-                  Noget kroppen er følsom over for?
-                  <textarea
-                    rows={2}
-                    className={styles.compactTextarea}
-                    value={runnerProfile.injuryHistory ?? ""}
-                    onChange={(e) => setRunnerProfile((current) => ({ ...current, injuryHistory: e.target.value }))}
-                    placeholder="Fx akillessene, knæ eller noget du holder øje med"
-                  />
-                </label>
-                <label>
-                  Noget du helst vil styre uden om?
-                  <textarea
-                    rows={2}
-                    className={styles.compactTextarea}
-                    value={runnerProfile.weakPoints ?? ""}
-                    onChange={(e) => setRunnerProfile((current) => ({ ...current, weakPoints: e.target.value }))}
-                    placeholder="Fx for mange intervaller eller for stive uger"
-                  />
-                </label>
               </div>
             </div>
           )}
 
           {onboardingStep === 8 && (
             <div className={styles.sectionBlock}>
-              <h3>Finjustér planen (valgfrit)</h3>
+              <h3>{siteLocale === "en" ? "Constraints (optional)" : "Hensyn (valgfrit)"}</h3>
+              <div className={styles.formGrid}>
+                <label>
+                  {siteLocale === "en" ? "Anything your body is sensitive to?" : "Noget kroppen er følsom over for?"}
+                  <textarea
+                    rows={2}
+                    className={styles.compactTextarea}
+                    value={runnerProfile.injuryHistory ?? ""}
+                    onChange={(e) => setRunnerProfile((current) => ({ ...current, injuryHistory: e.target.value }))}
+                    placeholder={siteLocale === "en" ? "For example Achilles, knee, or anything you are keeping an eye on" : "Fx akillessene, knæ eller noget du holder øje med"}
+                  />
+                </label>
+                <label>
+                  {siteLocale === "en" ? "Anything you would prefer to avoid?" : "Noget du helst vil styre uden om?"}
+                  <textarea
+                    rows={2}
+                    className={styles.compactTextarea}
+                    value={runnerProfile.weakPoints ?? ""}
+                    onChange={(e) => setRunnerProfile((current) => ({ ...current, weakPoints: e.target.value }))}
+                    placeholder={siteLocale === "en" ? "For example too many intervals or weeks that feel too rigid" : "Fx for mange intervaller eller for stive uger"}
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
+          {onboardingStep === 9 && (
+            <div className={styles.sectionBlock}>
+              <h3>{siteLocale === "en" ? "Fine-tune the plan (optional)" : "Finjustér planen (valgfrit)"}</h3>
               <div className={styles.formGrid}>
                 <div className={styles.optionalSectionCard}>
                   <div className={styles.optionalSectionHeader}>
                     <div>
-                      <p className={styles.nextLabel}>Seneste relevante tid eller PR</p>
+                      <p className={styles.nextLabel}>{siteLocale === "en" ? "Recent relevant result or PR" : "Seneste relevante tid eller PR"}</p>
                       <p className={styles.subtleInline}>
                         {showRecentRaceFields
-                          ? "Brug kun den her, hvis du allerede har en tid, der er relevant at tage med."
-                          : "Kun relevant hvis du allerede har en tid, du vil lade planen læne sig lidt op ad."}
+                          ? siteLocale === "en"
+                            ? "Only use this if you already have a result that is relevant to include."
+                            : "Brug kun den her, hvis du allerede har en tid, der er relevant at tage med."
+                          : siteLocale === "en"
+                            ? "Only relevant if you already have a result you want the plan to lean on a little."
+                            : "Kun relevant hvis du allerede har en tid, du vil lade planen læne sig lidt op ad."}
                       </p>
                     </div>
                     <button
@@ -3608,14 +4346,14 @@ export default function Home() {
                         setShowRecentRaceFields(true);
                       }}
                     >
-                      {showRecentRaceFields ? "Fjern" : "Tilføj tid/PR"}
+                      {showRecentRaceFields ? (siteLocale === "en" ? "Remove" : "Fjern") : siteLocale === "en" ? "Add time/PR" : "Tilføj tid/PR"}
                     </button>
                   </div>
                   {(recentRaceDraftSummary ?? recentRaceSummary) && (
                     <div className={styles.optionalSavedState}>
-                      <span className={styles.optionalSavedChip}>Gemt</span>
+                      <span className={styles.optionalSavedChip}>{ui.program.saved}</span>
                       <strong>{recentRaceDraftSummary ?? recentRaceSummary}</strong>
-                      <span>Du kan stadig rette eller fjerne den.</span>
+                      <span>{siteLocale === "en" ? "You can still edit or remove it." : "Du kan stadig rette eller fjerne den."}</span>
                     </div>
                   )}
                   {showRecentRaceFields && (
@@ -3644,10 +4382,10 @@ export default function Home() {
                         })}
                       </div>
                       <div className={styles.optionalInputLabel}>
-                        <span>Tid</span>
+                        <span>{siteLocale === "en" ? "Time" : "Tid"}</span>
                         <div className={styles.timePickerGrid}>
                           <label className={styles.timePickerColumn}>
-                            <span>Timer</span>
+                            <span>{siteLocale === "en" ? "Hours" : "Timer"}</span>
                             <select
                               className={styles.timePickerSelect}
                               value={String(recentRaceTimeParts.hours)}
@@ -3662,7 +4400,7 @@ export default function Home() {
                             </select>
                           </label>
                           <label className={styles.timePickerColumn}>
-                            <span>Min</span>
+                            <span>{siteLocale === "en" ? "Min" : "Min"}</span>
                             <select
                               className={styles.timePickerSelect}
                               value={String(recentRaceTimeParts.minutes)}
@@ -3677,7 +4415,7 @@ export default function Home() {
                             </select>
                           </label>
                           <label className={styles.timePickerColumn}>
-                            <span>Sek</span>
+                            <span>{siteLocale === "en" ? "Sec" : "Sek"}</span>
                             <select
                               className={styles.timePickerSelect}
                               value={String(recentRaceTimeParts.seconds)}
@@ -3693,19 +4431,19 @@ export default function Home() {
                           </label>
                         </div>
                         <small className={styles.fieldHint}>
-                          Jeg viser {recentRaceTimeParts.hours > 0 ? "t:mm:ss" : "mm:ss"} i resuméet.
+                          {siteLocale === "en" ? `I show ${recentRaceTimeParts.hours > 0 ? "h:mm:ss" : "mm:ss"} in the summary.` : `Jeg viser ${recentRaceTimeParts.hours > 0 ? "t:mm:ss" : "mm:ss"} i resuméet.`}
                         </small>
                       </div>
                     </div>
                   )}
                   {showRecentRaceFields && (!recentRaceDraft.distance || !recentRaceDraftSummary) && (
-                    <small className={styles.fieldHint}>Vælg både distance og tid, hvis du vil gemme en seneste relevant tid.</small>
+                    <small className={styles.fieldHint}>{siteLocale === "en" ? "Choose both a distance and a time if you want to save a recent relevant result." : "Vælg både distance og tid, hvis du vil gemme en seneste relevant tid."}</small>
                   )}
                 </div>
                 <div className={`${styles.inlineFieldGrid} ${styles.secondarySetupBlock}`}>
-                  <p className={styles.subtleInline}>Resten er kun til finjustering. Du kan sagtens springe det over.</p>
+                  <p className={styles.subtleInline}>{siteLocale === "en" ? "The rest is only for fine-tuning. You can comfortably skip it." : "Resten er kun til finjustering. Du kan sagtens springe det over."}</p>
                   <label>
-                    Højde (cm)
+                    {siteLocale === "en" ? "Height (cm)" : "Højde (cm)"}
                     <input
                       type="number"
                       value={profileDraft.heightCm}
@@ -3720,7 +4458,7 @@ export default function Home() {
                     />
                   </label>
                   <label>
-                    Vægt (kg)
+                    {siteLocale === "en" ? "Weight (kg)" : "Vægt (kg)"}
                     <input
                       type="number"
                       value={profileDraft.weightKg}
@@ -3735,7 +4473,7 @@ export default function Home() {
                     />
                   </label>
                   <label>
-                    Alder
+                    {siteLocale === "en" ? "Age" : "Alder"}
                     <input
                       type="number"
                       value={profileDraft.age}
@@ -3752,9 +4490,9 @@ export default function Home() {
                 </div>
               </div>
               <div className={styles.trainingDays}>
-                <p className={styles.daysLabel}>Køn (valgfrit)</p>
+                <p className={styles.daysLabel}>{siteLocale === "en" ? "Gender (optional)" : "Køn (valgfrit)"}</p>
                 <div className={styles.choiceGrid}>
-                  {GENDER_OPTIONS.map((option) => {
+                  {localizedGenderOptions.map((option) => {
                     const active = runnerProfile.gender === option.value;
                     return (
                       <button
@@ -3777,7 +4515,7 @@ export default function Home() {
           <div className={styles.onboardingStickyNav}>
             <div className={styles.onboardingStickyNavInner}>
               <button className={styles.secondaryBtn} type="button" onClick={() => setOnboardingStep((step) => Math.max(1, step - 1))} disabled={onboardingStep === 1}>
-                Forrige
+                {ui.back}
               </button>
               {onboardingStep < onboardingSteps ? (
                 <button className={styles.primaryBtn} type="button" onClick={() => setOnboardingStep((step) => Math.min(onboardingSteps, step + 1))} disabled={!isOnboardingStepValid}>
@@ -3785,11 +4523,11 @@ export default function Home() {
                 </button>
               ) : (
                 <div className={styles.onboardingNavActions}>
-                  <button className={styles.secondaryBtnMuted} type="button" onClick={requestPlanRecommendation} disabled={isLoading}>
-                    Spring over
+                  <button className={styles.secondaryBtnMuted} type="button" onClick={() => void requestPlanRecommendation()} disabled={isLoading}>
+                    {ui.skip}
                   </button>
-                  <button className={styles.primaryBtn} onClick={requestPlanRecommendation} disabled={isLoading}>
-                    {isLoading ? "Henter plan..." : "Se min plan"}
+                  <button className={styles.primaryBtn} onClick={() => void requestPlanRecommendation()} disabled={isLoading}>
+                    {isLoading ? ui.loadingPlan : ui.showMyPlan}
                   </button>
                 </div>
               )}
@@ -3800,47 +4538,92 @@ export default function Home() {
 
       {stage === "intermezzo" && planRecommendation && (
         <section className={`${styles.centerCard} ${styles.intermezzoCard}`}>
-          <p className={styles.nextLabel}>Min anbefaling</p>
+          <p className={styles.nextLabel}>{ui.recommendation.title}</p>
           <p className={styles.subtle}>{recommendationLeadCopy}</p>
           <div className={styles.intermezzoGrid}>
             <div className={styles.intermezzoItem}>
-              <p>Anbefalet varighed</p>
-              <strong>{recommendedRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks} uger</strong>
+              <p>{ui.recommendation.recommendedDuration}</p>
+              <strong>{recommendedRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks} {siteLocale === "en" ? "weeks" : "uger"}</strong>
             </div>
             <div className={styles.intermezzoItem}>
-              <p>Realistisk spænd</p>
-              <strong>{planRecommendation.minDurationWeeks}–{planRecommendation.maxDurationWeeks} uger</strong>
+              <p>{ui.recommendation.realisticRange}</p>
+              <strong>{planRecommendation.minDurationWeeks}–{planRecommendation.maxDurationWeeks} {siteLocale === "en" ? "weeks" : "uger"}</strong>
             </div>
             <div className={styles.intermezzoItem}>
-              <p>Valgt vej</p>
-              <strong>{activeRecommendationOption?.label ?? "Anbefalet vej"}</strong>
+              <p>{ui.recommendation.selectedPath}</p>
+              <strong>{activeRecommendationOption ? recommendationRouteLabel(activeRecommendationOption.mode, siteLocale) : ui.recommendation.recommendedPath}</strong>
             </div>
             <div className={styles.intermezzoItem}>
-              <p>Planens længde</p>
-              <strong>{activeRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks} uger</strong>
+              <p>{ui.recommendation.selectedDuration}</p>
+              <strong>{activeRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks} {siteLocale === "en" ? "weeks" : "uger"}</strong>
             </div>
             <div className={styles.intermezzoItem}>
-              <p>Træningsrytme</p>
-              <strong>{Math.max(2, (activeRecommendationOption?.sessionsPerWeek ?? planRecommendation.recommendedSessionsPerWeek) - 1)} → {activeRecommendationOption?.sessionsPerWeek ?? planRecommendation.recommendedSessionsPerWeek} pas/uge</strong>
+              <p>{ui.recommendation.trainingRhythm}</p>
+              <strong>
+                {(activeRecommendationOption?.sessionsPerWeek ?? planRecommendation.recommendedSessionsPerWeek) === (goal.availableTrainingDays?.length ?? 0)
+                  ? `${activeRecommendationOption?.sessionsPerWeek ?? planRecommendation.recommendedSessionsPerWeek} ${siteLocale === "en" ? "runs/week" : "pas/uge"}`
+                  : `${Math.max(1, (activeRecommendationOption?.sessionsPerWeek ?? planRecommendation.recommendedSessionsPerWeek) - 1)} → ${activeRecommendationOption?.sessionsPerWeek ?? planRecommendation.recommendedSessionsPerWeek} ${siteLocale === "en" ? "runs/week" : "pas/uge"}`}
+              </strong>
             </div>
             <div className={styles.intermezzoItem}>
-              <p>Progressionstempo</p>
+              <p>{ui.recommendation.progressionTempo}</p>
               <strong>{recommendationProgressionLabel}</strong>
             </div>
             <div className={styles.intermezzoItem}>
-              <p>Planens niveau</p>
-              <strong>{activeRecommendationOption?.planLevelLabel ?? "Realistisk"}</strong>
+              <p>{ui.recommendation.planLevel}</p>
+              <strong>{activeRecommendationOption?.planLevelLabel ?? ui.recommendation.realistic}</strong>
             </div>
+          </div>
+          <div className={styles.intermezzoReason}>
+            <h3>{ui.recommendation.adjustDuration}</h3>
+            <p className={styles.subtleInline}>
+              {siteLocale === "en"
+                ? `I recommend ${recommendedRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks} weeks, but you can adjust it if you want to.`
+                : `Jeg anbefaler ${recommendedRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks} uger, men du kan justere, hvis du vil.`}
+            </p>
+            <div className={styles.durationAdjustRow}>
+              <button
+                type="button"
+                className={styles.secondaryBtnMuted}
+                onClick={() => updateRecommendationDuration((activeRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks) - 1)}
+                disabled={isLoading || (activeRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks) <= (durationEditBounds?.editableMinWeeks ?? planRecommendation.minDurationWeeks)}
+              >
+                {ui.recommendation.minusWeek}
+              </button>
+              <label className={styles.durationAdjustField}>
+                <span>{ui.recommendation.weeks}</span>
+                <input
+                  type="number"
+                  min={durationEditBounds?.editableMinWeeks ?? planRecommendation.minDurationWeeks}
+                  max={durationEditBounds?.editableMaxWeeks ?? planRecommendation.maxDurationWeeks}
+                  inputMode="numeric"
+                  value={activeRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks}
+                  onChange={(event) => updateRecommendationDuration(Number(event.target.value || planRecommendation.recommendedDurationWeeks))}
+                />
+              </label>
+              <button
+                type="button"
+                className={styles.secondaryBtnMuted}
+                onClick={() => updateRecommendationDuration((activeRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks) + 1)}
+                disabled={isLoading || (activeRecommendationOption?.durationWeeks ?? planRecommendation.recommendedDurationWeeks) >= (durationEditBounds?.editableMaxWeeks ?? planRecommendation.maxDurationWeeks)}
+              >
+                {ui.recommendation.plusWeek}
+              </button>
+            </div>
+            <p className={styles.subtleInline}>
+              {ui.recommendation.endDate}: {activeRecommendationOption?.goalDate ? new Date(`${activeRecommendationOption.goalDate}T12:00:00`).toLocaleDateString(siteLocale === "en" ? "en-GB" : "da-DK", { day: "numeric", month: "long", year: "numeric" }) : "—"}
+            </p>
+            {durationAdjustmentState?.note && <p className={styles.warningText}>{durationAdjustmentState.note}</p>}
           </div>
           {activeRecommendationOption?.wasAdjusted && activeRecommendationOption.adjustmentMessage && (
             <div className={styles.intermezzoReason}>
-              <h3>Justering</h3>
+              <h3>{ui.recommendation.adjustment}</h3>
               <p className={styles.subtleInline}>{activeRecommendationOption.adjustmentMessage}</p>
             </div>
           )}
           {recommendationWarnings.length > 0 && (
             <div className={styles.intermezzoReason}>
-              <h3>Vigtigt at vide</h3>
+              <h3>{siteLocale === "en" ? "Important to know" : "Vigtigt at vide"}</h3>
               {recommendationWarnings.map((warning, index) => (
                 <p key={`recommendation-warning-${index}`} className={styles.subtleInline}>
                   {warning}
@@ -3861,16 +4644,16 @@ export default function Home() {
                 onClick={() => selectRecommendationOption(option.mode)}
                 disabled={isLoading}
               >
-                {option.label}
+                {recommendationRouteLabel(option.mode, siteLocale)}
               </button>
             ))}
           </div>
           <div className={styles.topActions}>
             <button className={`${styles.primaryBtn} ${styles.recommendationPrimaryBtn}`} onClick={() => generatePlan()} disabled={isLoading}>
-              {isLoading ? "Genererer..." : "Brug denne anbefaling"}
+              {isLoading ? (siteLocale === "en" ? "Generating..." : "Genererer...") : siteLocale === "en" ? "Use this plan" : "Brug denne anbefaling"}
             </button>
             <button className={styles.secondaryBtn} onClick={() => setStage("profile")} disabled={isLoading}>
-              Ret mine svar
+              {siteLocale === "en" ? "Edit my answers" : "Ret mine svar"}
             </button>
           </div>
         </section>
@@ -3879,53 +4662,56 @@ export default function Home() {
       {stage === "program" && (
         <section className={styles.grid}>
           <article className={styles.card}>
-            {plan && (
-              <>
-                <div className={styles.programHeaderBlock}>
-                  <p className={styles.nextLabel}>Program</p>
-                  <h2>Dit næste skridt</h2>
-                  <p className={styles.subtle}>{programStatusLine}</p>
-                  {displayWeek !== weekNumber && <p className={styles.subtleInline}>Du kigger på uge {displayWeek} lige nu.</p>}
-                  {isDemoMode && <p className={styles.demoBadge}>Demo-mode aktiv</p>}
-                </div>
-                {showProgramIntro && (
-                  <div className={styles.programIntroBlock}>
-                    <p className={styles.subtleInline}>{profileInsightSummary ?? "Det vigtigste står øverst. Resten er kun baggrund."}</p>
-                  </div>
-                )}
-              </>
-            )}
+            {plan && !showProgramIntro && isDemoMode && <p className={`${styles.demoBadge} ${styles.programDemoBadge}`}>{siteLocale === "en" ? "Demo mode active" : "Demo-mode aktiv"}</p>}
 
             <div className={styles.programHeroGrid}>
               <div className={styles.todayCard}>
                 <p className={styles.nextLabel}>{todayActionState.label}</p>
-                <h3 className={!todaySession ? styles.restDayTitle : undefined}>{todaySession ? shortSessionTitle(todaySession.title) : todayActionState.emptyTitle}</h3>
+                <h3 className={!todaySession ? styles.restDayTitle : undefined}>{todaySession ? visibleSessionTitle(todaySession.title, siteLocale) : todayActionState.emptyTitle}</h3>
                 {todaySession ? (
                   <>
-                    <p className={styles.todayMeta}>{todayDuration} min · {formatDanishDateWithWeekday(new Date())}</p>
-                    <p className={styles.todayDescription}>{intervalSummary(todaySession)}</p>
-                    <p className={styles.todaySupport}>{sessionShortDescription(todaySession)}</p>
+                    <p className={styles.todayMeta}>{formatReadableDurationFromSeconds(todayDuration * 60)}</p>
+                    {todayWorkoutProfile && (
+                      <div className={styles.dayIntensityBar} aria-hidden="true">
+                        {todayWorkoutProfile.map((segment, index) => (
+                          <span
+                            key={`${todaySession.id}-today-intensity-${index}`}
+                            className={`${styles.dayIntensitySegment} ${
+                              segment.level === "hard"
+                                ? styles.dayIntensityHard
+                                : segment.level === "moderate"
+                                  ? styles.dayIntensityModerate
+                                  : segment.level === "easy"
+                                    ? styles.dayIntensityEasy
+                                    : styles.dayIntensityRest
+                            }`}
+                            style={{ flexGrow: Math.max(1, segment.durationSec) }}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>
-                    <p className={styles.restDayBadge}>Ro</p>
-                    <p className={styles.todayDescription}>{todayActionState.description}</p>
-                    <p className={styles.todaySupport}>{todayActionState.support}</p>
+                    <p className={styles.restDayBadge}>{siteLocale === "en" ? "Calm day" : "Rolig dag"}</p>
+                    {nextSession && (
+                      <p className={styles.todayMeta}>
+                        {siteLocale === "en" ? `Next run: ${nextWorkoutDayLabel}` : `Næste tur: ${nextWorkoutDayLabel}`}
+                      </p>
+                    )}
                   </>
                 )}
                 {todaySession ? (
                   <button
-                    ref={todayPrimaryCtaRef}
                     className={styles.primaryBtn}
                     onClick={() => {
                       openWorkoutSession(todaySession.id);
                     }}
                   >
-                    {todayActionState.ctaLabel}
+                    {siteLocale === "en" ? "Start run" : "Start tur"}
                   </button>
                 ) : nextSession ? (
                   <button
-                    ref={todayPrimaryCtaRef}
                     className={`${styles.secondaryBtn} ${styles.secondaryBtnMuted}`}
                     onClick={() => {
                       revealWeekOverview({ focusNextWorkout: true });
@@ -3935,7 +4721,6 @@ export default function Home() {
                   </button>
                 ) : (
                   <button
-                    ref={todayPrimaryCtaRef}
                     className={`${styles.secondaryBtn} ${styles.secondaryBtnMuted}`}
                     onClick={() => {
                       revealWeekOverview();
@@ -3947,27 +4732,22 @@ export default function Home() {
               </div>
               <div className={styles.programSecondaryStack}>
                 {nextWorkoutState.visible && (
-                  <div className={`${styles.goalCard} ${styles.goalCardSecondary} ${styles.programSecondaryCard}`}>
-                    <p className={styles.nextLabel}>Næste planlagte pas</p>
-                    <h3>{shortSessionTitle(nextWorkoutState.title)}</h3>
+                  <div className={`${styles.goalCard} ${styles.goalCardSecondary} ${styles.programSecondaryCard} ${nextSession && isGoalEventSession(nextSession) ? styles.goalCardGoalEvent : ""}`}>
+                    <p className={styles.nextLabel}>{siteLocale === "en" ? "Next planned workout" : "Næste planlagte pas"}</p>
+                    <h3>{nextSession ? sessionDisplayTitle(nextSession, goal.distance, siteLocale) : visibleSessionTitle(nextWorkoutState.title, siteLocale)}</h3>
+                    {nextSession && isGoalEventSession(nextSession) && <p className={styles.goalEventTag}>{goalEventDistanceLabel(goal.distance, siteLocale)} · {siteLocale === "en" ? "race day" : "måldag"}</p>}
                     {nextWorkoutState.meta && <p className={styles.subtleInline}>{nextWorkoutState.meta}</p>}
-                    <p className={styles.goalCardMeta}>
-                      {todaySession ? "Klar efter dagens pas." : "Det her er det næste pas i planen."}
-                    </p>
                   </div>
                 )}
 
                 {plan && currentWeeklyLoad.length > 0 && (
                   <div className={`${styles.chartCard} ${styles.chartCardCompact} ${styles.chartCardMinimal} ${styles.programProgressCard}`}>
-                    <p className={styles.nextLabel}>Fremdrift</p>
+                    <p className={styles.nextLabel}>{ui.program.progress}</p>
                     {progressGraphState.visible && (
                       <div className={styles.progressMiniChart}>
                         <div className={styles.chartMetaRow}>
-                          <span className={styles.chartActiveWeek}>Valgt uge: U{displayWeek}</span>
-                          <span>Uge {progressGraphState.windowStartWeek}–{progressGraphState.windowEndWeek}</span>
-                          {(progressGraphState.hasHiddenBefore || progressGraphState.hasHiddenAfter) && (
-                            <span className={styles.chartMetaHint}>Tryk på en uge for at åbne den i programmet</span>
-                          )}
+                          <span className={styles.chartActiveWeek}>{ui.program.selectedWeek}</span>
+                          <span>{ui.program.weekRange(progressGraphState.windowStartWeek, progressGraphState.windowEndWeek)}</span>
                         </div>
                         <div
                           className={styles.barRow}
@@ -3984,8 +4764,8 @@ export default function Home() {
                               }}
                               aria-pressed={bar.isCurrent}
                               aria-current={bar.isCurrent ? "true" : undefined}
-                              aria-label={`Vis uge ${bar.week}`}
-                              title={`Vis uge ${bar.week}`}
+                              aria-label={ui.program.viewWeek(bar.week)}
+                              title={ui.program.viewWeek(bar.week)}
                             >
                               <div className={styles.barTrackMini}>
                                 <div
@@ -3997,41 +4777,35 @@ export default function Home() {
                             </button>
                           ))}
                         </div>
-                        <svg viewBox="0 0 120 28" preserveAspectRatio="none" className={styles.lineChart} role="img" aria-label="Oprindelig og nuværende plan">
+                        <svg viewBox="0 0 120 28" preserveAspectRatio="none" className={styles.lineChart} role="img" aria-label={siteLocale === "en" ? "Original and current plan" : "Oprindelig og nuværende plan"}>
                           {progressGraphState.showBaselineSeries && <path d={progressGraphState.baselinePath} className={styles.baselinePath} />}
                           <path d={progressGraphState.path} className={styles.currentPath} />
-                          {progressGraphState.points.map((point) => (
-                            <circle
-                              key={point.week}
-                              className={point.isCurrent ? styles.progressMiniChartPointActive : styles.progressMiniChartPoint}
-                              cx={point.x}
-                              cy={point.y}
-                              r={point.isCurrent ? 2.3 : 1.6}
-                            />
-                          ))}
+                          {progressGraphState.points
+                            .filter((point) => point.isCurrent)
+                            .map((point) => <circle key={point.week} className={styles.progressMiniChartPointActive} cx={point.x} cy={point.y} r={2.5} />)}
                         </svg>
                         <div className={styles.chartLegend}>
                           {progressGraphState.showBaselineSeries && (
                             <span className={styles.chartLegendItem}>
                               <i className={styles.baselineDot} />
                               <span>
-                                <strong className={styles.chartLegendLabel}>Oprindelig plan</strong>
-                                <small className={styles.chartLegendHint}>Programmet som det så ud fra start</small>
+                                <strong className={styles.chartLegendLabel}>{ui.program.originalPlan}</strong>
+                                <small className={styles.chartLegendHint}>{ui.program.fromStart}</small>
                               </span>
                             </span>
                           )}
                           <span className={styles.chartLegendItem}>
                             <i className={styles.currentDot} />
                             <span>
-                              <strong className={styles.chartLegendLabel}>Nuværende plan</strong>
-                              <small className={styles.chartLegendHint}>Planen efter dine justeringer</small>
+                                <strong className={styles.chartLegendLabel}>{ui.program.currentPlan}</strong>
+                                <small className={styles.chartLegendHint}>{ui.program.afterAdjustments}</small>
                             </span>
                           </span>
                           <span className={styles.chartLegendItem}>
                             <i className={styles.progressLegendCurrent} />
                             <span>
-                              <strong className={styles.chartLegendLabel}>Aktuel uge</strong>
-                              <small className={styles.chartLegendHint}>Den uge du kigger på lige nu</small>
+                                <strong className={styles.chartLegendLabel}>{ui.program.currentWeek}</strong>
+                                <small className={styles.chartLegendHint}>{ui.program.selectedNow}</small>
                             </span>
                           </span>
                         </div>
@@ -4050,53 +4824,27 @@ export default function Home() {
               </div>
             </div>
 
-            <div className={styles.programMoreSection}>
-              <button
-                type="button"
-                className={`${styles.programMoreToggle} ${styles.programMoreToggleMuted}`}
-                onClick={() => setShowProgramMore((value) => !value)}
-                aria-expanded={showProgramMore}
-              >
-                <span>
-                  <strong>Vis mere</strong>
-                  <small>Ugeoverblik, justeringer og noter</small>
-                </span>
-                <span>{showProgramMore ? "−" : "+"}</span>
-              </button>
-            </div>
-
-            {showProgramMore && (
-              <div className={styles.programDetailStack}>
-                <div className={`${styles.goalCard} ${styles.goalCardSecondary} ${styles.programDetailCard}`}>
-                  <p className={styles.nextLabel}>{weekState.title}</p>
-                  <h3>Fokus lige nu</h3>
-                  <p className={styles.subtleInline}>{weeklyFocusSummary}</p>
-                  {weeklyFocusSupport && weeklyFocusSupport !== weeklyFocusSummary && <p className={styles.goalCardMeta}>{weeklyFocusSupport}</p>}
-                  {planFeasibilityStatus === "feasible_with_adjustments" && planTradeoff && (
-                    <p className={styles.subtleInline}>{planTradeoff}</p>
-                  )}
-                </div>
-
+            <div className={styles.programDetailStack}>
                 <div className={`${styles.programSection} ${styles.programSectionMuted} ${styles.programDetailCard}`}>
                   <div className={styles.programSectionHeader}>
                     <div>
-                      <p className={styles.nextLabel}>Nuværende uge</p>
-                      <h3>Overblik over uge {displayWeek}</h3>
+                        <p className={styles.nextLabel}>{ui.program.currentWeekTitle}</p>
+                        <h3>{ui.program.overviewOfWeek(displayWeek)}</h3>
                     </div>
                   </div>
                   {plan && (
                     <div className={styles.progressSummaryGrid}>
                       <div className={styles.valueCard}>
-                        <p>Ugens load</p>
+                        <p>{ui.program.weeklyLoad}</p>
                         <strong>{currentWeekLoad ? currentWeekLoad.load.toFixed(1).replace(".", ",") : "0,0"}</strong>
                       </div>
                       <div className={styles.valueCard}>
-                        <p>Længste sammenhængende løb</p>
+                        <p>{ui.program.longestRun}</p>
                         <strong>{formatMinutesLabel(currentWeekLongestContinuousRunSec)}</strong>
                       </div>
                       <div className={styles.valueCard}>
-                        <p>Næste måldag</p>
-                        <strong>{goalDestinationSession ? shortSessionTitle(goalDestinationSession.title) : "—"}</strong>
+                        <p>{ui.program.nextGoalDay}</p>
+                        <strong>{goalDestinationSession ? sessionDisplayTitle(goalDestinationSession, goal.distance, siteLocale) : "—"}</strong>
                       </div>
                     </div>
                   )}
@@ -4104,11 +4852,11 @@ export default function Home() {
                     <div ref={programWeekRef}>
                       <div className={styles.topActions}>
                         <button className={styles.secondaryBtn} onClick={() => setVisibleWeek(Math.max(1, displayWeek - 1))} disabled={displayWeek <= 1}>
-                          Forrige uge
+                          {ui.program.previousWeek}
                         </button>
-                        <span className={styles.weekLabel}>Uge {displayWeek}</span>
+                        <span className={styles.weekLabel}>{siteLocale === "en" ? `Week ${displayWeek}` : `Uge ${displayWeek}`}</span>
                         <button className={styles.secondaryBtn} onClick={() => setVisibleWeek(Math.min(plan.weeks, displayWeek + 1))} disabled={displayWeek >= plan.weeks}>
-                          Næste uge
+                          {ui.program.nextWeek}
                         </button>
                       </div>
                     </div>
@@ -4117,8 +4865,9 @@ export default function Home() {
                     {calendarWeekDates.map((date) => {
                       const daySession = sessionsByDate.get(date.toISOString().slice(0, 10));
                       const daySessionFeedback = daySession ? sessionFeedbackMap[daySession.id] ?? null : null;
+                      const sessionIntensityProfile = deriveWorkoutProfile(daySession);
                       const isToday = date.toDateString() === new Date().toDateString();
-                      const isGoalDay = Boolean(daySession && /Måldag|test/i.test(daySession.title));
+                      const isGoalDay = Boolean(daySession && isGoalEventSession(daySession));
                       const isNextWorkout = shouldHighlightNextWorkout(daySession, nextSession?.id ?? null);
                       const visualState = getProgramDayVisualState(daySession, daySessionFeedback);
                       const cardStateClass =
@@ -4135,148 +4884,96 @@ export default function Home() {
                           onClick={() => {
                             if (daySession) {
                               setSelectedSessionId(daySession.id);
-                              openWorkoutSession(daySession.id);
-                            } else {
-                              setRestDayPrompt({ dateLabel: formatDanishDateWithWeekday(date), showIdeas: false });
+                              setFocusedProgramDayIso(date.toISOString());
                             }
                           }}
                         >
-                          <strong>{formatDanishDateWithWeekday(date)}</strong>
+                          <p className={styles.dayCardWeekday}>{dayLabel(daySession?.dayOfWeek ?? WEEK_DAY_NAMES[(date.getDay() + 6) % 7]!, siteLocale).toUpperCase()}</p>
+                          <span className={styles.dayCardDate}>{formatDateWithWeekday(date, siteLocale).split(":")[0]}</span>
                           {daySession ? (
-                            <span>
-                              {daySession.title}
-                              {` · ca. ${Math.round(sessionTotalDurationSec(daySession) / 60)} min`}
-                              {daySessionFeedback ? ` · ${savedFeedbackStatusLabel(daySessionFeedback.status)}` : ""}
-                              {isNextWorkout ? " · Næste pas" : ""}
-                              {/Måldag|test/i.test(daySession.title) ? " · Måldag" : ""}
-                            </span>
+                            <>
+                              <strong>{sessionDisplayTitle(daySession, goal.distance, siteLocale)}</strong>
+                              {sessionIntensityProfile && (
+                                <div className={styles.dayIntensityBar} aria-hidden="true">
+                                  {sessionIntensityProfile.map((segment, index) => (
+                                    <span
+                                      key={`${daySession.id}-intensity-${index}`}
+                                      className={`${styles.dayIntensitySegment} ${
+                                        segment.level === "hard"
+                                          ? styles.dayIntensityHard
+                                          : segment.level === "moderate"
+                                            ? styles.dayIntensityModerate
+                                            : segment.level === "easy"
+                                              ? styles.dayIntensityEasy
+                                              : styles.dayIntensityRest
+                                      }`}
+                                      style={{ flexGrow: Math.max(1, segment.durationSec) }}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                              <span>
+                                {`${Math.round(sessionTotalDurationSec(daySession) / 60)} min`}
+                                {daySessionFeedback ? ` · ${savedFeedbackStatusLabel(daySessionFeedback.status, siteLocale)}` : ""}
+                                {isNextWorkout ? ` · ${ui.program.nextWorkout}` : ""}
+                              </span>
+                            </>
                           ) : (
-                            <span>Hvile, let bevægelse og plads til at lande ugen.</span>
+                            <span>{siteLocale === "en" ? "Calm day" : "Rolig dag"}</span>
                           )}
                         </button>
                       );
                     })}
                   </div>
-                  {restDayPrompt && (
-                    <div className={styles.restPromptCard}>
-                      <h3>Restitutionsdag</h3>
-                      <p className={styles.subtleInline}>{restDayPrompt.dateLabel}</p>
-                      <p className={styles.subtleInline}>Ingen planlagt løbetræning. Vil du have et par lette forslag i stedet?</p>
-                      <div className={styles.topActions}>
-                        <button className={styles.secondaryBtn} type="button" onClick={() => setRestDayPrompt({ ...restDayPrompt, showIdeas: true })}>
-                          Vis forslag
-                        </button>
-                        <button className={styles.secondaryBtnMuted} type="button" onClick={() => setRestDayPrompt(null)}>
-                          Luk
-                        </button>
-                      </div>
-                      {restDayPrompt.showIdeas && (
-                        <ul className={styles.bulletList}>
-                          <li>20-30 min gåtur</li>
-                          <li>10 min mobilitet</li>
-                          <li>Let styrke eller core</li>
-                          <li>Rolig cykling uden at presse</li>
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {(planWarnings.length > 0 || programAdjustments.length > 0 || savedAdaptations.length > 0 || (!isDemoMode && profileId)) && (
-                  <div className={`${styles.safetyCard} ${programAdjustmentState.kind === "none" ? styles.safetyCardMuted : ""} ${styles.programDetailCard}`}>
-                    <div className={styles.programSectionHeader}>
-                      <div>
-                        <p className={styles.nextLabel}>Programjusteringer</p>
-                        <h3>{programAdjustmentState.headline}</h3>
-                      </div>
-                      <span className={`${styles.sectionTonePill} ${styles[`sectionTonePill${programAdjustmentToneAppearance[0].toUpperCase()}${programAdjustmentToneAppearance.slice(1)}`]}`}>{programAdjustmentState.toneLabel}</span>
-                    </div>
-                    <p className={styles.subtleInline}>{programAdjustmentState.summary}</p>
-                    {visibleAdjustmentHighlights.length > 0 && (
-                      <ul className={styles.bulletList}>
-                        {visibleAdjustmentHighlights.map((item, index) => (
-                          <li key={`adjustment-highlight-${index}`}>{coachAdjustmentCopy(item)}</li>
-                        ))}
-                      </ul>
-                    )}
-                    {hasMoreSafetyAdjustments && (
-                      <button className={styles.textBtn} type="button" onClick={() => setShowAllSafety((value) => !value)}>
-                        {showAllSafety ? "Vis mindre" : "Se alle justeringer"}
-                      </button>
-                    )}
-                    {!isDemoMode && profileId && (
-                      <div className={styles.savedFeedbackCard}>
-                        <h3>Egne noter</h3>
-                        <p className={styles.subtleInline}>Gem korte noter om søvn, belastning eller noget du vil huske til næste uge.</p>
-                        <label>
-                          <textarea
-                            value={noteDraft}
-                            onChange={(event) => setNoteDraft(event.target.value)}
-                            placeholder="Fx: lidt tunge ben efter uge 4, men søvnen var også dårlig."
-                            rows={3}
-                          />
-                        </label>
-                        <div className={styles.topActions}>
-                          <button className={styles.secondaryBtn} type="button" onClick={saveProfileNote} disabled={!noteDraft.trim() || noteSaveState === "saving"}>
-                            {noteSaveState === "saving" ? "Gemmer..." : noteSaveState === "saved" ? "Gemt" : "Gem note"}
-                          </button>
-                        </div>
-                        {savedNotes.length > 0 && (
-                          <ul className={styles.bulletList}>
-                            {savedNotes.slice(0, 3).map((note) => (
-                              <li key={note.id}>
-                                {new Date(note.createdAt).toLocaleDateString("da-DK")} · {note.text}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className={`${styles.insightCard} ${programInsightState.isEmpty ? styles.insightCardMuted : ""} ${styles.programDetailCard}`}>
-                  <p className={styles.nextLabel}>Træningsindsigter</p>
-                  <h3>{programInsightState.title}</h3>
-                  <p className={styles.subtleInline}>{programInsightState.summary}</p>
-                  {programInsightState.isEmpty ? (
-                    <>
-                      <p className={styles.subtleInline}>{programInsightState.body}</p>
-                      {programInsightState.cta && <p className={styles.insightPrompt}>{programInsightState.cta}</p>}
-                    </>
-                  ) : (
-                    <ul className={styles.bulletList}>
-                      {programInsightState.bullets.map((line, index) => (
-                        <li key={`learned-insight-${index}`}>{line}</li>
-                      ))}
-                    </ul>
-                  )}
                 </div>
               </div>
+            {focusedProgramSession && focusedProgramDate && (
+              <section className={styles.inlineOverlay}>
+                <div className={styles.inlineOverlayBackdrop} onClick={() => setFocusedProgramDayIso(null)} />
+                <article className={styles.inlineOverlayCard}>
+                  {(() => {
+                    const focusedIntensityProfile = deriveWorkoutProfile(focusedProgramSession);
+                    return (
+                      <>
+                  <p className={styles.dayFocusWeekday}>{dayLabel(focusedProgramSession.dayOfWeek, siteLocale).toUpperCase()}</p>
+                  <h3>{sessionDisplayTitle(focusedProgramSession, goal.distance, siteLocale)}</h3>
+                  <p className={styles.subtleStrong}>{formatReadableDurationFromSeconds(sessionTotalDurationSec(focusedProgramSession))}</p>
+                  <p className={styles.dayFocusStructure}>{sessionStructureSummary(focusedProgramSession, siteLocale)}</p>
+                  {focusedIntensityProfile && (
+                    <div className={styles.dayIntensityBar} aria-hidden="true">
+                      {focusedIntensityProfile.map((segment, index) => (
+                        <span
+                          key={`${focusedProgramSession.id}-focus-intensity-${index}`}
+                          className={`${styles.dayIntensitySegment} ${
+                            segment.level === "hard"
+                              ? styles.dayIntensityHard
+                              : segment.level === "moderate"
+                                ? styles.dayIntensityModerate
+                                : segment.level === "easy"
+                                  ? styles.dayIntensityEasy
+                                  : styles.dayIntensityRest
+                          }`}
+                          style={{ flexGrow: Math.max(1, segment.durationSec) }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <div className={styles.topActions}>
+                    <button type="button" className={styles.primaryBtn} onClick={() => openWorkoutSession(focusedProgramSession.id)}>
+                      {siteLocale === "en" ? "Start run" : "Start tur"}
+                    </button>
+                    <button type="button" className={styles.textBtn} onClick={() => setFocusedProgramDayIso(null)}>
+                      {siteLocale === "en" ? "Back" : "Tilbage"}
+                    </button>
+                  </div>
+                      </>
+                    );
+                  })()}
+                </article>
+              </section>
             )}
           </article>
 
-          {stickyProgramCtaLabel && (
-            <div className={`${styles.programStickyCta} ${!showStickyProgramCta ? styles.programStickyCtaHidden : ""}`}>
-              <div className={styles.programStickyInner}>
-                <button
-                  type="button"
-                  className={styles.primaryBtn}
-                  onClick={() => {
-                    if (todaySession) {
-                      openWorkoutSession(todaySession.id);
-                      return;
-                    }
-                    if (nextSession) {
-                      openWorkoutSession(nextSession.id);
-                    }
-                  }}
-                >
-                  {stickyProgramCtaLabel}
-                </button>
-              </div>
-            </div>
-          )}
         </section>
       )}
 
@@ -4285,305 +4982,138 @@ export default function Home() {
           <div className={styles.workoutOverlay}>
         <section className={styles.grid}>
           <article className={styles.card}>
-            {!activeSession && <p>Vælg et træningspas i programmet først.</p>}
-            {activeSession && currentStep && !workoutCompleted && (
+            {!activeSession && <p>{ui.workout.chooseWorkout}</p>}
+            {activeSession && currentStep && !workoutCompleted && workoutStartCountdown !== null && (
+              <div className={styles.workoutCountdownCard}>
+                <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label={ui.workout.closeWorkoutAria}>
+                  {workoutActionState.closeLabel}
+                </button>
+                <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Starting" : "Starter"}</p>
+                <h2 className={styles.workoutCountdownTitle}>{sessionDisplayTitle(activeSession, goal.distance, siteLocale)}</h2>
+                <p className={styles.subtleInline}>
+                  {isGoalEventSession(activeSession)
+                    ? `${goalEventDistanceLabel(goal.distance, siteLocale)} · ${siteLocale === "en" ? "race day" : "måldag"}`
+                    : formatReadableDurationFromSeconds(activeSessionDuration * 60)}
+                </p>
+                <div className={styles.workoutCountdownNumber}>{workoutStartCountdown}</div>
+              </div>
+            )}
+            {activeSession && currentStep && !workoutCompleted && workoutStartCountdown === null && (
               <>
-                <div className={styles.workoutTopBar}>
-                  <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label="Luk træningspas">
+                <div className={styles.workoutCompactTopBar}>
+                  <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label={ui.workout.closeWorkoutAria}>
                     {workoutActionState.closeLabel}
                   </button>
-                  <div className={styles.workoutHeaderCenter}>
-                    <p className={styles.workoutWeekContext}>Uge {activeSession.week}</p>
-                    <h2 className={styles.workoutHeaderTitle}>{shortSessionTitle(activeSession.title)}</h2>
-                  </div>
-                  <p className={styles.workoutDurationBadge}>Ca. {activeSessionDuration} min</p>
+                  <span className={styles.workoutCompactProgress}>{stepIndex + 1} / {activeSession.steps.length}</span>
                 </div>
-                <div className={`${styles.workoutPurposeCard} ${styles.workoutPurposeCardMuted}`}>
-                  <p className={styles.workoutMiniLabel}>Pas i dag</p>
-                  <p className={styles.subtleInline}>{activeWorkoutPurpose}</p>
-                </div>
-                {activeSessionFeedback && (
-                  <div className={styles.savedFeedbackCard}>
-                    <p className={styles.confirmationBadge}>Gemt feedback</p>
-                    <h3>Dette træningspas er allerede logget</h3>
-                    <div className={styles.savedFeedbackChips}>
-                      <span>{savedFeedbackStatusLabel(activeSessionFeedback.status)}</span>
-                      <span>{savedFeedbackEnergyLabel(activeSessionFeedback.energy)}</span>
-                      <span>{savedFeedbackPainLabel(activeSessionFeedback.painLevel)}</span>
-                      <span>Belastning {activeSessionFeedback.effort}/10</span>
-                    </div>
-                    {activeSessionFeedback.quickFeedback && (
-                      <p className={styles.subtleInline}>Vurdering: {QUICK_FEEDBACK_OPTIONS.find((option) => option.value === activeSessionFeedback.quickFeedback)?.label ?? "Gemte signaler"}</p>
-                    )}
-                    {activeSessionFeedback.notes && <p className={styles.subtleInline}>Note: {activeSessionFeedback.notes}</p>}
-                    <p className={styles.subtleInline}>Gemt {formatSubmittedAt(activeSessionFeedback.submittedAt)}</p>
-                  </div>
-                )}
-                {workoutAudioStatus && <p className={styles.ttsStatus}>{workoutAudioStatus}</p>}
                 {workoutInterruptionNotice && <p className={styles.workoutStatusNotice}>{workoutInterruptionNotice}</p>}
                 <div className={styles.liveWorkoutCard}>
-                  <div className={styles.liveWorkoutMeta}>
-                    <p className={styles.phaseLabel}>{phaseName(currentStep).toUpperCase()}</p>
-                    <p className={styles.subtleStrong}>
-                      {stepIndex + 1} / {activeSession.steps.length}
-                      {isLastWorkoutStep && <span className={styles.finalStepTag}>Sidste interval</span>}
-                    </p>
-                  </div>
-                  <div className={styles.timerBig}>{formatClock(remainingSec)}</div>
-                  <p className={styles.instruction}>{coachingHint(currentStep)}</p>
-                  {currentStepHeartRateGuidance && <p className={styles.heartRateHint}>{currentStepHeartRateGuidance}</p>}
-                  <div className={styles.progressTrack}>
-                    <div className={styles.progressFill} style={{ width: `${stepProgress}%` }} />
-                  </div>
                   {stepNotice && <p className={styles.stepNotice}>{stepNotice}</p>}
-                </div>
-
-                <div className={`${styles.nextCueCard} ${workoutCueState.tone === "muted" ? styles.nextCueCardMuted : ""}`}>
-                  <p className={styles.workoutMiniLabel}>{workoutCueState.label}</p>
-                  <h3>{workoutCueState.title}</h3>
-                  <p className={workoutCueState.tone === "active" ? styles.cueFallback : styles.subtleInline}>{workoutCueState.detail}</p>
-                  {workoutCueState.secondaryDetail && <p className={styles.heartRateHintSecondary}>{workoutCueState.secondaryDetail}</p>}
+                  <p className={styles.phaseLabel}>{phaseName(currentStep, siteLocale)}</p>
+                  <div className={styles.timerBig}>{formatClock(remainingSec)}</div>
+                  <p className={styles.instruction}>{coachingHint(currentStep, siteLocale)}</p>
+                  {isLastWorkoutStep && (
+                    <p className={styles.workoutFinalHint}>{siteLocale === "en" ? "Ready to finish the workout." : "Passet er klar til at blive afsluttet."}</p>
+                  )}
                 </div>
 
                 <div className={styles.workoutPrimaryAction}>
-                  <button
-                    className={styles.primaryBtn}
-                    onClick={() => {
-                      setIsRunning((v) => {
-                        const next = !v;
-                        if (!next) cancelCue();
-                        if (next && !speechEnabled && audioMode !== "off") {
-                          const initialized = initSpeech();
-                          setSpeechEnabled(initialized);
-                          setTtsSupported(isSpeechSupported());
-                        }
-                        if (audioMode === "off") {
-                          setSpeechEnabled(false);
-                        }
-                        if (next) {
-                          setWorkoutInterruptionNotice(null);
-                          lastTickAtRef.current = Date.now();
-                        }
-                        return next;
-                      });
-                    }}
-                  >
-                    {workoutActionState.primaryLabel}
-                  </button>
-                  <div className={styles.workoutManualControls}>
-                    <p className={styles.workoutMiniLabel}>{workoutActionState.manualLabel}</p>
-                    <div className={`${styles.workoutSecondaryControls} ${stepIndex === 0 ? styles.workoutSecondaryControlsSingle : ""}`}>
-                      {stepIndex > 0 && (
-                        <button className={styles.secondaryBtnMuted} onClick={previousStep} type="button">
-                          {workoutActionState.previousLabel}
-                        </button>
-                      )}
-                      <button
-                        className={isLastWorkoutStep ? styles.completeWorkoutBtn : styles.secondaryBtnMuted}
-                        onClick={nextStep}
-                        type="button"
-                      >
-                        {workoutActionState.advanceLabel}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`${styles.workoutStructureCard} ${styles.workoutStructureCardMuted}`}>
-                  <div className={styles.programSectionHeader}>
-                    <div>
-                      <p className={styles.workoutMiniLabel}>Overblik</p>
-                      <h3>{showFullWorkoutStructure ? "Alle dele" : "Resten af passet"}</h3>
-                    </div>
-                    <button
-                      type="button"
-                      className={styles.secondaryBtnMuted}
-                      onClick={() => setShowFullWorkoutStructure((current) => !current)}
-                    >
-                      {showFullWorkoutStructure ? "Vis mindre" : "Vis alle"}
+                  {isLastWorkoutStep ? (
+                    <button className={styles.completeWorkoutBtn} onClick={nextStep} type="button">
+                      {workoutActionState.finishLabel}
                     </button>
-                  </div>
-                  <ul className={styles.stepOverviewCompact}>
-                    {visibleWorkoutSteps.map(({ step, index, status }) => {
-                      const marker = status === "done" ? "✓" : status === "current" ? "●" : "○";
-                      return (
-                        <li
-                          key={`${step.label}-${index}`}
-                          className={status === "done" ? styles.stepDone : status === "current" ? styles.stepCurrent : status === "next" ? styles.stepNext : ""}
-                        >
-                          <button
-                            type="button"
-                            className={styles.stepJumpBtn}
-                            onClick={() => goToStep(index)}
-                            aria-label={`Gå til interval ${index + 1}`}
-                            aria-current={status === "current" ? "step" : undefined}
-                          >
-                            <span>{marker}</span>
-                            <span>{phaseName(step)}</span>
-                            <span>{formatClock(step.durationSec)}</span>
-                            <span>{status === "current" ? "Nu" : status === "done" ? "Færdig" : status === "next" ? "Næste" : "Senere"}</span>
+                  ) : (
+                    <button
+                      className={styles.primaryBtn}
+                      onClick={() => {
+                        setIsRunning((v) => {
+                          const next = !v;
+                          if (!next) cancelCue();
+                          if (next) {
+                            setWorkoutInterruptionNotice(null);
+                            lastTickAtRef.current = Date.now();
+                          }
+                          return next;
+                        });
+                      }}
+                    >
+                      {workoutActionState.primaryLabel}
+                    </button>
+                  )}
+                  {(!isRunning || isLastWorkoutStep) && (
+                    <div className={styles.workoutManualControls}>
+                      <div className={`${styles.workoutSecondaryControls} ${stepIndex === 0 ? styles.workoutSecondaryControlsSingle : ""}`}>
+                        {stepIndex > 0 && (
+                          <button className={styles.workoutSecondaryAction} onClick={previousStep} type="button">
+                            {workoutActionState.previousLabel}
                           </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                        )}
+                        {isLastWorkoutStep ? (
+                          <button
+                            className={styles.workoutSecondaryAction}
+                            onClick={() => {
+                              setIsRunning((v) => {
+                                const next = !v;
+                                if (!next) cancelCue();
+                                if (next) {
+                                  setWorkoutInterruptionNotice(null);
+                                  lastTickAtRef.current = Date.now();
+                                }
+                                return next;
+                              });
+                            }}
+                            type="button"
+                          >
+                            {workoutActionState.primaryLabel}
+                          </button>
+                        ) : (
+                          <button className={styles.workoutSecondaryAction} onClick={nextStep} type="button">
+                            {workoutActionState.advanceLabel}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}
             {activeSession && workoutCompleted && (
               <div className={styles.completedWorkoutCard}>
                 <div className={styles.workoutTopBar}>
-                  <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label="Luk træningspas">
+                  <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label={ui.workout.closeWorkoutAria}>
                     {workoutActionState.closeLabel}
                   </button>
                   <div className={styles.workoutHeaderCenter}>
-                    <p className={styles.workoutWeekContext}>Uge {activeSession.week}</p>
-                    <h2 className={styles.workoutHeaderTitle}>{shortSessionTitle(activeSession.title)}</h2>
+                    <p className={styles.workoutWeekContext}>{sessionWeekBadge(activeSession.week, siteLocale)}</p>
+                    <h2 className={styles.workoutHeaderTitle}>{sessionDisplayTitle(activeSession, goal.distance, siteLocale)}</h2>
                   </div>
-                  <p className={styles.workoutDurationBadge}>Ca. {activeSessionDuration} min</p>
+                  <span className={styles.workoutDurationBadge}>{formatReadableDurationFromSeconds(activeSessionDuration * 60)}</span>
                 </div>
-                <p className={styles.confirmationBadge}>Træningspas afsluttet</p>
-                <h2>Godt arbejde — træningspasset er gennemført</h2>
-                <p className={styles.subtle}>Fortæl kort hvordan træningspasset føltes, så jeg kan justere det næste skridt i programmet.</p>
-                <div className={styles.postWorkoutCoachCard}>
-                  <h3>{completedWorkoutCoach.title}</h3>
-                  <p className={styles.subtleInline}>{completedWorkoutCoach.body}</p>
-                </div>
-                <div className={styles.completedWorkoutStats}>
-                  <span>{shortSessionTitle(activeSession.title)}</span>
-                  <span>{activeSession.steps.length} intervaller gennemført</span>
+                <p className={styles.confirmationBadge}>{ui.workout.completed}</p>
+                <h2>{ui.workout.completionTitle}</h2>
+                <p className={styles.subtleStrong}>{ui.workout.completionRegistered}</p>
+                <p className={styles.subtle}>{ui.workout.completionPrompt}</p>
+                <div className={styles.completedWorkoutActions}>
+                  <button type="button" className={styles.primaryBtn} onClick={() => setShowWorkoutCheckIn(true)}>
+                    {ui.workout.continueToCheckIn}
+                  </button>
                 </div>
               </div>
             )}
           </article>
 
-          {workoutCompleted && (
+          {workoutCompleted && showWorkoutCheckIn && (
             <article className={styles.card}>
-              <p className={styles.confirmationBadge}>{feedbackSubmitted ? "Coach-respons" : "Din feedback"}</p>
-              <h2>{feedbackSubmitted ? feedbackConfirmation?.title ?? "Tak for din feedback." : workoutCheckInState.title}</h2>
-              <p className={styles.subtle}>
-                {feedbackSubmitted ? "Jeg har set din feedback og justeret det næste skridt i planen." : workoutCheckInState.summary}
-              </p>
-              {feedbackConfirmation && (
-                <div className={styles.confirmationCard}>
-                  {feedbackConfirmation.updatedLabel && <p className={styles.updatedResponseBadge}>{feedbackConfirmation.updatedLabel}</p>}
-                  <p className={styles.nextLabel}>Det lagde jeg mærke til</p>
-                  <p className={styles.subtleInline}>{feedbackConfirmation.interpretation}</p>
-                  <p className={styles.nextLabel}>Det ændrer jeg</p>
-                  <p className={styles.subtleInline}>{feedbackConfirmation.adjustment}</p>
-                  {feedbackConfirmation.progressionPreview && (
-                    <>
-                      <p className={styles.nextLabel}>Næste skridt</p>
-                      <p className={styles.subtleInline}>{feedbackConfirmation.progressionPreview}</p>
-                    </>
-                  )}
-                  {feedbackConfirmation.focus && (
-                    <>
-                      <p className={styles.nextLabel}>Fokus nu</p>
-                      <p className={styles.subtleInline}>{feedbackConfirmation.focus}</p>
-                    </>
-                  )}
-                  {feedbackConfirmation.learnedInsights && feedbackConfirmation.learnedInsights.length > 0 && (
-                    <>
-                      <p className={styles.nextLabel}>Det lærer jeg om dig</p>
-                      {feedbackConfirmation.learnedInsights.map((line, index) => (
-                        <p key={`feedback-learned-${index}`} className={styles.subtleInline}>{line}</p>
-                      ))}
-                    </>
-                  )}
-                  {!feedbackConfirmation.reply && (
-                    <div className={styles.coachReplyBlock}>
-                      <div className={styles.coachReplyActions}>
-                        <button
-                          type="button"
-                          className={styles.secondaryBtn}
-                          onClick={() => handleCoachReply({ replyType: "agree" })}
-                        >
-                          Enig
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.secondaryBtn}
-                          onClick={() => handleCoachReply({ replyType: "disagree" })}
-                        >
-                          Ikke enig
-                        </button>
-                      </div>
-                      <div className={styles.coachClarifyBox}>
-                        <textarea
-                          value={clarificationDraft}
-                          onChange={(e) => setClarificationDraft(e.target.value)}
-                          placeholder="Kort forklaring, hvis du vil nuancere vurderingen"
-                          rows={3}
-                        />
-                        <button
-                          type="button"
-                          className={styles.textBtn}
-                          onClick={() => handleCoachReply({ replyType: "clarify", text: clarificationDraft.trim() })}
-                          disabled={!clarificationDraft.trim()}
-                        >
-                          Send afklaring
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {feedbackConfirmation.reply && feedbackConfirmation.resolution && (
-                    <div className={styles.coachReplyResolution}>
-                      <p className={styles.subtleInline}>{feedbackConfirmation.resolution}</p>
-                      {feedbackConfirmation.reply.replyType === "clarify" && feedbackConfirmation.reply.text && (
-                        <p className={styles.subtleInline}>Din note: {feedbackConfirmation.reply.text}</p>
-                      )}
-                    </div>
-                  )}
-                  <div className={styles.confirmationActions}>
-                    <button
-                      type="button"
-                      className={styles.primaryBtn}
-                      onClick={() => {
-                        setIsRunning(false);
-                        setStage("program");
-                      }}
-                    >
-                      Se opdateret program
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {!feedbackSubmitted && (
+              {!feedbackSubmitted ? (
                 <div className={styles.feedbackFlow}>
                   <div className={styles.feedbackQuickSection}>
                     <div className={styles.feedbackSectionHeader}>
-                      <p className={styles.nextLabel}>1. Gik passet som planlagt?</p>
-                      <p className={styles.feedbackSectionHint}>Vælg den, der passer bedst.</p>
+                      <p className={styles.confirmationBadge}>{ui.workout.quickCheckIn}</p>
+                      <h2>{siteLocale === "en" ? "How did the run feel?" : "Hvordan føltes turen?"}</h2>
+                      <p className={styles.subtle}>{ui.workout.quickCheckInLead}</p>
                     </div>
                     <div className={styles.quickFeedbackGrid}>
-                      {COMPLETION_OPTIONS.map((option) => {
-                        const active = feedback.completionPct === option.value;
-                        return (
-                          <button
-                            key={`completion-${option.value}`}
-                            type="button"
-                            className={active ? styles.quickFeedbackCardActive : styles.quickFeedbackCard}
-                            onClick={() => {
-                              setFeedback((current) => ({ ...current, completionPct: option.value }));
-                              setFeedbackDraft((draft) => ({ ...draft, completionPct: String(option.value) }));
-                            }}
-                          >
-                            <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
-                            <span className={styles.choiceText}>{option.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className={styles.feedbackQuickSection}>
-                    <div className={styles.feedbackSectionHeader}>
-                      <p className={styles.nextLabel}>2. Hvordan føltes det?</p>
-                    </div>
-                    <div className={styles.quickFeedbackGrid}>
-                      {QUICK_FEEDBACK_OPTIONS.map((option) => {
+                      {workoutFeelingOptions.map((option) => {
                         const active = feedback.quickFeedback === option.value;
                         return (
                           <button
@@ -4614,158 +5144,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className={styles.feedbackQuickSection}>
-                    <div className={styles.feedbackSectionHeader}>
-                      <p className={styles.nextLabel}>3. Hurtige signaler</p>
-                      <p className={styles.feedbackSectionHint}>Kun energi og smerte. Resten er valgfrit.</p>
-                    </div>
-                  <div className={styles.feedbackSignalGrid}>
-                    <div className={styles.feedbackMiniSection}>
-                      <p className={styles.nextLabel}>Energi</p>
-                      <div className={styles.quickFeedbackGridCompact}>
-                        {ENERGY_OPTIONS.map((option) => {
-                          const active = feedback.energy === option.value;
-                          return (
-                            <button
-                              key={`energy-${option.value}`}
-                              type="button"
-                              className={active ? styles.quickFeedbackCardActive : styles.quickFeedbackCard}
-                              onClick={() => {
-                                setFeedback((current) => ({ ...current, energy: option.value }));
-                                setFeedbackDraft((draft) => ({ ...draft, energy: String(option.value) }));
-                              }}
-                            >
-                              <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
-                              <span className={styles.choiceText}>{option.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <div className={styles.feedbackMiniSection}>
-                      <p className={styles.nextLabel}>Smerte</p>
-                      <div className={styles.quickFeedbackGridCompact}>
-                        {PAIN_OPTIONS.map((option) => {
-                          const active = feedback.painLevel === option.value;
-                          return (
-                            <button
-                              key={`pain-${option.value}`}
-                              type="button"
-                              className={active ? styles.quickFeedbackCardActive : styles.quickFeedbackCard}
-                              onClick={() => {
-                                setFeedback((current) => ({ ...current, painLevel: option.value }));
-                                setFeedbackDraft((draft) => ({ ...draft, painLevel: String(option.value) }));
-                              }}
-                            >
-                              <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
-                              <span className={styles.choiceText}>{option.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                  </div>
-
-                  <div className={styles.feedbackOptionalBlock}>
-                    <button
-                      type="button"
-                      className={styles.textBtn}
-                      onClick={() => {
-                        setShowDetailedFeedback((current) => !current);
-                      }}
-                    >
-                      {workoutCheckInState.optionalLabel}
-                    </button>
-                    <p className={styles.feedbackOptionalHint}>{workoutCheckInState.optionalHint}</p>
-                  </div>
-
-                  {showDetailedFeedback && (
-                    <div className={styles.feedbackOptionalPanel}>
-                      <div className={styles.formGrid}>
-                        <label>
-                          Oplevet belastning (1–10)
-                          <input
-                            type="number"
-                            min={1}
-                            max={10}
-                            value={feedbackDraft.effort}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              setFeedbackDraft((d) => ({ ...d, effort: value }));
-                              if (value !== "") setFeedback((f) => ({ ...f, effort: clampInt(Number(value), 1, 10) }));
-                            }}
-                            onBlur={() => {
-                              if (feedbackDraft.effort === "") setFeedbackDraft((d) => ({ ...d, effort: String(feedback.effort) }));
-                            }}
-                          />
-                        </label>
-                        <label>
-                          Gennemført %
-                          <input
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={feedbackDraft.completionPct}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              setFeedbackDraft((d) => ({ ...d, completionPct: value }));
-                              if (value !== "") setFeedback((f) => ({ ...f, completionPct: clampInt(Number(value), 0, 100) }));
-                            }}
-                            onBlur={() => {
-                              if (feedbackDraft.completionPct === "") setFeedbackDraft((d) => ({ ...d, completionPct: String(feedback.completionPct) }));
-                            }}
-                          />
-                        </label>
-                        <label>
-                          Energi (1–5)
-                          <input
-                            type="number"
-                            min={1}
-                            max={5}
-                            value={feedbackDraft.energy}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              setFeedbackDraft((d) => ({ ...d, energy: value }));
-                              if (value !== "") setFeedback((f) => ({ ...f, energy: clampInt(Number(value), 1, 5) }));
-                            }}
-                            onBlur={() => {
-                              if (feedbackDraft.energy === "") setFeedbackDraft((d) => ({ ...d, energy: String(feedback.energy) }));
-                            }}
-                          />
-                        </label>
-                        <label>
-                          Smerte (1–10)
-                          <input
-                            type="number"
-                            min={1}
-                            max={10}
-                            value={feedbackDraft.painLevel}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              setFeedbackDraft((d) => ({ ...d, painLevel: value }));
-                              if (value !== "") setFeedback((f) => ({ ...f, painLevel: clampInt(Number(value), 1, 10) }));
-                            }}
-                            onBlur={() => {
-                              if (feedbackDraft.painLevel === "") setFeedbackDraft((d) => ({ ...d, painLevel: String(feedback.painLevel) }));
-                            }}
-                          />
-                        </label>
-                        <label className={styles.feedbackNotesField}>
-                          Kort note
-                          <input
-                            type="text"
-                            value={feedback.notes}
-                            onChange={(e) => {
-                              setFeedback((f) => ({ ...f, notes: e.target.value }));
-                            }}
-                            placeholder="Noget særligt jeg skal vide?"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  )}
-
                   <div className={styles.feedbackSubmitBar}>
                     <button
                       className={styles.primaryBtn}
@@ -4774,12 +5152,40 @@ export default function Home() {
                     >
                       {feedbackSubmitState === "submitting" && <span className={styles.buttonSpinner} aria-hidden="true" />}
                       {feedbackSubmitState === "submitting"
-                        ? "Gemmer..."
+                        ? ui.program.saving
                         : feedbackSubmitState === "success"
-                          ? "Feedback gemt ✓"
-                          : workoutCheckInState.submitLabel}
+                          ? ui.workout.feedbackSaved
+                          : siteLocale === "en"
+                            ? "Save and continue"
+                            : "Gem og fortsæt"}
                     </button>
-                    <p className={styles.feedbackSubmitHint}>Du kan være færdig på få tryk.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.confirmationCard}>
+                  <p className={styles.confirmationBadge}>{ui.workout.confirmationBadge}</p>
+                  <h2>{ui.workout.confirmationTitle}</h2>
+                  <p className={styles.subtle}>{ui.workout.confirmationBody}</p>
+                  {workoutCheckInMicroCopy && <p className={styles.subtleInline}>{workoutCheckInMicroCopy}</p>}
+                  {nextSession ? (
+                    <>
+                      <p className={styles.nextWorkoutSummary}>{`${ui.workout.nextRunLabel}: ${nextWorkoutDayLabel}`}</p>
+                      <p className={styles.subtleStrong}>{nextWorkoutState.title}</p>
+                    </>
+                  ) : (
+                    <p className={styles.nextWorkoutSummary}>{ui.workout.nextRunSoon}</p>
+                  )}
+                  <div className={styles.confirmationActions}>
+                    <button
+                      type="button"
+                      className={styles.primaryBtn}
+                      onClick={() => {
+                        setIsRunning(false);
+                        setStage("program");
+                      }}
+                    >
+                      {ui.workout.seeNextRun}
+                    </button>
                   </div>
                 </div>
               )}
@@ -4790,12 +5196,89 @@ export default function Home() {
         </section>
       )}
 
+      {pendingLowFrequencyOverride && lowFrequencyOverridePrompt && (
+        <section className={styles.inlineOverlay}>
+          <div className={styles.inlineOverlayBackdrop} onClick={() => setPendingLowFrequencyOverride(null)} />
+          <div className={styles.inlineOverlayCard}>
+            <p className={styles.nextLabel}>{ui.overlay.important}</p>
+            <h3>{lowFrequencyOverridePrompt.title}</h3>
+            <p className={styles.subtleInline}>{lowFrequencyOverridePrompt.body}</p>
+            <div className={styles.topActions}>
+              <button
+                className={styles.primaryBtn}
+                type="button"
+                onClick={() => {
+                  setAcceptedLowFrequencyOverrideKey(lowFrequencyOverridePrompt.overrideKey);
+                  const pending = pendingLowFrequencyOverride;
+                  setPendingLowFrequencyOverride(null);
+                  if (pending.intent === "generation") {
+                    void generatePlan(pending.selectedRecommendation, { skipLowFrequencyGuardrail: true });
+                    return;
+                  }
+                  void requestPlanRecommendation({ skipLowFrequencyGuardrail: true });
+                }}
+              >
+                {lowFrequencyOverridePrompt.confirmLabel}
+              </button>
+              <button
+                className={styles.secondaryBtn}
+                type="button"
+                onClick={() => {
+                  setPendingLowFrequencyOverride(null);
+                  setStage("profile");
+                  setOnboardingStep(weeklyStructureStep);
+                }}
+              >
+                {ui.overlay.adjustTrainingDays}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {pendingDurationOverride && durationOverridePrompt && (
+        <section className={styles.inlineOverlay}>
+          <div className={styles.inlineOverlayBackdrop} onClick={() => setPendingDurationOverride(null)} />
+          <div className={styles.inlineOverlayCard}>
+            <p className={styles.nextLabel}>{ui.overlay.important}</p>
+            <h3>{durationOverridePrompt.title}</h3>
+            <p className={styles.subtleInline}>{durationOverridePrompt.body}</p>
+            <div className={styles.topActions}>
+              <button
+                className={styles.primaryBtn}
+                type="button"
+                onClick={() => {
+                  setAcceptedDurationOverrideKey(durationOverridePrompt.overrideKey);
+                  const pending = pendingDurationOverride;
+                  setPendingDurationOverride(null);
+                  void generatePlan(pending.selectedRecommendation, { skipDurationGuardrail: true });
+                }}
+              >
+                {durationOverridePrompt.confirmLabel}
+              </button>
+              <button
+                className={styles.secondaryBtn}
+                type="button"
+                onClick={() => {
+                  setPendingDurationOverride(null);
+                  if (recommendedRecommendationOption) {
+                    updateRecommendationDuration(recommendedRecommendationOption.durationWeeks);
+                  }
+                }}
+              >
+                {ui.overlay.useRecommendedDuration}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {(isLoading || isProgramTransitioning) && (
         <section className={styles.loadingHero}>
           <div className={styles.loadingOverlay}>
             <div className={styles.spinner} />
-            <p>{isProgramTransitioning ? "Jeg bygger dit program..." : "Jeg samler dit program..."}</p>
-            <small>{isProgramTransitioning ? "Gør den sidste coach-opsummering klar." : "Jeg lægger dine første uger på plads ud fra dit mål og dit nuværende niveau."}</small>
+            <p>{isProgramTransitioning ? ui.overlay.building : ui.overlay.assembling}</p>
+            <small>{isProgramTransitioning ? ui.overlay.finalSummary : ui.overlay.firstWeeks}</small>
           </div>
         </section>
       )}

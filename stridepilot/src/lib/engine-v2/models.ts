@@ -10,6 +10,7 @@ export type GoalType =
   | "target_time"
   | "return_to_running";
 export type TrainingStyle = "conservative" | "balanced" | "performance";
+export type BaseProgramTrack = "getting_started" | "returning" | "steady_runner" | "goal_focused";
 export type AmbitionPreference = "gentle" | "standard" | "ambitious";
 export type ExperienceLevel = "none" | "new" | "recreational" | "intermediate" | "advanced";
 export type RunnerLevel =
@@ -212,6 +213,7 @@ export interface RunnerInput {
   preferredLongRunDay?: "saturday" | "sunday" | "weekday" | "flexible";
   typicalAvailableTimeMin: number;
   trainingStylePreference: TrainingStyle;
+  baseProgramTrack?: BaseProgramTrack;
   externalTrainingLoad?: "none" | "light" | "moderate" | "high";
   injuryConcern?: "none" | "low" | "moderate" | "high";
   confidence?: number;

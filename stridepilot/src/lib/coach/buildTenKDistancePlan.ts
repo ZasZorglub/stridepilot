@@ -5,12 +5,14 @@ import {
   buildProgressionWorkout,
   buildRaceSpecificWorkout,
   buildRecoveryWorkout,
+  buildRunWalkWorkout,
   buildSteadyWorkout,
   buildTempoWorkout,
   WorkoutBuildContext,
 } from "./workouts";
 import { buildPlanRationale, buildWeekRationales, buildWorkoutRationales, generatePlanExplanation } from "./explanations";
 import { GoalConfig, PlanPhase, PlanType, ProgressionCurves, RunnerCategory, RunnerProfile, TrainingPlan, TrainingWeek, WorkoutSession, WorkoutType } from "./types";
+import { buildEarlyWeekRealismPolicy, buildEntryRealismPolicy, buildTrackPosturePolicy, ContinuityBand } from "./realismPolicy";
 import { runnerCategoryReason } from "./classification";
 import { cutbackInterval, orderTrainingDaysForLongRun, preferredLongRunDay } from "./week-structure";
 import { deriveCalendarWeekCount, planStartWeekMonday } from "../calendar-week";
@@ -20,6 +22,7 @@ type TenKDistancePhase = "base" | "build" | "specific" | "peak" | "taper";
 type CurveWeek = {
   weekNumber: number;
   phase: TenKDistancePhase;
+  weekNumberInPhase: number;
   isCutback: boolean;
   longRunMin: number;
   weeklyVolumeMin: number;
@@ -71,13 +74,33 @@ function categoryValue(category: RunnerCategory): number {
   return 6;
 }
 
+function continuityBandForCategory(category: RunnerCategory): ContinuityBand {
+  if (category === "true_beginner") return "ultra_zero";
+  if (category === "run_walk_beginner") return "one_to_two_min";
+  if (category === "continuous_beginner") return "five_min";
+  return "established";
+}
+
+function beginnerLikeTenKDistanceProfile(profile: RunnerProfile, category: RunnerCategory): boolean {
+  return categoryValue(category) <= 3 || profile.baseProgramTrack === "getting_started";
+}
+
 function longRunStart(profile: RunnerProfile, category: RunnerCategory): number {
   const longest = profile.longestRunMinutes;
   const typical = profile.typicalWorkoutMinutes || 40;
+  const entryPolicy = buildEntryRealismPolicy({
+    profile,
+    continuityBand: continuityBandForCategory(category),
+    beginnerLike: beginnerLikeTenKDistanceProfile(profile, category),
+  });
 
   if (categoryValue(category) <= 1) return 20;
-  if (category === "continuous_beginner") return roundHalf(clamp(Math.max(24, Math.min(longest, typical * 0.9)), 24, 36));
-  if (category === "recreational") return roundHalf(clamp(Math.max(34, longest * 0.9, typical), 32, 48));
+  if (category === "continuous_beginner") {
+    return roundHalf(clamp(Math.max(24, Math.min(longest, typical * 0.9)) * entryPolicy.conservativeCapacityFactor, 24, entryPolicy.longRunStartMax ?? 36));
+  }
+  if (category === "recreational") {
+    return roundHalf(clamp(Math.max(34, longest * 0.9, typical) * entryPolicy.conservativeCapacityFactor, 32, entryPolicy.longRunStartMax ?? 48));
+  }
   if (category === "light_intermediate") return roundHalf(clamp(Math.max(40, longest * 0.9, typical), 38, 58));
   if (category === "intermediate") return roundHalf(clamp(Math.max(50, longest * 0.92, typical), 46, 72));
   return roundHalf(clamp(Math.max(55, longest * 0.94, typical), 52, 80));
@@ -138,6 +161,15 @@ function phaseProgress(timeline: TenKDistancePhase[], weekNumber: number): numbe
   return phaseWeeks.length <= 1 ? 1 : (indexInPhase - 1) / (phaseWeeks.length - 1);
 }
 
+function phaseWeekNumber(timeline: TenKDistancePhase[], weekNumber: number): number {
+  const phase = timeline[weekNumber - 1];
+  let indexInPhase = 0;
+  for (let i = 0; i < weekNumber; i += 1) {
+    if (timeline[i] === phase) indexInPhase += 1;
+  }
+  return indexInPhase;
+}
+
 function phaseIntensity(phase: TenKDistancePhase, progress: number): number {
   if (phase === "base") return 0.22 + progress * 0.06;
   if (phase === "build") return 0.34 + progress * 0.1;
@@ -165,6 +197,7 @@ function buildCurves(profile: RunnerProfile, goal: GoalConfig, category: RunnerC
   return timeline.map((phase, index) => {
     const weekNumber = index + 1;
     const progress = phaseProgress(timeline, weekNumber);
+    const weekNumberInPhase = phaseWeekNumber(timeline, weekNumber);
     const isCutback = phase !== "taper" && phase !== "peak" && weekNumber > 1 && weekNumber % cutbackEvery === 0;
 
     let longRunMin = roundHalf(curveBetween(longStart, longPeak, phase, progress));
@@ -184,6 +217,7 @@ function buildCurves(profile: RunnerProfile, goal: GoalConfig, category: RunnerC
     return {
       weekNumber,
       phase,
+      weekNumberInPhase,
       isCutback,
       longRunMin: roundHalf(clamp(longRunMin, longStart * 0.85, longPeak)),
       weeklyVolumeMin: roundHalf(clamp(weeklyVolumeMin, volumeStart * 0.9, volumePeak)),
@@ -211,14 +245,46 @@ function focusForPhase(phase: TenKDistancePhase, isCutback: boolean): string {
   return "Friske kroppen op, bevare rytmen og gå ind i slutugen med mere overskud.";
 }
 
-function weeklyTypes(trainingDaysPerWeek: GoalConfig["trainingDaysPerWeek"], phase: TenKDistancePhase, intensity: number, isCutback: boolean): WorkoutType[] {
+function weeklyTypes(
+  trainingDaysPerWeek: GoalConfig["trainingDaysPerWeek"],
+  phase: TenKDistancePhase,
+  weekNumberInPhase: number,
+  intensity: number,
+  isCutback: boolean,
+  profile: RunnerProfile,
+  category: RunnerCategory,
+): WorkoutType[] {
+  const mappedPhase: PlanPhase =
+    phase === "base" ? "introduction" : phase === "build" ? "continuous_running" : phase === "taper" ? "race_preparation" : "capacity";
+  const continuityBand = continuityBandForCategory(category);
+  const beginnerLike = beginnerLikeTenKDistanceProfile(profile, category);
+  const earlyWeekPolicy = buildEarlyWeekRealismPolicy({
+    profile,
+    continuityBand,
+    beginnerLike,
+    phase: mappedPhase,
+    weekNumberInPhase,
+  });
+  const trackPosture = buildTrackPosturePolicy({
+    profile,
+    track: profile.baseProgramTrack,
+    continuityBand,
+    beginnerLike,
+    phase: mappedPhase,
+    weekNumberInPhase,
+    useRunWalk: earlyWeekPolicy.preferRunWalk,
+    effectivePerformance: false,
+  });
+
   if (trainingDaysPerWeek === 2) {
+    if (earlyWeekPolicy.preferRunWalk) return ["run-walk", "long"];
     if (phase === "specific" || phase === "peak") return [intensity >= 0.56 ? "progression" : "steady", "long"];
     if (phase === "taper") return ["easy", "race-specific"];
     return ["steady", "long"];
   }
 
   if (trainingDaysPerWeek === 3) {
+    if (trackPosture.preferEasyOnly) return [earlyWeekPolicy.preferRunWalk ? "run-walk" : "easy", "easy", "long"];
     if (phase === "base") return ["easy", "steady", "long"];
     if (phase === "build") return ["easy", isCutback ? "steady" : intensity >= 0.4 ? "fartlek" : "steady", "long"];
     if (phase === "specific") return ["easy", intensity >= 0.56 ? "progression" : "steady", "long"];
@@ -226,6 +292,7 @@ function weeklyTypes(trainingDaysPerWeek: GoalConfig["trainingDaysPerWeek"], pha
     return ["easy", "steady", "race-specific"];
   }
 
+  if (trackPosture.preferEasyOnly) return [earlyWeekPolicy.preferRunWalk ? "run-walk" : "easy", "recovery", "easy", "long"];
   if (phase === "base") return ["easy", "recovery", "steady", "long"];
   if (phase === "build") return ["easy", "recovery", isCutback ? "steady" : "fartlek", "long"];
   if (phase === "specific") return ["easy", "recovery", intensity >= 0.56 ? "progression" : "steady", "long"];
@@ -234,6 +301,7 @@ function weeklyTypes(trainingDaysPerWeek: GoalConfig["trainingDaysPerWeek"], pha
 }
 
 function buildSessionByType(type: WorkoutType, context: WorkoutBuildContext): WorkoutSession {
+  if (type === "run-walk") return buildRunWalkWorkout(context);
   if (type === "easy") return buildEasyWorkout(context);
   if (type === "recovery") return buildRecoveryWorkout(context);
   if (type === "long") return buildLongWorkout(context);
@@ -274,7 +342,7 @@ export function buildTenKDistancePlan(profile: RunnerProfile, goal: GoalConfig):
   const weeks: TrainingWeek[] = [];
 
   for (const curveWeek of curves) {
-    const types = weeklyTypes(goal.trainingDaysPerWeek, curveWeek.phase, curveWeek.intensityScore, curveWeek.isCutback);
+    const types = weeklyTypes(goal.trainingDaysPerWeek, curveWeek.phase, curveWeek.weekNumberInPhase, curveWeek.intensityScore, curveWeek.isCutback, profile, category);
     const weekDays = orderedDays.slice(0, types.length).map((day, idx) => (types[idx] === "long" ? longRunDay : day));
     const usedDays = new Set<WorkoutSession["dayOfWeek"]>();
     const normalizedDays = weekDays.map((day) => {
@@ -296,6 +364,13 @@ export function buildTenKDistancePlan(profile: RunnerProfile, goal: GoalConfig):
       }
 
       const minutes = sessionMinutes(curveWeek, type, goal.trainingDaysPerWeek);
+      const earlyWeekPolicy = buildEarlyWeekRealismPolicy({
+        profile,
+        continuityBand: continuityBandForCategory(category),
+        beginnerLike: beginnerLikeTenKDistanceProfile(profile, category),
+        phase: curveWeek.phase === "base" ? "introduction" : curveWeek.phase === "build" ? "continuous_running" : curveWeek.phase === "taper" ? "race_preparation" : "capacity",
+        weekNumberInPhase: curveWeek.weekNumberInPhase,
+      });
       const continuousRunMin =
         type === "long"
           ? Math.max(24, Math.round(curveWeek.weeklyVolumeMin * 0.22))
@@ -304,6 +379,9 @@ export function buildTenKDistancePlan(profile: RunnerProfile, goal: GoalConfig):
             : type === "easy"
               ? minutes.continuous
               : Math.max(18, Math.min(minutes.quality, minutes.continuous + 6));
+      const resolvedContinuousRunMin = earlyWeekPolicy.maxContinuousRunMin != null ? Math.min(continuousRunMin, earlyWeekPolicy.maxContinuousRunMin) : continuousRunMin;
+      const resolvedLongRunMin = earlyWeekPolicy.maxLongRunMin != null ? Math.min(minutes.long, earlyWeekPolicy.maxLongRunMin) : minutes.long;
+      const resolvedIntervalRunMin = earlyWeekPolicy.maxIntervalRunMin != null ? Math.min(clamp(minutes.quality * 0.22, 3, 8), earlyWeekPolicy.maxIntervalRunMin) : clamp(minutes.quality * 0.22, 3, 8);
 
       return [
         buildSessionByType(type, {
@@ -314,10 +392,10 @@ export function buildTenKDistancePlan(profile: RunnerProfile, goal: GoalConfig):
           dayOfWeek: day,
           date: toIsoDate(date),
           isStabilizationWeek: curveWeek.isCutback,
-          continuousRunMin: roundHalf(continuousRunMin),
-          longRunMin: minutes.long,
-          intervalRunMin: roundHalf(clamp(minutes.quality * 0.22, 3, 8)),
-          walkBreakMin: 2,
+          continuousRunMin: roundHalf(resolvedContinuousRunMin),
+          longRunMin: roundHalf(resolvedLongRunMin),
+          intervalRunMin: roundHalf(resolvedIntervalRunMin),
+          walkBreakMin: earlyWeekPolicy.minWalkBreakMin ?? 2,
           repeats: minutes.repeats,
           isGoalSession: curveWeek.weekNumber === totalWeeks && index === types.length - 1,
         }),

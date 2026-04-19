@@ -27,6 +27,118 @@ function latestDay(days: DayOfWeek[]): DayOfWeek {
   return [...days].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b)).at(-1) ?? "sunday";
 }
 
+function pickClosestOpenIndex(length: number, target: number, used: Set<number>): number {
+  let bestIndex = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < length; index += 1) {
+    if (used.has(index)) continue;
+    const distance = Math.abs(index - target);
+    if (distance < bestDistance || (distance === bestDistance && index > bestIndex)) {
+      bestIndex = index;
+      bestDistance = distance;
+    }
+  }
+  return bestIndex;
+}
+
+function spreadDaysEvenly(days: DayOfWeek[], count: number): DayOfWeek[] {
+  if (count <= 0) return [];
+  if (count >= days.length) return [...days];
+  const used = new Set<number>();
+  const picked: number[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const target = ((index + 1) * days.length) / (count + 1) - 1;
+    const chosenIndex = pickClosestOpenIndex(days.length, target, used);
+    used.add(chosenIndex);
+    picked.push(chosenIndex);
+  }
+  return picked.sort((a, b) => a - b).map((index) => days[index]!);
+}
+
+function spreadDaysAcrossWeek(days: DayOfWeek[], count: number): DayOfWeek[] {
+  if (count <= 0) return [];
+  if (count >= days.length) return [...days];
+  if (count === 1) return [days[Math.floor(days.length / 2)] ?? days[0]!];
+  if (count === 2) return [days[Math.max(0, Math.floor((days.length - 1) * 0.3))] ?? days[0]!, days[days.length - 1]!];
+
+  const used = new Set<number>();
+  const picked: number[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const target = (index * (days.length - 1)) / (count - 1);
+    const chosenIndex = pickClosestOpenIndex(days.length, target, used);
+    used.add(chosenIndex);
+    picked.push(chosenIndex);
+  }
+  return picked.sort((a, b) => a - b).map((index) => days[index]!);
+}
+
+function chooseDistributedTrainingDays(
+  availableDays: DayOfWeek[],
+  resolvedRuns: number,
+  preferredLongRunDay: DayOfWeek,
+): DayOfWeek[] {
+  const sortedDays = [...availableDays].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
+  if (resolvedRuns >= sortedDays.length) return sortedDays;
+
+  const selectedDays = spreadDaysAcrossWeek(sortedDays, resolvedRuns);
+  if (!sortedDays.includes(preferredLongRunDay) || selectedDays.includes(preferredLongRunDay)) {
+    return selectedDays;
+  }
+
+  const replaceIndex = selectedDays.reduce((bestIndex, day, index, days) => {
+    if (bestIndex === -1) return index;
+    return DAY_ORDER.indexOf(day) > DAY_ORDER.indexOf(days[bestIndex]!) ? index : bestIndex;
+  }, -1);
+  if (replaceIndex === -1) return selectedDays;
+
+  const adjustedDays = [...selectedDays];
+  adjustedDays[replaceIndex] = preferredLongRunDay;
+  return [...new Set(adjustedDays)].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
+}
+
+function roleDayPriority(role: WeeklyRole): number {
+  if (role === "quality") return 0;
+  if (role === "aerobic_support") return 1;
+  if (role === "recovery") return 2;
+  return 3;
+}
+
+function preferredRoleDayIndex(role: WeeklyRole, totalDays: number): number {
+  if (totalDays <= 1) return 0;
+  if (role === "quality") return Math.max(0, totalDays - 2);
+  if (role === "aerobic_support") return Math.max(0, Math.floor((totalDays - 1) * 0.45));
+  if (role === "recovery") return Math.max(0, totalDays - 3);
+  return 0;
+}
+
+function assignSupportDaysToRoles(days: DayOfWeek[], roles: WeeklyRole[]): DayOfWeek[] {
+  if (days.length <= 1 || roles.length <= 1) return days.slice(0, roles.length);
+  const remaining = days.map((day, index) => ({ day, index }));
+  const assignments = Array<DayOfWeek>(roles.length);
+  const orderedRoles = roles
+    .map((role, index) => ({ role, index }))
+    .sort((left, right) => {
+      const priorityDiff = roleDayPriority(left.role) - roleDayPriority(right.role);
+      if (priorityDiff !== 0) return priorityDiff;
+      return left.index - right.index;
+    });
+
+  for (const entry of orderedRoles) {
+    const targetIndex = preferredRoleDayIndex(entry.role, days.length);
+    const chosen =
+      [...remaining].sort((left, right) => {
+        const distanceDiff = Math.abs(left.index - targetIndex) - Math.abs(right.index - targetIndex);
+        if (distanceDiff !== 0) return distanceDiff;
+        return right.index - left.index;
+      })[0] ?? remaining[0];
+    assignments[entry.index] = chosen.day;
+    const remainingIndex = remaining.findIndex((candidate) => candidate.day === chosen.day);
+    if (remainingIndex >= 0) remaining.splice(remainingIndex, 1);
+  }
+
+  return assignments;
+}
+
 function mapRunnerLevelToVNext(runnerType: PrimaryRunnerType): VNextRunnerLevel {
   switch (runnerType) {
     case "true_beginner":
@@ -308,7 +420,7 @@ export function getWeeklyStructure(params: {
     isStepBackWeek,
   });
   if (vNextRoles.length > 0) {
-    return vNextRoles;
+    return vNextRoles.slice(0, sessionsPerWeek);
   }
   const beginnerLike =
     runnerType === "true_beginner" ||
@@ -432,21 +544,20 @@ function effectiveTrainingDays(
   phaseWeek: PhaseWeek,
   curves: ProgressionCurves,
 ): DayOfWeek[] {
-  const availableDays: DayOfWeek[] = input.availableTrainingDays.length > 0 ? input.availableTrainingDays : ["tuesday", "thursday", "sunday"];
+  const availableDays: DayOfWeek[] =
+    input.availableTrainingDays.length > 0
+      ? [...input.availableTrainingDays].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b))
+      : ["tuesday", "thursday", "sunday"];
   const continuityLedFinish =
     curves.backboneType === "continuous_backbone" &&
     (planType === "5k_finish" || planType === "5k_finish_no_walk" || planType === "10k_finish");
   const targetRuns = Math.min(phaseWeek.targetRuns, availableDays.length);
   if (!continuityLedFinish && targetRuns >= availableDays.length) return availableDays;
   const longRunDay = chooseLongRunDay(input);
-  const supportDays = availableDays.filter((day) => day !== longRunDay).sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
   const curveRuns = curves.sessionsPerWeekCurve[phaseWeek.weekIndex - 1] ?? (phaseWeek.weekIndex <= 2 ? 2 : 3);
   const resolvedRuns = Math.min(targetRuns, curveRuns, availableDays.length);
   if (resolvedRuns >= availableDays.length) return availableDays;
-  if (resolvedRuns === 2) {
-    return [supportDays[0] ?? availableDays[0] ?? "tuesday", longRunDay];
-  }
-  return [...supportDays.slice(0, 2), longRunDay];
+  return chooseDistributedTrainingDays(availableDays, resolvedRuns, longRunDay);
 }
 
 function weeklyEmphasis(phase: Phase, intensity: number, isCutback: boolean): WeeklyEmphasis {
@@ -636,8 +747,6 @@ export function buildWeeklyStructure(
   const phase: Phase = phaseWeek.phase;
   const weekIndex = phaseWeek.weekIndex;
   const availableDays = effectiveTrainingDays(input, classification, planType, phaseWeek, curves);
-  const longRunDay = chooseLongRunDay(input);
-  const remainingDays = availableDays.filter((day) => day !== longRunDay).sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
   const isCutback = curves.cutbackWeeks.includes(weekIndex);
   const structureRoles = getWeeklyStructure({
     phase,
@@ -648,6 +757,14 @@ export function buildWeeklyStructure(
     isRaceWeek: phaseWeek.isRaceWeek,
     isStepBackWeek: isCutback,
   });
+  const longRunDay = chooseLongRunDay(input);
+  const hasLongRunSlot = structureRoles.some((role) => {
+    const mapped = mapPhaseStructureRole(role, availableDays.length);
+    return mapped.role === "long_run";
+  });
+  const remainingDays = (hasLongRunSlot ? availableDays.filter((day) => day !== longRunDay) : availableDays).sort(
+    (a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b),
+  );
   const intensity = curves.intensityCurve[weekIndex - 1] ?? 0.2;
   const taperStrategy =
     phase === "taper" || phaseWeek.isRaceWeek
@@ -685,7 +802,6 @@ export function buildWeeklyStructure(
   const baseSlots = structureRoles.map((structureRole, index) => {
     const mapped = mapPhaseStructureRole(structureRole, availableDays.length);
     if (mapped.role === "long_run") return { role: mapped.role, day: longRunDay, qualityBias: "none" as const, protected: true };
-    const day = remainingDays[index] ?? availableDays[index] ?? longRunDay;
     const qualityBias =
       mapped.role === "quality"
         ? (mapped.qualityBias ??
@@ -695,10 +811,25 @@ export function buildWeeklyStructure(
               ? ("moderate" as const)
               : ("specific" as const)))
         : ("none" as const);
-    return { role: mapped.role, day, qualityBias, protected: mapped.role === "recovery" };
+    return { role: mapped.role, day: longRunDay, qualityBias, protected: mapped.role === "recovery" };
+  });
+  const supportSlots = baseSlots.filter((slot) => slot.role !== "long_run");
+  const assignedSupportDays = assignSupportDaysToRoles(
+    remainingDays,
+    supportSlots.map((slot) => slot.role),
+  );
+  let supportIndex = 0;
+  const scheduledSlots = baseSlots.map((slot) => {
+    if (slot.role === "long_run") return slot;
+    const assignedDay = assignedSupportDays[supportIndex] ?? remainingDays[supportIndex] ?? availableDays[supportIndex] ?? longRunDay;
+    supportIndex += 1;
+    return {
+      ...slot,
+      day: assignedDay,
+    };
   });
   const slots = distributeLoadAcrossSlots(
-    baseSlots,
+    scheduledSlots,
     weeklyVolumeTargetMin,
     phase,
     classification.traits.runnerLevel,

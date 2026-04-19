@@ -4,6 +4,7 @@ export type RunnerArchetype =
   | "fit_but_inexperienced"
   | "returning_runner"
   | "overeager_runner";
+export type BaseProgramTrack = "getting_started" | "returning" | "steady_runner" | "goal_focused";
 
 export type RunnerCategory =
   | "true_beginner"
@@ -48,6 +49,7 @@ export type PlanPhase =
 export type DayOfWeek = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 
 export interface RunnerProfile {
+  baseProgramTrack: BaseProgramTrack;
   archetype: RunnerArchetype;
   runnerCategory?: RunnerCategory;
   aerobicBase: 1 | 2 | 3 | 4 | 5;
@@ -69,6 +71,7 @@ export interface GoalConfig {
   trainingDaysPerWeek: 2 | 3 | 4;
   startDate: string;
   targetTime?: string;
+  targetPaceSecPerKm?: number;
   preferredTrainingDays?: DayOfWeek[];
   preferredLongRunDay?: "saturday" | "sunday" | "weekday" | "flexible";
 }
@@ -182,6 +185,7 @@ export interface WorkoutFeedback {
 }
 
 export interface OnboardingInterpretationInput {
+  onboardingTrack?: "getting_started" | "returning" | "running_consistently" | "goal_focused";
   onboardingText?: string;
   injuryHistory?: string;
   weakPoints?: string;

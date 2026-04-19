@@ -9,6 +9,7 @@ export type RecommendationPlanLevel =
   | "slightly_ambitious"
   | "ambitious";
 export type GuidancePreference = "simple" | "flexible" | "performance_oriented";
+export type OnboardingTrack = "getting_started" | "returning" | "running_consistently" | "goal_focused";
 export type CurrentRunningAbility =
   | "helt_ny"
   | "fem_min"
@@ -23,12 +24,14 @@ export interface RecentRaceTime {
 
 export interface RunnerProfile {
   firstName?: string;
+  onboardingTrack?: OnboardingTrack;
   heightCm: number;
   weightKg: number;
   age: number;
   activityLevel: ActivityLevel;
   runningExperience: "nybegynder" | "let_ovet" | "ovet";
   currentRunningAbility: CurrentRunningAbility;
+  currentContinuousDistanceKm?: number;
   gender?: "kvinde" | "mand" | "andet" | "vil_ikke_oplyse";
   userTrainingContext?: string;
   currentWeeklyVolumeKm?: number;

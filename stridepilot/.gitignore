@@ -41,3 +41,15 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# local data / exports
+exports/
+
+# temp folders
+tmp/
+tmp-*/
+tmp-v2/
+
+# benchmark reports
+tmp/benchmark-reports/
+tmp/**/*.zip

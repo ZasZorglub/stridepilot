@@ -129,6 +129,20 @@ function sessionAwareHeartRateGuidance(
       };
     }
   }
+  if (sessionType === "race-specific" || sessionType === "benchmark") {
+    if (segment.type === "warmup" || segment.type === "cooldown" || segment.type === "recovery") {
+      return {
+        zoneLabel: "Zone 1-2",
+        summary: segment.type === "cooldown" ? "Lad pulsen falde tilbage mod zone 1-2." : "Start roligt i zone 1-2.",
+      };
+    }
+    if (segment.type === "tempo" || segment.type === "steady" || segment.type === "run") {
+      return {
+        zoneLabel: "Zone 3",
+        summary: "Løb i kontrolleret tempo. Du skal kunne tale i korte sætninger.",
+      };
+    }
+  }
   return segmentHeartRateGuidance(segment);
 }
 
