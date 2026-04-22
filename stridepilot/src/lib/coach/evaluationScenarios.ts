@@ -1,0 +1,254 @@
+import type { GoalConfig, RunnerProfile } from "./types";
+
+export interface CoachEvaluationScenario {
+  id: string;
+  name: string;
+  focus: string;
+  profile: RunnerProfile;
+  goal: GoalConfig;
+  reviewWeeks?: number;
+}
+
+function baseGoal(overrides: Partial<GoalConfig> = {}): GoalConfig {
+  return {
+    goalDistance: "5K",
+    goalIntent: "finish",
+    startDate: "2026-04-21",
+    targetDate: "2026-07-12",
+    trainingDaysPerWeek: 3,
+    preferredTrainingDays: ["tuesday", "thursday", "sunday"],
+    ...overrides,
+  };
+}
+
+function baseProfile(overrides: Partial<RunnerProfile> = {}): RunnerProfile {
+  return {
+    baseProgramTrack: "getting_started",
+    archetype: "nervous_beginner",
+    runnerCategory: "true_beginner",
+    aerobicBase: 1,
+    runningSpecificity: 1,
+    confidence: 2,
+    injurySensitivity: 3,
+    progressionStyle: "conservative",
+    currentRunsPerWeek: 1,
+    currentWeeklyVolumeKm: 4,
+    longestRunMinutes: 12,
+    typicalWorkoutMinutes: 30,
+    realisticTrainingDaysPerWeek: 3,
+    ...overrides,
+  };
+}
+
+export const coachEvaluationScenarios: CoachEvaluationScenario[] = [
+  {
+    id: "beginner-low-confidence-short",
+    name: "Complete beginner, low confidence, short sessions",
+    focus: "Entry-level realism and calm starts for a hesitant beginner with very little training history.",
+    profile: baseProfile({
+      currentRunsPerWeek: 0,
+      currentWeeklyVolumeKm: 0,
+      longestRunMinutes: 0,
+      typicalWorkoutMinutes: 25,
+      confidence: 1,
+      injurySensitivity: 4,
+      realisticTrainingDaysPerWeek: 3,
+      runnerCategory: "true_beginner",
+    }),
+    goal: baseGoal(),
+  },
+  {
+    id: "beginner-run-walk",
+    name: "Beginner run-walk runner",
+    focus: "Run-walk structure should stay clear, supportive, and not become filler-heavy.",
+    profile: baseProfile({
+      runnerCategory: "run_walk_beginner",
+      currentRunsPerWeek: 1,
+      currentWeeklyVolumeKm: 3,
+      longestRunMinutes: 8,
+      typicalWorkoutMinutes: 30,
+      confidence: 2,
+    }),
+    goal: baseGoal(),
+  },
+  {
+    id: "first-5k-beginner",
+    name: "Beginner aiming for first 5K",
+    focus: "Should feel like real first-5K coaching, not a passive shuffle plan.",
+    profile: baseProfile({
+      runnerCategory: "continuous_beginner",
+      archetype: "motivated_novice",
+      currentRunsPerWeek: 2,
+      currentWeeklyVolumeKm: 6,
+      longestRunMinutes: 15,
+      confidence: 3,
+      typicalWorkoutMinutes: 35,
+    }),
+    goal: baseGoal({
+      goalIntent: "finish_comfortably",
+      targetDate: "2026-07-26",
+    }),
+  },
+  {
+    id: "returning-after-break",
+    name: "Beginner returning after a break",
+    focus: "Should protect the comeback runner without making every workout feel passive.",
+    profile: baseProfile({
+      baseProgramTrack: "returning",
+      archetype: "returning_runner",
+      runnerCategory: "continuous_beginner",
+      currentRunsPerWeek: 1,
+      currentWeeklyVolumeKm: 7,
+      longestRunMinutes: 18,
+      confidence: 2,
+      injurySensitivity: 4,
+      typicalWorkoutMinutes: 35,
+    }),
+    goal: baseGoal({
+      goalDistance: "10K",
+      targetDate: "2026-08-23",
+    }),
+  },
+  {
+    id: "two-day-runner",
+    name: "Runner with only 2 training days per week",
+    focus: "Two-day structure should stay coach-like and not collapse into weak filler sessions.",
+    profile: baseProfile({
+      baseProgramTrack: "steady_runner",
+      archetype: "fit_but_inexperienced",
+      runnerCategory: "continuous_beginner",
+      currentRunsPerWeek: 2,
+      currentWeeklyVolumeKm: 10,
+      longestRunMinutes: 22,
+      confidence: 3,
+      typicalWorkoutMinutes: 40,
+      realisticTrainingDaysPerWeek: 2,
+    }),
+    goal: baseGoal({
+      trainingDaysPerWeek: 2,
+      preferredTrainingDays: ["wednesday", "sunday"],
+      goalDistance: "5K",
+      goalIntent: "finish",
+    }),
+  },
+  {
+    id: "four-day-runner",
+    name: "Runner with 4 training days per week",
+    focus: "Four-day weeks should show differentiated session roles early without becoming chaotic.",
+    profile: baseProfile({
+      baseProgramTrack: "goal_focused",
+      archetype: "fit_but_inexperienced",
+      runnerCategory: "recreational",
+      currentRunsPerWeek: 4,
+      currentWeeklyVolumeKm: 24,
+      longestRunMinutes: 42,
+      confidence: 4,
+      injurySensitivity: 2,
+      progressionStyle: "balanced",
+      typicalWorkoutMinutes: 55,
+      realisticTrainingDaysPerWeek: 4,
+    }),
+    goal: baseGoal({
+      goalDistance: "10K",
+      goalIntent: "finish",
+      trainingDaysPerWeek: 4,
+      preferredTrainingDays: ["monday", "wednesday", "friday", "sunday"],
+      targetDate: "2026-08-16",
+    }),
+  },
+  {
+    id: "improving-runner-with-base",
+    name: "Improving runner with some base already",
+    focus: "Should look like credible improvement coaching rather than beginner protection.",
+    profile: baseProfile({
+      baseProgramTrack: "goal_focused",
+      archetype: "fit_but_inexperienced",
+      runnerCategory: "light_intermediate",
+      aerobicBase: 3,
+      runningSpecificity: 3,
+      confidence: 4,
+      injurySensitivity: 2,
+      progressionStyle: "balanced",
+      currentRunsPerWeek: 4,
+      currentWeeklyVolumeKm: 28,
+      longestRunMinutes: 50,
+      typicalWorkoutMinutes: 60,
+      realisticTrainingDaysPerWeek: 4,
+    }),
+    goal: baseGoal({
+      goalDistance: "10K",
+      goalIntent: "improve",
+      trainingDaysPerWeek: 4,
+      preferredTrainingDays: ["monday", "wednesday", "friday", "sunday"],
+      targetDate: "2026-07-19",
+    }),
+  },
+  {
+    id: "short-easy-recovery",
+    name: "Short easy / recovery-focused runner",
+    focus: "Short sessions should still feel like real training and not mostly transitions.",
+    profile: baseProfile({
+      baseProgramTrack: "returning",
+      archetype: "returning_runner",
+      runnerCategory: "continuous_beginner",
+      currentRunsPerWeek: 2,
+      currentWeeklyVolumeKm: 8,
+      longestRunMinutes: 16,
+      confidence: 2,
+      injurySensitivity: 5,
+      typicalWorkoutMinutes: 25,
+      realisticTrainingDaysPerWeek: 3,
+    }),
+    goal: baseGoal({
+      goalDistance: "5K",
+      goalIntent: "finish",
+      targetDate: "2026-06-28",
+    }),
+  },
+  {
+    id: "interval-readiness",
+    name: "Interval-focused improvement runner",
+    focus: "Quality work should look controlled and purposeful, not watered down or awkwardly padded.",
+    profile: baseProfile({
+      baseProgramTrack: "goal_focused",
+      archetype: "motivated_novice",
+      runnerCategory: "recreational",
+      aerobicBase: 3,
+      runningSpecificity: 3,
+      confidence: 4,
+      injurySensitivity: 2,
+      progressionStyle: "balanced",
+      currentRunsPerWeek: 3,
+      currentWeeklyVolumeKm: 20,
+      longestRunMinutes: 38,
+      typicalWorkoutMinutes: 50,
+      realisticTrainingDaysPerWeek: 3,
+    }),
+    goal: baseGoal({
+      goalDistance: "5K",
+      goalIntent: "improve",
+      targetDate: "2026-07-05",
+    }),
+  },
+  {
+    id: "passive-start-probe",
+    name: "Passive-start regression probe",
+    focus: "Designed to expose awkward walk + warmup openings and weak short-session structure.",
+    profile: baseProfile({
+      runnerCategory: "continuous_beginner",
+      archetype: "nervous_beginner",
+      currentRunsPerWeek: 1,
+      currentWeeklyVolumeKm: 3,
+      longestRunMinutes: 10,
+      confidence: 1,
+      injurySensitivity: 4,
+      typicalWorkoutMinutes: 22,
+      realisticTrainingDaysPerWeek: 3,
+    }),
+    goal: baseGoal({
+      goalDistance: "5K",
+      goalIntent: "finish",
+      targetDate: "2026-06-21",
+    }),
+  },
+];

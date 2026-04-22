@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "../tmp-coach-scenarios",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": "..",
+    "incremental": false
+  },
+  "include": [
+    "./coach-scenario-evaluation.ts",
+    "../src/lib/coach/**/*.ts"
+  ]
+}

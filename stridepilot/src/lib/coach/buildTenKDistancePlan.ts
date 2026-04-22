@@ -12,7 +12,7 @@ import {
 } from "./workouts";
 import { buildPlanRationale, buildWeekRationales, buildWorkoutRationales, generatePlanExplanation } from "./explanations";
 import { GoalConfig, PlanPhase, PlanType, ProgressionCurves, RunnerCategory, RunnerProfile, TrainingPlan, TrainingWeek, WorkoutSession, WorkoutType } from "./types";
-import { buildEarlyWeekRealismPolicy, buildEntryRealismPolicy, buildTrackPosturePolicy, ContinuityBand } from "./realismPolicy";
+import { buildEarlyWeekRealismPolicy, buildEntryRealismPolicy, buildProgressionRealismPolicy, buildTrackPosturePolicy, ContinuityBand } from "./realismPolicy";
 import { runnerCategoryReason } from "./classification";
 import { cutbackInterval, orderTrainingDaysForLongRun, preferredLongRunDay } from "./week-structure";
 import { deriveCalendarWeekCount, planStartWeekMonday } from "../calendar-week";
@@ -178,6 +178,42 @@ function phaseIntensity(phase: TenKDistancePhase, progress: number): number {
   return 0.28 - progress * 0.08;
 }
 
+function capWeekLoad(sessions: WorkoutSession[], targetLoad: number, previousLoad: number | null): WorkoutSession[] {
+  const maxAllowed = previousLoad ? Math.min(targetLoad, previousLoad * 1.12) : targetLoad;
+  const totalLoad = sessions.reduce((sum, session) => sum + session.estimatedLoad, 0);
+  if (totalLoad <= maxAllowed) return sessions;
+
+  const ratio = maxAllowed / totalLoad;
+  return sessions.map((session) => ({
+    ...session,
+    estimatedLoad: Math.round(session.estimatedLoad * (session.type === "tempo" ? Math.max(ratio, 0.9) : ratio) * 10) / 10,
+  }));
+}
+
+function smoothWeeklyLoadTarget(
+  targetLoad: number,
+  previousLoad: number | null,
+  phase: TenKDistancePhase,
+  isStabilizationWeek: boolean,
+  profile: RunnerProfile,
+  goal: GoalConfig,
+  continuityBand: ContinuityBand,
+  previousWasStabilizationWeek: boolean,
+  beginnerLike: boolean,
+): number {
+  if (!previousLoad) return targetLoad;
+  const progressionPolicy = buildProgressionRealismPolicy({
+    profile,
+    continuityBand,
+    beginnerLike,
+    goal,
+    phase: phase === "base" ? "introduction" : phase === "build" ? "continuous_running" : phase === "taper" ? "race_preparation" : "capacity",
+    isStabilizationWeek,
+    previousWasStabilizationWeek,
+  });
+  return Math.round(clamp(targetLoad, previousLoad * progressionPolicy.loadMinFactor, previousLoad * progressionPolicy.loadMaxFactor) * 10) / 10;
+}
+
 function curveBetween(start: number, peak: number, phase: TenKDistancePhase, progress: number): number {
   if (phase === "base") return start + (peak - start) * 0.18 * progress;
   if (phase === "build") return start + (peak - start) * (0.18 + 0.38 * progress);
@@ -275,6 +311,17 @@ function weeklyTypes(
     useRunWalk: earlyWeekPolicy.preferRunWalk,
     effectivePerformance: false,
   });
+  const earlySpecificityReady =
+    phase === "base" &&
+    weekNumberInPhase <= 2 &&
+    !earlyWeekPolicy.preferRunWalk &&
+    !trackPosture.preferEasyOnly &&
+    profile.baseProgramTrack === "goal_focused" &&
+    categoryValue(category) >= categoryValue("recreational") &&
+    profile.currentRunsPerWeek >= 4 &&
+    profile.currentWeeklyVolumeKm >= 20 &&
+    profile.longestRunMinutes >= 40;
+  const earlySpecificityType: WorkoutType = earlySpecificityReady && weekNumberInPhase === 2 ? "progression" : "steady";
 
   if (trainingDaysPerWeek === 2) {
     if (earlyWeekPolicy.preferRunWalk) return ["run-walk", "long"];
@@ -285,7 +332,7 @@ function weeklyTypes(
 
   if (trainingDaysPerWeek === 3) {
     if (trackPosture.preferEasyOnly) return [earlyWeekPolicy.preferRunWalk ? "run-walk" : "easy", "easy", "long"];
-    if (phase === "base") return ["easy", "steady", "long"];
+    if (phase === "base") return ["easy", earlySpecificityType, "long"];
     if (phase === "build") return ["easy", isCutback ? "steady" : intensity >= 0.4 ? "fartlek" : "steady", "long"];
     if (phase === "specific") return ["easy", intensity >= 0.56 ? "progression" : "steady", "long"];
     if (phase === "peak") return ["easy", intensity >= 0.7 ? "race-specific" : "tempo", "long"];
@@ -293,7 +340,7 @@ function weeklyTypes(
   }
 
   if (trackPosture.preferEasyOnly) return [earlyWeekPolicy.preferRunWalk ? "run-walk" : "easy", "recovery", "easy", "long"];
-  if (phase === "base") return ["easy", "recovery", "steady", "long"];
+  if (phase === "base") return ["easy", "recovery", earlySpecificityType, "long"];
   if (phase === "build") return ["easy", "recovery", isCutback ? "steady" : "fartlek", "long"];
   if (phase === "specific") return ["easy", "recovery", intensity >= 0.56 ? "progression" : "steady", "long"];
   if (phase === "peak") return ["easy", "recovery", intensity >= 0.7 ? "race-specific" : "tempo", "long"];
@@ -340,6 +387,8 @@ export function buildTenKDistancePlan(profile: RunnerProfile, goal: GoalConfig):
   const startDate = new Date(`${goal.startDate}T00:00:00`);
   const curves = buildCurves(profile, goal, category, totalWeeks);
   const weeks: TrainingWeek[] = [];
+  let previousLoad: number | null = null;
+  let previousWasStabilizationWeek = false;
 
   for (const curveWeek of curves) {
     const types = weeklyTypes(goal.trainingDaysPerWeek, curveWeek.phase, curveWeek.weekNumberInPhase, curveWeek.intensityScore, curveWeek.isCutback, profile, category);
@@ -402,15 +451,30 @@ export function buildTenKDistancePlan(profile: RunnerProfile, goal: GoalConfig):
       ];
     });
 
-    const estimatedLoad = Math.round(sessions.reduce((sum, session) => sum + session.estimatedLoad, 0) * 10) / 10;
+    const rawEstimatedLoad = Math.round(sessions.reduce((sum, session) => sum + session.estimatedLoad, 0) * 10) / 10;
+    const smoothedTargetLoad = smoothWeeklyLoadTarget(
+      rawEstimatedLoad,
+      previousLoad,
+      curveWeek.phase,
+      curveWeek.isCutback,
+      profile,
+      goal,
+      continuityBandForCategory(category),
+      previousWasStabilizationWeek,
+      beginnerLikeTenKDistanceProfile(profile, category),
+    );
+    const adjustedSessions = capWeekLoad(sessions, smoothedTargetLoad, previousLoad);
+    const estimatedLoad = Math.round(adjustedSessions.reduce((sum, session) => sum + session.estimatedLoad, 0) * 10) / 10;
     weeks.push({
       weekNumber: curveWeek.weekNumber,
       phase: mapPhaseToPlanPhase(curveWeek.phase),
       focus: focusForPhase(curveWeek.phase, curveWeek.isCutback),
-      sessions,
+      sessions: adjustedSessions,
       estimatedLoad,
       isStabilizationWeek: curveWeek.isCutback,
     });
+    previousLoad = estimatedLoad;
+    previousWasStabilizationWeek = curveWeek.isCutback;
   }
 
   const sessions = weeks.flatMap((week) => week.sessions);

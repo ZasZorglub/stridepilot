@@ -35,6 +35,8 @@
     "test:engine-vnext:beta-smoke": "tsc -p tmp/tsconfig.engine-v2.json && node tmp-v2/scripts/engine-vnext-beta-smoke-test.js",
     "test:onboarding-flow": "tsc -p tmp/tsconfig.engine-v2.json && node tmp-v2/scripts/onboarding-flow-test.js",
     "test:program-screen": "tsc -p tmp/tsconfig.engine-v2.json && node tmp-v2/scripts/program-screen-test.js",
+    "test:coach-guardrails": "tsc -p scripts/tsconfig.coach-guardrails.json && node tmp-coach/scripts/coach-guardrails-test.js",
+    "eval:coach-scenarios": "tsc -p scripts/tsconfig.coach-scenarios.json && node tmp-coach-scenarios/scripts/coach-scenario-evaluation.js",
     "test:workout-screen": "tsc -p tmp/tsconfig.engine-v2.json && node tmp-v2/scripts/workout-screen-test.js",
     "test:late-week-start": "tsc -p tmp/tsconfig.engine-v2.json && node tmp-v2/scripts/late-week-start-test.js",
     "test:engine-vnext:beginner-realism": "tsc -p tmp/tsconfig.engine-v2.json && node tmp-v2/scripts/engine-vnext-beginner-realism-test.js",

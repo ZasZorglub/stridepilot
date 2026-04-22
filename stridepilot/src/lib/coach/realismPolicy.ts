@@ -1,5 +1,19 @@
 import { BaseProgramTrack, GoalConfig, PlanPhase, RunnerProfile } from "./types";
 
+/**
+ * Coach-policy layer for entry realism, early-week protection, and load smoothing.
+ *
+ * Product intent:
+ * - Beginners should feel safe, but never passive or filler-heavy.
+ * - Walking is a tool for confidence and control, not the dominant session experience.
+ * - Short sessions still need a visible main set and meaningful running.
+ * - Stronger runners should be recognized early with controlled specificity.
+ * - Early progression should feel smooth and credible, especially in week 1 -> 2.
+ *
+ * These helpers are intentionally explicit so future engine changes can preserve
+ * the current StridePilot coach feel instead of reintroducing passive openings,
+ * weak running ratios, or abrupt early ramps.
+ */
 export type ContinuityBand = "ultra_zero" | "one_to_two_min" | "five_min" | "established";
 
 export interface EntryRealismPolicy {
@@ -11,6 +25,8 @@ export interface EntryRealismPolicy {
 }
 
 export interface CapacityInterpretationPolicy {
+  // When true, early sessions should default to run-walk because the runner still
+  // needs protection. The surrounding values should still preserve meaningful running.
   preferRunWalkByDefault: boolean;
   firstWorkoutContinuousMaxMin: number | null;
   firstWorkoutTotalRunMaxMin: number | null;
@@ -25,6 +41,8 @@ export interface CapacityInterpretationPolicy {
 }
 
 export interface EarlyWeekRealismPolicy {
+  // Early-week policy is the main place where we prevent beginner safety from
+  // turning into passivity, and where we keep opening weeks readable and coach-like.
   preferRunWalk: boolean;
   maxContinuousRunMin: number | null;
   maxLongRunMin: number | null;
@@ -44,6 +62,8 @@ export interface ProgressionRealismPolicy {
 }
 
 export interface TrackPosturePolicy {
+  // Track posture controls whether the opening block should feel purely protective,
+  // steadily supportive, or intentionally quality-oriented for stronger runners.
   preferEasyOnly: boolean;
   preferSteadySupport: boolean;
   preferControlledQualitySignal: boolean;
@@ -117,6 +137,9 @@ export function buildCapacityInterpretationPolicy(params: {
   continuityBand: ContinuityBand;
   beginnerLike: boolean;
 }): CapacityInterpretationPolicy {
+  // This policy encodes the beginner philosophy that came out of the hardening work:
+  // even the weakest runner should get a session that feels manageable and real.
+  // The ultra-protected presets therefore limit passivity while still staying calm.
   const protectedGettingStarted = protectedGettingStartedRunner(params.profile, params.continuityBand, params.beginnerLike);
   const lowCapacityGettingStarted = lowCapacityGettingStartedRunner(params.profile, params.continuityBand, params.beginnerLike);
 
@@ -124,15 +147,15 @@ export function buildCapacityInterpretationPolicy(params: {
     return {
       preferRunWalkByDefault: true,
       firstWorkoutContinuousMaxMin: 1,
-      firstWorkoutTotalRunMaxMin: 2,
+      firstWorkoutTotalRunMaxMin: 6,
       introductoryContinuousStartMin: 1,
       introductoryLongRunStartMin: 8,
-      introductoryIntervalRunMin: 0.5,
+      introductoryIntervalRunMin: 1.5,
       introductoryRepeats: 4,
-      introductoryWalkBreakMin: 2.5,
+      introductoryWalkBreakMin: 1.25,
       introductoryContinuousFloorMin: 1,
       introductoryLongRunFloorMin: 8,
-      introductoryIntervalFloorMin: 0.5,
+      introductoryIntervalFloorMin: 1.5,
     };
   }
 
@@ -140,15 +163,15 @@ export function buildCapacityInterpretationPolicy(params: {
     return {
       preferRunWalkByDefault: true,
       firstWorkoutContinuousMaxMin: 2,
-      firstWorkoutTotalRunMaxMin: 4,
+      firstWorkoutTotalRunMaxMin: 5,
       introductoryContinuousStartMin: 2,
       introductoryLongRunStartMin: 10,
-      introductoryIntervalRunMin: 0.75,
-      introductoryRepeats: 4,
-      introductoryWalkBreakMin: 2.25,
+      introductoryIntervalRunMin: 1,
+      introductoryRepeats: 5,
+      introductoryWalkBreakMin: 1.75,
       introductoryContinuousFloorMin: 2,
       introductoryLongRunFloorMin: 10,
-      introductoryIntervalFloorMin: 0.75,
+      introductoryIntervalFloorMin: 1,
     };
   }
 
@@ -172,15 +195,15 @@ export function buildCapacityInterpretationPolicy(params: {
     return {
       preferRunWalkByDefault: true,
       firstWorkoutContinuousMaxMin: 4,
-      firstWorkoutTotalRunMaxMin: 8,
+      firstWorkoutTotalRunMaxMin: 10,
       introductoryContinuousStartMin: 4,
       introductoryLongRunStartMin: 14,
-      introductoryIntervalRunMin: 1,
-      introductoryRepeats: 4,
-      introductoryWalkBreakMin: 2,
+      introductoryIntervalRunMin: 2,
+      introductoryRepeats: 5,
+      introductoryWalkBreakMin: 1.75,
       introductoryContinuousFloorMin: 4,
       introductoryLongRunFloorMin: 14,
-      introductoryIntervalFloorMin: 1,
+      introductoryIntervalFloorMin: 2,
     };
   }
 
@@ -222,6 +245,8 @@ export function buildEarlyWeekRealismPolicy(params: {
   phase: PlanPhase;
   weekNumberInPhase: number;
 }): EarlyWeekRealismPolicy {
+  // Early-week realism is where we keep the first block from becoming either
+  // too passive for beginners or too generic for runners who already have base.
   const protectedGettingStarted = protectedGettingStartedRunner(params.profile, params.continuityBand, params.beginnerLike);
   const lowCapacityGettingStarted = lowCapacityGettingStartedRunner(params.profile, params.continuityBand, params.beginnerLike);
   const lowCapacityRunWalk = lowCapacityGettingStarted && params.profile.realisticTrainingDaysPerWeek <= 3 && params.profile.currentRunsPerWeek <= 2;
@@ -243,7 +268,7 @@ export function buildEarlyWeekRealismPolicy(params: {
           maxContinuousRunMin: 12 + (params.weekNumberInPhase - 1) * 2,
           maxLongRunMin: 22 + (params.weekNumberInPhase - 1) * 4,
           maxIntervalRunMin: 2,
-          minWalkBreakMin: 1.75,
+          minWalkBreakMin: params.continuityBand === "ultra_zero" ? 1.25 : params.continuityBand === "one_to_two_min" ? 1.5 : 1.75,
         }
       : {
           preferRunWalk: lowCapacityRunWalk,
@@ -290,6 +315,9 @@ export function buildProgressionRealismPolicy(params: {
   isStabilizationWeek: boolean;
   previousWasStabilizationWeek: boolean;
 }): ProgressionRealismPolicy {
+  // This policy is the main safeguard against early week-to-week trust breaks.
+  // It should keep opening progression smooth enough to feel coached, while still
+  // allowing stronger runners to see credible forward movement.
   const marathonLike = params.goal.goalDistance === "Halvmaraton" || params.goal.goalDistance === "Marathon";
   const protectedGettingStarted = protectedGettingStartedRunner(params.profile, params.continuityBand, params.beginnerLike);
   const lowCapacityGettingStarted = lowCapacityGettingStartedRunner(params.profile, params.continuityBand, params.beginnerLike);
@@ -350,6 +378,9 @@ export function buildTrackPosturePolicy(params: {
   useRunWalk: boolean;
   effectivePerformance: boolean;
 }): TrackPosturePolicy {
+  // Opening-week training identity lives here: easy-only for protected entries,
+  // steady support for calm durability tracks, and a controlled quality signal
+  // for stronger goal-focused runners who should be recognized early.
   const earlyWeeks = params.phase === "introduction" || (params.phase === "continuous_running" && params.weekNumberInPhase <= 2);
   const protectedEntry = protectedGettingStartedRunner(params.profile, params.continuityBand, params.beginnerLike);
   const lowCapacityEntry = lowCapacityGettingStartedRunner(params.profile, params.continuityBand, params.beginnerLike);

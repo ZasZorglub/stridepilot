@@ -748,9 +748,24 @@ function sessionMix(
     effectivePerformance,
   });
   const trackDrivenQuality = trackPosture.preferControlledQualitySignal;
+  const earlyPerformanceSpecificity =
+    !useRunWalk &&
+    weekNumberInPhase <= 2 &&
+    effectivePerformance &&
+    (trackDrivenQuality || strongBackground(profile, goal) || profile.currentRunsPerWeek >= 4 || profile.currentWeeklyVolumeKm >= 22);
   const earlyQualityType: WorkoutType =
     weekNumberInPhase <= 1
-      ? "steady"
+      ? goal.goalDistance === "5K"
+        ? earlyPerformanceSpecificity
+          ? "strides"
+          : "steady"
+        : goal.goalDistance === "10K"
+          ? earlyPerformanceSpecificity
+            ? "strides"
+            : "steady"
+          : earlyPerformanceSpecificity
+            ? "tempo"
+            : "steady"
       : goal.goalDistance === "5K"
         ? "strides"
         : goal.goalDistance === "10K"
@@ -1048,7 +1063,8 @@ function createWeekState(params: {
       Math.min(profileStart.longRunPeak, profileStart.longRunCap),
     ),
   );
-  const resolvedRepeats = clamp(repeats, distanceProfile.repeatsPeak.min, distanceProfile.repeatsPeak.max);
+  const minimumRepeats = continuityBand === "ultra_zero" ? 4 : distanceProfile.repeatsPeak.min;
+  const resolvedRepeats = clamp(repeats, minimumRepeats, distanceProfile.repeatsPeak.max);
   let resolvedIntervalRunMin = roundHalf(
     clamp(
       intervalRunMin,

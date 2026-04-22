@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "../tmp-coach",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": "..",
+    "incremental": false
+  },
+  "include": [
+    "./coach-guardrails-test.ts",
+    "../src/lib/coach/**/*.ts"
+  ]
+}
