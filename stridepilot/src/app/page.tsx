@@ -21,7 +21,7 @@ import {
   WorkoutSession,
   WorkoutStep,
 } from "@/lib/types";
-import { APP_NAME, APP_VERSION } from "@/lib/app-config";
+import { APP_BUILD_ID, APP_NAME, APP_VERSION } from "@/lib/app-config";
 import { formatReadableDurationFromSeconds } from "@/lib/duration";
 import { buildFeedbackMailto } from "@/lib/feedback-mail";
 import { getSiteCopy } from "@/lib/site-copy";
@@ -3915,7 +3915,7 @@ export default function Home() {
               </button>
               <p className={styles.subtleInline}>{siteCopy.betaTesterInstructions}</p>
               <p className={styles.authVersionLabel}>
-                {APP_NAME} {APP_VERSION} · build b00d5be
+                {APP_NAME} {APP_VERSION} · build {APP_BUILD_ID}
               </p>
             </div>
           </div>
@@ -3979,7 +3979,7 @@ export default function Home() {
               )}
 
               <p className={styles.authVersionLabel}>
-                {APP_NAME} {APP_VERSION} · build b00d5be
+                {APP_NAME} {APP_VERSION} · build {APP_BUILD_ID}
               </p>
             </section>
           </div>
