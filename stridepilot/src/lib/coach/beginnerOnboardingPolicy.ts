@@ -1,9 +1,14 @@
-import type { GoalConfig, RunnerProfile, WorkoutType } from "./types";
+import type { GoalConfig, RunnerProfile, WorkoutStructureSegment, WorkoutType } from "./types";
 import type { ContinuityBand } from "./realismPolicy";
 
 export interface FirstSessionPolicyResult {
   applies: boolean;
   protectedType: WorkoutType;
+}
+
+export interface FirstSessionRunWalkOpeningPolicyResult {
+  applies: boolean;
+  opening: WorkoutStructureSegment[];
 }
 
 export interface BeginnerWeekOneVariationResult {
@@ -120,6 +125,32 @@ export function firstSessionPolicy(context: FirstSessionPolicyContext): FirstSes
   return {
     applies: shouldProtect,
     protectedType: shouldProtect ? protectedType : context.plannedType,
+  };
+}
+
+/**
+ * Keep the very first protected beginner run-walk workout coach-like:
+ * a runner who has been running recently can start a touch more actively,
+ * while a long-break/new runner keeps the gentler walk+jog entry.
+ */
+export function firstSessionRunWalkOpeningPolicy(
+  context: BeginnerOnboardingBaseContext,
+): FirstSessionRunWalkOpeningPolicyResult {
+  const recentProtectedContinuousBeginner =
+    context.weekNumber === 1 &&
+    context.phase === "introduction" &&
+    context.actualSessionNumber === 1 &&
+    beginnerCategory(context.profile) === "continuous_beginner" &&
+    context.profile.baseProgramTrack === "getting_started" &&
+    context.profile.archetype === "fit_but_inexperienced";
+
+  if (!recentProtectedContinuousBeginner) {
+    return { applies: false, opening: [] };
+  }
+
+  return {
+    applies: true,
+    opening: [{ type: "recovery", label: "Let jog", durationMin: 3.5 }],
   };
 }
 

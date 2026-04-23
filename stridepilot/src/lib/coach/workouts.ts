@@ -1,4 +1,5 @@
 import { GoalConfig, PlanPhase, RunnerProfile, WorkoutSession, WorkoutStructureSegment, WorkoutTemplate, WorkoutType } from "./types";
+import { firstSessionRunWalkOpeningPolicy } from "./beginnerOnboardingPolicy";
 import { goalEventMinimumRealismMinutes } from "./realismPolicy";
 
 /**
@@ -164,15 +165,18 @@ function runWalkOpeningSegments(context: WorkoutBuildContext): WorkoutStructureS
     return [{ type: "walk", label: "Kort gangstart", durationMin: 2.5 }];
   }
 
-  const recentProtectedContinuousBeginner =
-    category === "continuous_beginner" &&
-    context.phase === "introduction" &&
-    context.weekNumber === 1 &&
-    context.profile.baseProgramTrack === "getting_started" &&
-    context.profile.archetype === "fit_but_inexperienced";
+  const firstSessionOpening = firstSessionRunWalkOpeningPolicy({
+    profile: context.profile,
+    goal: context.goal,
+    weekNumber: context.weekNumber,
+    phase: context.phase,
+    actualSessionNumber: 1,
+    actualWeekSessionCount: 1,
+    plannedWeekSessionCount: 1,
+  });
 
-  if (recentProtectedContinuousBeginner) {
-    return [{ type: "recovery", label: "Let jog", durationMin: 3.5 }];
+  if (firstSessionOpening.applies) {
+    return firstSessionOpening.opening;
   }
 
   return warmupSegments(context);

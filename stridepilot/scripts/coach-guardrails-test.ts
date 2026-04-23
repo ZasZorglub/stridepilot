@@ -199,4 +199,58 @@ const partialWeekOne = partialPlan.weeks[0]!;
 assert.equal(partialWeekOne.sessions.length, 2, "partial opening week should only keep the surviving sessions");
 assert.equal(partialWeekOne.sessions[0]?.type, "run-walk", "the first actual beginner session in a partial week should stay introductory");
 
+const recentFirstSession = buildRunWalkWorkout(
+  makeContext({
+    profile: makeProfile({
+      archetype: "fit_but_inexperienced",
+      runnerCategory: "continuous_beginner",
+      aerobicBase: 3,
+      runningSpecificity: 1,
+      confidence: 2,
+      injurySensitivity: 2,
+      currentWeeklyVolumeKm: 8,
+      longestRunMinutes: 18,
+      typicalWorkoutMinutes: 32,
+    }),
+    intervalRunMin: 2,
+    walkBreakMin: 2,
+    repeats: 5,
+  }),
+);
+
+const longBreakFirstSession = buildRunWalkWorkout(
+  makeContext({
+    profile: makeProfile({
+      archetype: "nervous_beginner",
+      runnerCategory: "continuous_beginner",
+      aerobicBase: 2,
+      runningSpecificity: 2,
+      confidence: 2,
+      injurySensitivity: 4,
+      currentWeeklyVolumeKm: 8,
+      longestRunMinutes: 18,
+      typicalWorkoutMinutes: 32,
+    }),
+    intervalRunMin: 2,
+    walkBreakMin: 2,
+    repeats: 5,
+  }),
+);
+
+assert.equal(recentFirstSession.type, "run-walk", "recent and long-break beginners should stay in the same safe introductory workout family");
+assert.equal(longBreakFirstSession.type, "run-walk", "recent and long-break beginners should stay in the same safe introductory workout family");
+assert.deepEqual(
+  recentFirstSession.structure[0],
+  { type: "recovery", label: "Let jog", durationMin: 3.5 },
+  "a recently running beginner should get a slightly more active first-session opening",
+);
+assert.deepEqual(
+  longBreakFirstSession.structure.slice(0, 2),
+  [
+    { type: "walk", label: "Rolig gang", durationMin: 1 },
+    { type: "recovery", label: "Let jog", durationMin: 2.5 },
+  ],
+  "a long-break or new beginner should keep the calmer walk-plus-jog first-session opening",
+);
+
 console.log("coach-guardrails-test: ok");
