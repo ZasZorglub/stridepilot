@@ -337,6 +337,7 @@ export function isOnboardingStepReady(params: {
   selections: {
     track: boolean;
     runningAbility: boolean;
+    recentRunningState?: boolean;
     goalDistance: boolean;
     goalType: boolean;
     activityLevel: boolean;
@@ -353,7 +354,7 @@ export function isOnboardingStepReady(params: {
 }): boolean {
   if (params.onboardingStep === 1) return params.selections.track;
   if (params.onboardingStep === 2) return Boolean(params.firstName?.trim());
-  if (params.onboardingStep === 3) return params.selections.runningAbility;
+  if (params.onboardingStep === 3) return params.selections.runningAbility && Boolean(params.selections.recentRunningState);
   if (params.onboardingStep === 4) return params.selections.goalDistance;
   if (params.onboardingStep === 5) {
     return (

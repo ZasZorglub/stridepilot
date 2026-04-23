@@ -11,6 +11,7 @@ import {
   PlanAmbition,
   PlanRecommendation,
   PlanRecommendationOption,
+  RecentRunningState,
   RunnerProfile,
   RunnerProfileInsights,
   SavedPlanAdaptation,
@@ -132,6 +133,7 @@ type InfoField = "targetPace" | "runningExperience" | "activityLevel" | "availab
 type OnboardingSelectionState = {
   track: boolean;
   runningAbility: boolean;
+  recentRunningState: boolean;
   goalDistance: boolean;
   goalType: boolean;
   activityLevel: boolean;
@@ -229,6 +231,12 @@ const CURRENT_RUNS_PER_WEEK_OPTIONS = [
   { value: 2, label: "2 gange" },
   { value: 3, label: "3 gange" },
   { value: 4, label: "4+ gange" },
+] as const;
+
+const RECENT_RUNNING_STATE_OPTIONS: Array<{ value: RecentRunningState; label: string; labelEn: string }> = [
+  { value: "recent", label: "Jeg har løbet for nylig", labelEn: "I've been running recently" },
+  { value: "returning", label: "Jeg er på vej tilbage", labelEn: "I'm getting back into it" },
+  { value: "long_break_or_new", label: "Det er længe siden / jeg er ny", labelEn: "It's been a long time / I'm new" },
 ] as const;
 
 const GOAL_DISTANCE_OPTIONS: Array<{ value: Goal["distance"]; label: string }> = [
@@ -1155,6 +1163,7 @@ export default function Home() {
   const [onboardingSelections, setOnboardingSelections] = useState<OnboardingSelectionState>({
     track: false,
     runningAbility: false,
+    recentRunningState: false,
     goalDistance: false,
     goalType: false,
     activityLevel: false,
@@ -1170,6 +1179,7 @@ export default function Home() {
     activityLevel: "moderat",
     runningExperience: "nybegynder",
     currentRunningAbility: "helt_ny",
+    recentRunningState: undefined,
     currentContinuousDistanceKm: undefined,
     gender: undefined,
     userTrainingContext: "",
@@ -1352,6 +1362,10 @@ export default function Home() {
   );
   const localizedCurrentRunsPerWeekOptions = useMemo(
     () => CURRENT_RUNS_PER_WEEK_OPTIONS.map((option) => ({ ...option, label: siteLocale === "en" ? (option.value === 0 ? "0 runs" : option.value === 1 ? "1 run" : option.value === 4 ? "4+ runs" : `${option.value} runs`) : option.label })),
+    [siteLocale],
+  );
+  const localizedRecentRunningStateOptions = useMemo(
+    () => RECENT_RUNNING_STATE_OPTIONS.map((option) => ({ value: option.value, label: siteLocale === "en" ? option.labelEn : option.label })),
     [siteLocale],
   );
   const localizedActivityLevelOptions = useMemo(
@@ -1577,6 +1591,7 @@ export default function Home() {
     setOnboardingSelections({
       track: false,
       runningAbility: false,
+      recentRunningState: false,
       goalDistance: false,
       goalType: false,
       activityLevel: false,
@@ -1618,6 +1633,7 @@ export default function Home() {
       activityLevel: "moderat",
       runningExperience: "nybegynder",
       currentRunningAbility: "helt_ny",
+      recentRunningState: undefined,
       currentContinuousDistanceKm: undefined,
       gender: undefined,
       userTrainingContext: "",
@@ -2147,6 +2163,7 @@ export default function Home() {
       setOnboardingSelections({
         track: Boolean(inferredTrack),
         runningAbility: hasSetup,
+        recentRunningState: Boolean(runnerProfile.recentRunningState),
         goalDistance: hasSetup,
         goalType: hasSetup,
         activityLevel: hasSetup,
@@ -4127,6 +4144,28 @@ export default function Home() {
                           } else {
                             setRunnerProfile((current) => ({ ...current, currentRunsPerWeek: nextRuns }));
                           }
+                        }}
+                      >
+                        <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>
+                        <span className={styles.choiceText}>{option.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className={styles.trainingDays}>
+                <p className={styles.daysLabel}>{siteLocale === "en" ? "How recently have you been running?" : "Hvor nyligt har du løbet?"}</p>
+                <div className={styles.choiceGrid}>
+                  {localizedRecentRunningStateOptions.map((option) => {
+                    const active = runnerProfile.recentRunningState === option.value;
+                    return (
+                      <button
+                        key={`recent-running-${option.value}`}
+                        type="button"
+                        className={active ? styles.choiceCardActive : styles.choiceCard}
+                        onClick={() => {
+                          setRunnerProfile((current) => ({ ...current, recentRunningState: option.value }));
+                          setOnboardingSelections((current) => ({ ...current, recentRunningState: true }));
                         }}
                       >
                         <span className={styles.choiceCheck} aria-hidden="true">{active ? "✓" : ""}</span>

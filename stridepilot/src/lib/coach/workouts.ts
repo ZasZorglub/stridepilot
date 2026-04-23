@@ -164,6 +164,17 @@ function runWalkOpeningSegments(context: WorkoutBuildContext): WorkoutStructureS
     return [{ type: "walk", label: "Kort gangstart", durationMin: 2.5 }];
   }
 
+  const recentProtectedContinuousBeginner =
+    category === "continuous_beginner" &&
+    context.phase === "introduction" &&
+    context.weekNumber === 1 &&
+    context.profile.baseProgramTrack === "getting_started" &&
+    context.profile.archetype === "fit_but_inexperienced";
+
+  if (recentProtectedContinuousBeginner) {
+    return [{ type: "recovery", label: "Let jog", durationMin: 3.5 }];
+  }
+
   return warmupSegments(context);
 }
 

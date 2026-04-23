@@ -453,6 +453,7 @@ export async function POST(req: Request) {
     });
     const recentFeedback = await fetchRecentFeedbackSignals(session?.userId, profileId);
     const coachProfile = interpretCoachRunnerProfile({
+      recentRunningState: runnerProfile.recentRunningState,
       onboardingText: runnerProfile.userTrainingContext,
       injuryHistory: runnerProfile.injuryHistory,
       weakPoints: runnerProfile.weakPoints,

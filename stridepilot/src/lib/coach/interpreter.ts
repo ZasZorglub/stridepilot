@@ -87,6 +87,7 @@ function inferBaseFromAbility(currentAbility?: string): { aerobicBase: 1 | 2 | 3
 
 function inferArchetype(input: OnboardingInterpretationInput): RunnerArchetype {
   const baseProgramTrack = resolveBaseProgramTrack(input.onboardingTrack);
+  const recentRunningState = input.recentRunningState;
   const text = [input.onboardingText, input.injuryHistory, input.weakPoints, input.otherTraining].map(normalizeText).join(" ");
   const currentAbility = normalizeText(input.currentAbility);
   const activityLevel = normalizeText(input.activityLevel);
@@ -97,7 +98,7 @@ function inferArchetype(input: OnboardingInterpretationInput): RunnerArchetype {
   const explicitBeginner = hasAnyKeyword(text, ["helt ny", "aldrig løbet", "never run", "har aldrig løbet", "ingen løbeerfaring", "start fra nul"]);
   const strongStructuredExperience = hasStrongStructuredExperience(input);
 
-  if (baseProgramTrack === "returning") return "returning_runner";
+  if (baseProgramTrack === "returning" || recentRunningState === "returning") return "returning_runner";
   if (strongStructuredExperience) {
     if (hasAnyKeyword(text, ["tilbage", "igen", "comeback", "returning", "har løbet før", "kommer tilbage"])) {
       return "returning_runner";
@@ -119,6 +120,10 @@ function inferArchetype(input: OnboardingInterpretationInput): RunnerArchetype {
     return "fit_but_inexperienced";
   }
   if (explicitBeginner) {
+    return "nervous_beginner";
+  }
+
+  if (recentRunningState === "long_break_or_new" && currentRunsPerWeek <= 1 && longestRunMinutes <= 20) {
     return "nervous_beginner";
   }
 

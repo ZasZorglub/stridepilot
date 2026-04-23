@@ -16,6 +16,7 @@ export type CurrentRunningAbility =
   | "ti_femten_min"
   | "tyve_tredive_min"
   | "mere_end_tredive_min";
+export type RecentRunningState = "recent" | "returning" | "long_break_or_new";
 
 export interface RecentRaceTime {
   distance: GoalDistance;
@@ -31,6 +32,7 @@ export interface RunnerProfile {
   activityLevel: ActivityLevel;
   runningExperience: "nybegynder" | "let_ovet" | "ovet";
   currentRunningAbility: CurrentRunningAbility;
+  recentRunningState?: RecentRunningState;
   currentContinuousDistanceKm?: number;
   gender?: "kvinde" | "mand" | "andet" | "vil_ikke_oplyse";
   userTrainingContext?: string;

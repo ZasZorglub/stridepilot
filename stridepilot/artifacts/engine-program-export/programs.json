@@ -10632,21 +10632,23 @@
       }
     },
     {
-      "programId": "fixed:low-confidence-returner:Continuous5K",
-      "scenarioId": "low-confidence-returner",
-      "scenarioName": "Low-confidence returner",
+      "programId": "fixed:recent-running-state-trio-recent:Continuous5K",
+      "scenarioId": "recent-running-state-trio-recent",
+      "scenarioName": "Recent-running-state trio: recent runner",
       "scenarioType": "fixed",
-      "scenarioFocus": "A cautious comeback runner should feel protected without being reduced to passive filler.",
+      "scenarioFocus": "Comparison runner for recentRunningState. Inputs stay fixed except freshness so week 1 can be compared directly.",
       "scenarioTags": [
-        "returning",
-        "low-confidence",
-        "beginner"
+        "comparison",
+        "recent-running-state",
+        "recent",
+        "partial-week"
       ],
+      "comparisonGroup": "recent-running-state-trio-a",
       "planType": "Continuous5K",
       "goal": {
         "goalDistance": "5K",
-        "goalIntent": "finish_comfortably",
-        "startDate": "2026-04-21",
+        "goalIntent": "finish",
+        "startDate": "2026-04-24",
         "targetDate": "2026-07-19",
         "trainingDaysPerWeek": 3,
         "preferredTrainingDays": [
@@ -10657,18 +10659,21 @@
       },
       "weeks": 13,
       "userInputs": {
-        "baseProgramTrack": "returning",
-        "archetype": "returning_runner",
+        "recentRunningState": "recent",
+        "onboardingTrack": "getting_started",
+        "currentAbility": "ti_femten_min",
+        "baseProgramTrack": "getting_started",
+        "archetype": "fit_but_inexperienced",
         "runnerCategory": "continuous_beginner",
-        "aerobicBase": 1,
+        "aerobicBase": 3,
         "runningSpecificity": 1,
-        "confidence": 1,
-        "injurySensitivity": 5,
+        "confidence": 2,
+        "injurySensitivity": 2,
         "progressionStyle": "conservative",
         "currentRunsPerWeek": 1,
-        "currentWeeklyVolumeKm": 5,
-        "longestRunMinutes": 14,
-        "typicalWorkoutMinutes": 28,
+        "currentWeeklyVolumeKm": 8,
+        "longestRunMinutes": 18,
+        "typicalWorkoutMinutes": 32,
         "realisticTrainingDaysPerWeek": 3,
         "trainingDaysPerWeek": 3,
         "preferredTrainingDays": [
@@ -10676,13 +10681,13 @@
           "thursday",
           "sunday"
         ],
-        "startDate": "2026-04-21",
+        "startDate": "2026-04-24",
         "targetDate": "2026-07-19",
-        "goalIntent": "finish_comfortably",
+        "goalIntent": "finish",
         "goalDistance": "5K"
       },
       "calendarAssumptions": {
-        "startDate": "2026-04-21",
+        "startDate": "2026-04-24",
         "targetDate": "2026-07-19",
         "preferredTrainingDays": [
           "tuesday",
@@ -10690,8 +10695,8 @@
           "sunday"
         ],
         "requestedTrainingDaysPerWeek": 3,
-        "firstWeekSessionCount": 3,
-        "partialFirstWeek": false
+        "firstWeekSessionCount": 1,
+        "partialFirstWeek": true
       },
       "reviewWeeks": [
         {
@@ -10699,31 +10704,28 @@
           "phase": "introduction",
           "focus": "Få rytme i træningen og lande sikkert i programmet.",
           "weekSummary": "introduction · Få rytme i træningen og lande sikkert i programmet.",
-          "estimatedLoad": 31,
-          "sessionCount": 3,
-          "flags": [],
+          "estimatedLoad": 19,
+          "sessionCount": 1,
+          "flags": [
+            "partial_first_week"
+          ],
           "sessions": [
             {
-              "id": "1-tuesday-run-walk",
-              "dayOfWeek": "tuesday",
-              "date": "2026-04-21",
+              "id": "1-sunday-run-walk",
+              "dayOfWeek": "sunday",
+              "date": "2026-04-26",
               "type": "run-walk",
               "title": "Run-walk",
               "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
               "intent": "Skabe tryg rytme og løbetolerance.",
               "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
               "totalDurationMin": 23.5,
-              "estimatedLoad": 12.5,
+              "estimatedLoad": 19,
               "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
                 {
                   "type": "recovery",
                   "label": "Let jog",
-                  "durationMin": 2.5
+                  "durationMin": 3.5
                 },
                 {
                   "type": "run",
@@ -10746,220 +10748,84 @@
               "orderedStructure": [
                 {
                   "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 3.5
                 },
                 {
                   "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
                   "type": "run",
                   "label": "Løb/gang blok 1",
                   "durationMin": 2,
                   "sourceRepeatIndex": 1
                 },
                 {
-                  "order": 4,
+                  "order": 3,
                   "type": "pause",
                   "label": "Pause",
                   "durationMin": 2
                 },
                 {
-                  "order": 5,
+                  "order": 4,
                   "type": "run",
                   "label": "Løb/gang blok 2",
                   "durationMin": 2,
                   "sourceRepeatIndex": 2
                 },
                 {
-                  "order": 6,
+                  "order": 5,
                   "type": "pause",
                   "label": "Pause",
                   "durationMin": 2
                 },
                 {
-                  "order": 7,
+                  "order": 6,
                   "type": "run",
                   "label": "Løb/gang blok 3",
                   "durationMin": 2,
                   "sourceRepeatIndex": 3
                 },
                 {
-                  "order": 8,
+                  "order": 7,
                   "type": "pause",
                   "label": "Pause",
                   "durationMin": 2
                 },
                 {
-                  "order": 9,
+                  "order": 8,
                   "type": "run",
                   "label": "Løb/gang blok 4",
                   "durationMin": 2,
                   "sourceRepeatIndex": 4
                 },
                 {
-                  "order": 10,
+                  "order": 9,
                   "type": "pause",
                   "label": "Pause",
                   "durationMin": 2
                 },
                 {
-                  "order": 11,
+                  "order": 10,
                   "type": "run",
                   "label": "Løb/gang blok 5",
                   "durationMin": 2,
                   "sourceRepeatIndex": 5
                 },
                 {
+                  "order": 11,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
                   "order": 12,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 13,
                   "type": "walk",
                   "label": "Gang ned",
                   "durationMin": 1
                 }
               ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 2m løb/gang blok 1 -> 2m pause -> 2m løb/gang blok 2 -> 2m pause -> 2m løb/gang blok 3 -> 2m pause -> 2m løb/gang blok 4 -> 2m pause -> 2m løb/gang blok 5 -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 13.5,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            },
-            {
-              "id": "1-thursday-easy",
-              "dayOfWeek": "thursday",
-              "date": "2026-04-23",
-              "type": "easy",
-              "title": "Roligt løb",
-              "description": "Et jævnt pas hvor du finder rytme og bygger rolig kapacitet.",
-              "intent": "Skabe kontinuitet og overskud.",
-              "effortGuidance": "Hold et tempo hvor du stadig kan føre en kort samtale.",
-              "totalDurationMin": 9,
-              "estimatedLoad": 5,
-              "rawStructure": [
-                {
-                  "type": "recovery",
-                  "label": "Let jog start",
-                  "durationMin": 2
-                },
-                {
-                  "type": "steady",
-                  "label": "Roligt hovedsæt",
-                  "durationMin": 6
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "recovery",
-                  "label": "Let jog start",
-                  "durationMin": 2
-                },
-                {
-                  "order": 2,
-                  "type": "steady",
-                  "label": "Roligt hovedsæt",
-                  "durationMin": 6
-                },
-                {
-                  "order": 3,
-                  "type": "recovery",
-                  "label": "Let jog ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "2m let jog start -> 6m roligt hovedsæt -> 1m let jog ned",
-              "runningDurationMin": 9,
-              "openingDurationMin": 2,
-              "endingDurationMin": 1,
-              "flags": []
-            },
-            {
-              "id": "1-sunday-long",
-              "dayOfWeek": "sunday",
-              "date": "2026-04-26",
-              "type": "long",
-              "title": "Langt roligt pas",
-              "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
-              "intent": "Udvide den rolige kapacitet frem mod 5K.",
-              "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
-              "totalDurationMin": 22,
-              "estimatedLoad": 14,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "steady",
-                  "label": "Lang rolig blok",
-                  "durationMin": 16.5
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "steady",
-                  "label": "Lang rolig blok",
-                  "durationMin": 16.5
-                },
-                {
-                  "order": 4,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 5,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 16.5m lang rolig blok -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 20,
+              "structureSummary": "3.5m let jog -> 2m løb/gang blok 1 -> 2m pause -> 2m løb/gang blok 2 -> 2m pause -> 2m løb/gang blok 3 -> 2m pause -> 2m løb/gang blok 4 -> 2m pause -> 2m løb/gang blok 5 -> 1m let jog -> 1m gang ned",
+              "runningDurationMin": 14.5,
               "openingDurationMin": 3.5,
               "endingDurationMin": 2,
               "flags": []
@@ -10971,7 +10837,7 @@
           "phase": "introduction",
           "focus": "Bygge en stabil uge, hvor kroppen lærer træningen bedre at kende.",
           "weekSummary": "introduction · Bygge en stabil uge, hvor kroppen lærer træningen bedre at kende.",
-          "estimatedLoad": 31,
+          "estimatedLoad": 20.5,
           "sessionCount": 3,
           "flags": [],
           "sessions": [
@@ -10985,7 +10851,7 @@
               "intent": "Skabe tryg rytme og løbetolerance.",
               "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
               "totalDurationMin": 25,
-              "estimatedLoad": 12.5,
+              "estimatedLoad": 7.5,
               "rawStructure": [
                 {
                   "type": "walk",
@@ -11116,7 +10982,7 @@
               "intent": "Skabe kontinuitet og overskud.",
               "effortGuidance": "Hold et tempo hvor du stadig kan føre en kort samtale.",
               "totalDurationMin": 9,
-              "estimatedLoad": 4.5,
+              "estimatedLoad": 2.5,
               "rawStructure": [
                 {
                   "type": "recovery",
@@ -11169,8 +11035,8 @@
               "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
               "intent": "Udvide den rolige kapacitet frem mod 5K.",
               "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
-              "totalDurationMin": 23.5,
-              "estimatedLoad": 14,
+              "totalDurationMin": 29.5,
+              "estimatedLoad": 10.5,
               "rawStructure": [
                 {
                   "type": "walk",
@@ -11185,7 +11051,7 @@
                 {
                   "type": "steady",
                   "label": "Lang rolig blok",
-                  "durationMin": 18
+                  "durationMin": 24
                 },
                 {
                   "type": "recovery",
@@ -11215,7 +11081,7 @@
                   "order": 3,
                   "type": "steady",
                   "label": "Lang rolig blok",
-                  "durationMin": 18
+                  "durationMin": 24
                 },
                 {
                   "order": 4,
@@ -11230,8 +11096,8 @@
                   "durationMin": 1
                 }
               ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 18m lang rolig blok -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 21.5,
+              "structureSummary": "1m rolig gang -> 2.5m let jog -> 24m lang rolig blok -> 1m let jog -> 1m gang ned",
+              "runningDurationMin": 27.5,
               "openingDurationMin": 3.5,
               "endingDurationMin": 2,
               "flags": []
@@ -11243,7 +11109,7 @@
           "phase": "introduction",
           "focus": "En roligere uge hvor kroppen får plads til at absorbere træningen.",
           "weekSummary": "introduction · En roligere uge hvor kroppen får plads til at absorbere træningen.",
-          "estimatedLoad": 28.5,
+          "estimatedLoad": 20,
           "sessionCount": 3,
           "flags": [],
           "sessions": [
@@ -11257,7 +11123,7 @@
               "intent": "Skabe tryg rytme og løbetolerance.",
               "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
               "totalDurationMin": 27,
-              "estimatedLoad": 11,
+              "estimatedLoad": 7,
               "rawStructure": [
                 {
                   "type": "walk",
@@ -11388,7 +11254,7 @@
               "intent": "Give bevægelse uden at stjæle restitution.",
               "effortGuidance": "Hold det let fra start til slut.",
               "totalDurationMin": 17.5,
-              "estimatedLoad": 6,
+              "estimatedLoad": 4,
               "rawStructure": [
                 {
                   "type": "walk",
@@ -11463,8 +11329,8 @@
               "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
               "intent": "Udvide den rolige kapacitet frem mod 5K.",
               "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
-              "totalDurationMin": 23.5,
-              "estimatedLoad": 11.5,
+              "totalDurationMin": 29.5,
+              "estimatedLoad": 9,
               "rawStructure": [
                 {
                   "type": "walk",
@@ -11479,7 +11345,7 @@
                 {
                   "type": "steady",
                   "label": "Lang rolig blok",
-                  "durationMin": 18
+                  "durationMin": 24
                 },
                 {
                   "type": "recovery",
@@ -11509,7 +11375,7 @@
                   "order": 3,
                   "type": "steady",
                   "label": "Lang rolig blok",
-                  "durationMin": 18
+                  "durationMin": 24
                 },
                 {
                   "order": 4,
@@ -11524,8 +11390,8 @@
                   "durationMin": 1
                 }
               ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 18m lang rolig blok -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 21.5,
+              "structureSummary": "1m rolig gang -> 2.5m let jog -> 24m lang rolig blok -> 1m let jog -> 1m gang ned",
+              "runningDurationMin": 27.5,
               "openingDurationMin": 3.5,
               "endingDurationMin": 2,
               "flags": []
@@ -11540,7 +11406,1448 @@
           "long_passive_finish": 0,
           "muddy_structure": 0
         },
-        "weekFlags": []
+        "weekFlags": [
+          "partial_first_week"
+        ]
+      }
+    },
+    {
+      "programId": "fixed:recent-running-state-trio-returning:Continuous5K",
+      "scenarioId": "recent-running-state-trio-returning",
+      "scenarioName": "Recent-running-state trio: returning runner",
+      "scenarioType": "fixed",
+      "scenarioFocus": "Comparison runner for recentRunningState. Inputs stay fixed except freshness so week 1 can be compared directly.",
+      "scenarioTags": [
+        "comparison",
+        "recent-running-state",
+        "returning",
+        "partial-week"
+      ],
+      "comparisonGroup": "recent-running-state-trio-a",
+      "planType": "Continuous5K",
+      "goal": {
+        "goalDistance": "5K",
+        "goalIntent": "finish",
+        "startDate": "2026-04-24",
+        "targetDate": "2026-07-19",
+        "trainingDaysPerWeek": 3,
+        "preferredTrainingDays": [
+          "tuesday",
+          "thursday",
+          "sunday"
+        ]
+      },
+      "weeks": 13,
+      "userInputs": {
+        "recentRunningState": "returning",
+        "onboardingTrack": "getting_started",
+        "currentAbility": "ti_femten_min",
+        "baseProgramTrack": "getting_started",
+        "archetype": "returning_runner",
+        "runnerCategory": "recreational",
+        "aerobicBase": 2,
+        "runningSpecificity": 3,
+        "confidence": 2,
+        "injurySensitivity": 4,
+        "progressionStyle": "conservative",
+        "currentRunsPerWeek": 1,
+        "currentWeeklyVolumeKm": 8,
+        "longestRunMinutes": 18,
+        "typicalWorkoutMinutes": 32,
+        "realisticTrainingDaysPerWeek": 3,
+        "trainingDaysPerWeek": 3,
+        "preferredTrainingDays": [
+          "tuesday",
+          "thursday",
+          "sunday"
+        ],
+        "startDate": "2026-04-24",
+        "targetDate": "2026-07-19",
+        "goalIntent": "finish",
+        "goalDistance": "5K"
+      },
+      "calendarAssumptions": {
+        "startDate": "2026-04-24",
+        "targetDate": "2026-07-19",
+        "preferredTrainingDays": [
+          "tuesday",
+          "thursday",
+          "sunday"
+        ],
+        "requestedTrainingDaysPerWeek": 3,
+        "firstWeekSessionCount": 1,
+        "partialFirstWeek": true
+      },
+      "reviewWeeks": [
+        {
+          "weekNumber": 1,
+          "phase": "introduction",
+          "focus": "Få rytme i træningen og lande sikkert i programmet.",
+          "weekSummary": "introduction · Få rytme i træningen og lande sikkert i programmet.",
+          "estimatedLoad": 20,
+          "sessionCount": 1,
+          "flags": [
+            "partial_first_week"
+          ],
+          "sessions": [
+            {
+              "id": "1-sunday-run-walk",
+              "dayOfWeek": "sunday",
+              "date": "2026-04-26",
+              "type": "run-walk",
+              "title": "Run-walk",
+              "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
+              "intent": "Skabe tryg rytme og løbetolerance.",
+              "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
+              "totalDurationMin": 26,
+              "estimatedLoad": 20,
+              "rawStructure": [
+                {
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 6
+                },
+                {
+                  "type": "run",
+                  "label": "Løb/gang blok",
+                  "durationMin": 2,
+                  "repeats": 5,
+                  "recoverMin": 2
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 2
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 6
+                },
+                {
+                  "order": 2,
+                  "type": "run",
+                  "label": "Løb/gang blok 1",
+                  "durationMin": 2,
+                  "sourceRepeatIndex": 1
+                },
+                {
+                  "order": 3,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 4,
+                  "type": "run",
+                  "label": "Løb/gang blok 2",
+                  "durationMin": 2,
+                  "sourceRepeatIndex": 2
+                },
+                {
+                  "order": 5,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 6,
+                  "type": "run",
+                  "label": "Løb/gang blok 3",
+                  "durationMin": 2,
+                  "sourceRepeatIndex": 3
+                },
+                {
+                  "order": 7,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 8,
+                  "type": "run",
+                  "label": "Løb/gang blok 4",
+                  "durationMin": 2,
+                  "sourceRepeatIndex": 4
+                },
+                {
+                  "order": 9,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 10,
+                  "type": "run",
+                  "label": "Løb/gang blok 5",
+                  "durationMin": 2,
+                  "sourceRepeatIndex": 5
+                },
+                {
+                  "order": 11,
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 2
+                }
+              ],
+              "structureSummary": "6m let jog opvarmning -> 2m løb/gang blok 1 -> 2m pause -> 2m løb/gang blok 2 -> 2m pause -> 2m løb/gang blok 3 -> 2m pause -> 2m løb/gang blok 4 -> 2m pause -> 2m løb/gang blok 5 -> 2m let jog ned",
+              "runningDurationMin": 18,
+              "openingDurationMin": 6,
+              "endingDurationMin": 2,
+              "flags": []
+            }
+          ]
+        },
+        {
+          "weekNumber": 2,
+          "phase": "introduction",
+          "focus": "Bygge en stabil uge, hvor kroppen lærer træningen bedre at kende.",
+          "weekSummary": "introduction · Bygge en stabil uge, hvor kroppen lærer træningen bedre at kende.",
+          "estimatedLoad": 21.5,
+          "sessionCount": 3,
+          "flags": [],
+          "sessions": [
+            {
+              "id": "2-tuesday-run-walk",
+              "dayOfWeek": "tuesday",
+              "date": "2026-04-28",
+              "type": "run-walk",
+              "title": "Run-walk",
+              "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
+              "intent": "Skabe tryg rytme og løbetolerance.",
+              "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
+              "totalDurationMin": 27.5,
+              "estimatedLoad": 8.5,
+              "rawStructure": [
+                {
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 6
+                },
+                {
+                  "type": "run",
+                  "label": "Løb/gang blok",
+                  "durationMin": 2.25,
+                  "repeats": 5,
+                  "recoverMin": 2
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 2
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 6
+                },
+                {
+                  "order": 2,
+                  "type": "run",
+                  "label": "Løb/gang blok 1",
+                  "durationMin": 2.25,
+                  "sourceRepeatIndex": 1
+                },
+                {
+                  "order": 3,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 4,
+                  "type": "run",
+                  "label": "Løb/gang blok 2",
+                  "durationMin": 2.25,
+                  "sourceRepeatIndex": 2
+                },
+                {
+                  "order": 5,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 6,
+                  "type": "run",
+                  "label": "Løb/gang blok 3",
+                  "durationMin": 2.25,
+                  "sourceRepeatIndex": 3
+                },
+                {
+                  "order": 7,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 8,
+                  "type": "run",
+                  "label": "Løb/gang blok 4",
+                  "durationMin": 2.25,
+                  "sourceRepeatIndex": 4
+                },
+                {
+                  "order": 9,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 10,
+                  "type": "run",
+                  "label": "Løb/gang blok 5",
+                  "durationMin": 2.25,
+                  "sourceRepeatIndex": 5
+                },
+                {
+                  "order": 11,
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 2
+                }
+              ],
+              "structureSummary": "6m let jog opvarmning -> 2.3m løb/gang blok 1 -> 2m pause -> 2.3m løb/gang blok 2 -> 2m pause -> 2.3m løb/gang blok 3 -> 2m pause -> 2.3m løb/gang blok 4 -> 2m pause -> 2.3m løb/gang blok 5 -> 2m let jog ned",
+              "runningDurationMin": 19.5,
+              "openingDurationMin": 6,
+              "endingDurationMin": 2,
+              "flags": []
+            },
+            {
+              "id": "2-thursday-easy",
+              "dayOfWeek": "thursday",
+              "date": "2026-04-30",
+              "type": "easy",
+              "title": "Roligt løb",
+              "description": "Et jævnt pas hvor du finder rytme og bygger rolig kapacitet.",
+              "intent": "Skabe kontinuitet og overskud.",
+              "effortGuidance": "Hold et tempo hvor du stadig kan føre en kort samtale.",
+              "totalDurationMin": 8,
+              "estimatedLoad": 2.5,
+              "rawStructure": [
+                {
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 4
+                },
+                {
+                  "type": "steady",
+                  "label": "Roligt løb",
+                  "durationMin": 4
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 4
+                },
+                {
+                  "order": 2,
+                  "type": "steady",
+                  "label": "Roligt løb",
+                  "durationMin": 4
+                }
+              ],
+              "structureSummary": "4m let jog opvarmning -> 4m roligt løb",
+              "runningDurationMin": 8,
+              "openingDurationMin": 4,
+              "endingDurationMin": 0,
+              "flags": []
+            },
+            {
+              "id": "2-sunday-long",
+              "dayOfWeek": "sunday",
+              "date": "2026-05-03",
+              "type": "long",
+              "title": "Langt roligt pas",
+              "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
+              "intent": "Udvide den rolige kapacitet frem mod 5K.",
+              "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
+              "totalDurationMin": 29.5,
+              "estimatedLoad": 11,
+              "rawStructure": [
+                {
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 6
+                },
+                {
+                  "type": "steady",
+                  "label": "Lang rolig blok",
+                  "durationMin": 21.5
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 2
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 6
+                },
+                {
+                  "order": 2,
+                  "type": "steady",
+                  "label": "Lang rolig blok",
+                  "durationMin": 21.5
+                },
+                {
+                  "order": 3,
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 2
+                }
+              ],
+              "structureSummary": "6m let jog opvarmning -> 21.5m lang rolig blok -> 2m let jog ned",
+              "runningDurationMin": 29.5,
+              "openingDurationMin": 6,
+              "endingDurationMin": 2,
+              "flags": []
+            }
+          ]
+        },
+        {
+          "weekNumber": 3,
+          "phase": "introduction",
+          "focus": "En roligere uge hvor kroppen får plads til at absorbere træningen.",
+          "weekSummary": "introduction · En roligere uge hvor kroppen får plads til at absorbere træningen.",
+          "estimatedLoad": 21,
+          "sessionCount": 3,
+          "flags": [],
+          "sessions": [
+            {
+              "id": "3-tuesday-run-walk",
+              "dayOfWeek": "tuesday",
+              "date": "2026-05-05",
+              "type": "run-walk",
+              "title": "Run-walk",
+              "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
+              "intent": "Skabe tryg rytme og løbetolerance.",
+              "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
+              "totalDurationMin": 29.5,
+              "estimatedLoad": 8,
+              "rawStructure": [
+                {
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 6
+                },
+                {
+                  "type": "run",
+                  "label": "Løb/gang blok",
+                  "durationMin": 2.5,
+                  "repeats": 5,
+                  "recoverMin": 2.25
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 2
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 6
+                },
+                {
+                  "order": 2,
+                  "type": "run",
+                  "label": "Løb/gang blok 1",
+                  "durationMin": 2.5,
+                  "sourceRepeatIndex": 1
+                },
+                {
+                  "order": 3,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2.25
+                },
+                {
+                  "order": 4,
+                  "type": "run",
+                  "label": "Løb/gang blok 2",
+                  "durationMin": 2.5,
+                  "sourceRepeatIndex": 2
+                },
+                {
+                  "order": 5,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2.25
+                },
+                {
+                  "order": 6,
+                  "type": "run",
+                  "label": "Løb/gang blok 3",
+                  "durationMin": 2.5,
+                  "sourceRepeatIndex": 3
+                },
+                {
+                  "order": 7,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2.25
+                },
+                {
+                  "order": 8,
+                  "type": "run",
+                  "label": "Løb/gang blok 4",
+                  "durationMin": 2.5,
+                  "sourceRepeatIndex": 4
+                },
+                {
+                  "order": 9,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2.25
+                },
+                {
+                  "order": 10,
+                  "type": "run",
+                  "label": "Løb/gang blok 5",
+                  "durationMin": 2.5,
+                  "sourceRepeatIndex": 5
+                },
+                {
+                  "order": 11,
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 2
+                }
+              ],
+              "structureSummary": "6m let jog opvarmning -> 2.5m løb/gang blok 1 -> 2.3m pause -> 2.5m løb/gang blok 2 -> 2.3m pause -> 2.5m løb/gang blok 3 -> 2.3m pause -> 2.5m løb/gang blok 4 -> 2.3m pause -> 2.5m løb/gang blok 5 -> 2m let jog ned",
+              "runningDurationMin": 20.5,
+              "openingDurationMin": 6,
+              "endingDurationMin": 2,
+              "flags": []
+            },
+            {
+              "id": "3-thursday-recovery",
+              "dayOfWeek": "thursday",
+              "date": "2026-05-07",
+              "type": "recovery",
+              "title": "Recovery-pas",
+              "description": "Et meget let pas som holder kroppen i gang uden at fylde meget i den samlede belastning.",
+              "intent": "Give bevægelse uden at stjæle restitution.",
+              "effortGuidance": "Hold det let fra start til slut.",
+              "totalDurationMin": 18,
+              "estimatedLoad": 4,
+              "rawStructure": [
+                {
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 5
+                },
+                {
+                  "type": "recovery",
+                  "label": "Meget let bevægelse",
+                  "durationMin": 12
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 1
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 5
+                },
+                {
+                  "order": 2,
+                  "type": "recovery",
+                  "label": "Meget let bevægelse",
+                  "durationMin": 12
+                },
+                {
+                  "order": 3,
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 1
+                }
+              ],
+              "structureSummary": "5m let jog opvarmning -> 12m meget let bevægelse -> 1m let jog ned",
+              "runningDurationMin": 18,
+              "openingDurationMin": 5,
+              "endingDurationMin": 1,
+              "flags": []
+            },
+            {
+              "id": "3-sunday-long",
+              "dayOfWeek": "sunday",
+              "date": "2026-05-10",
+              "type": "long",
+              "title": "Langt roligt pas",
+              "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
+              "intent": "Udvide den rolige kapacitet frem mod 5K.",
+              "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
+              "totalDurationMin": 29.5,
+              "estimatedLoad": 9.5,
+              "rawStructure": [
+                {
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 6
+                },
+                {
+                  "type": "steady",
+                  "label": "Lang rolig blok",
+                  "durationMin": 21.5
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 2
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "recovery",
+                  "label": "Let jog opvarmning",
+                  "durationMin": 6
+                },
+                {
+                  "order": 2,
+                  "type": "steady",
+                  "label": "Lang rolig blok",
+                  "durationMin": 21.5
+                },
+                {
+                  "order": 3,
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 2
+                }
+              ],
+              "structureSummary": "6m let jog opvarmning -> 21.5m lang rolig blok -> 2m let jog ned",
+              "runningDurationMin": 29.5,
+              "openingDurationMin": 6,
+              "endingDurationMin": 2,
+              "flags": []
+            }
+          ]
+        }
+      ],
+      "reviewFlags": {
+        "sessionFlagCounts": {
+          "passive_start": 0,
+          "low_meaningful_running": 0,
+          "long_passive_finish": 0,
+          "muddy_structure": 0
+        },
+        "weekFlags": [
+          "partial_first_week"
+        ]
+      }
+    },
+    {
+      "programId": "fixed:recent-running-state-trio-long-break:Continuous5K",
+      "scenarioId": "recent-running-state-trio-long-break",
+      "scenarioName": "Recent-running-state trio: long break or new runner",
+      "scenarioType": "fixed",
+      "scenarioFocus": "Comparison runner for recentRunningState. Inputs stay fixed except freshness so week 1 can be compared directly.",
+      "scenarioTags": [
+        "comparison",
+        "recent-running-state",
+        "long-break-or-new",
+        "partial-week"
+      ],
+      "comparisonGroup": "recent-running-state-trio-a",
+      "planType": "Continuous5K",
+      "goal": {
+        "goalDistance": "5K",
+        "goalIntent": "finish",
+        "startDate": "2026-04-24",
+        "targetDate": "2026-07-19",
+        "trainingDaysPerWeek": 3,
+        "preferredTrainingDays": [
+          "tuesday",
+          "thursday",
+          "sunday"
+        ]
+      },
+      "weeks": 13,
+      "userInputs": {
+        "recentRunningState": "long_break_or_new",
+        "onboardingTrack": "getting_started",
+        "currentAbility": "ti_femten_min",
+        "baseProgramTrack": "getting_started",
+        "archetype": "nervous_beginner",
+        "runnerCategory": "continuous_beginner",
+        "aerobicBase": 2,
+        "runningSpecificity": 2,
+        "confidence": 2,
+        "injurySensitivity": 4,
+        "progressionStyle": "conservative",
+        "currentRunsPerWeek": 1,
+        "currentWeeklyVolumeKm": 8,
+        "longestRunMinutes": 18,
+        "typicalWorkoutMinutes": 32,
+        "realisticTrainingDaysPerWeek": 3,
+        "trainingDaysPerWeek": 3,
+        "preferredTrainingDays": [
+          "tuesday",
+          "thursday",
+          "sunday"
+        ],
+        "startDate": "2026-04-24",
+        "targetDate": "2026-07-19",
+        "goalIntent": "finish",
+        "goalDistance": "5K"
+      },
+      "calendarAssumptions": {
+        "startDate": "2026-04-24",
+        "targetDate": "2026-07-19",
+        "preferredTrainingDays": [
+          "tuesday",
+          "thursday",
+          "sunday"
+        ],
+        "requestedTrainingDaysPerWeek": 3,
+        "firstWeekSessionCount": 1,
+        "partialFirstWeek": true
+      },
+      "reviewWeeks": [
+        {
+          "weekNumber": 1,
+          "phase": "introduction",
+          "focus": "Få rytme i træningen og lande sikkert i programmet.",
+          "weekSummary": "introduction · Få rytme i træningen og lande sikkert i programmet.",
+          "estimatedLoad": 18,
+          "sessionCount": 1,
+          "flags": [
+            "partial_first_week"
+          ],
+          "sessions": [
+            {
+              "id": "1-sunday-run-walk",
+              "dayOfWeek": "sunday",
+              "date": "2026-04-26",
+              "type": "run-walk",
+              "title": "Run-walk",
+              "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
+              "intent": "Skabe tryg rytme og løbetolerance.",
+              "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
+              "totalDurationMin": 23.5,
+              "estimatedLoad": 18,
+              "rawStructure": [
+                {
+                  "type": "walk",
+                  "label": "Rolig gang",
+                  "durationMin": 1
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 2.5
+                },
+                {
+                  "type": "run",
+                  "label": "Løb/gang blok",
+                  "durationMin": 2,
+                  "repeats": 5,
+                  "recoverMin": 2
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
+                  "type": "walk",
+                  "label": "Gang ned",
+                  "durationMin": 1
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "walk",
+                  "label": "Rolig gang",
+                  "durationMin": 1
+                },
+                {
+                  "order": 2,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 2.5
+                },
+                {
+                  "order": 3,
+                  "type": "run",
+                  "label": "Løb/gang blok 1",
+                  "durationMin": 2,
+                  "sourceRepeatIndex": 1
+                },
+                {
+                  "order": 4,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 5,
+                  "type": "run",
+                  "label": "Løb/gang blok 2",
+                  "durationMin": 2,
+                  "sourceRepeatIndex": 2
+                },
+                {
+                  "order": 6,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 7,
+                  "type": "run",
+                  "label": "Løb/gang blok 3",
+                  "durationMin": 2,
+                  "sourceRepeatIndex": 3
+                },
+                {
+                  "order": 8,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 9,
+                  "type": "run",
+                  "label": "Løb/gang blok 4",
+                  "durationMin": 2,
+                  "sourceRepeatIndex": 4
+                },
+                {
+                  "order": 10,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 11,
+                  "type": "run",
+                  "label": "Løb/gang blok 5",
+                  "durationMin": 2,
+                  "sourceRepeatIndex": 5
+                },
+                {
+                  "order": 12,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
+                  "order": 13,
+                  "type": "walk",
+                  "label": "Gang ned",
+                  "durationMin": 1
+                }
+              ],
+              "structureSummary": "1m rolig gang -> 2.5m let jog -> 2m løb/gang blok 1 -> 2m pause -> 2m løb/gang blok 2 -> 2m pause -> 2m løb/gang blok 3 -> 2m pause -> 2m løb/gang blok 4 -> 2m pause -> 2m løb/gang blok 5 -> 1m let jog -> 1m gang ned",
+              "runningDurationMin": 13.5,
+              "openingDurationMin": 3.5,
+              "endingDurationMin": 2,
+              "flags": []
+            }
+          ]
+        },
+        {
+          "weekNumber": 2,
+          "phase": "introduction",
+          "focus": "Bygge en stabil uge, hvor kroppen lærer træningen bedre at kende.",
+          "weekSummary": "introduction · Bygge en stabil uge, hvor kroppen lærer træningen bedre at kende.",
+          "estimatedLoad": 19.5,
+          "sessionCount": 3,
+          "flags": [],
+          "sessions": [
+            {
+              "id": "2-tuesday-run-walk",
+              "dayOfWeek": "tuesday",
+              "date": "2026-04-28",
+              "type": "run-walk",
+              "title": "Run-walk",
+              "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
+              "intent": "Skabe tryg rytme og løbetolerance.",
+              "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
+              "totalDurationMin": 25,
+              "estimatedLoad": 7.5,
+              "rawStructure": [
+                {
+                  "type": "walk",
+                  "label": "Rolig gang",
+                  "durationMin": 1
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 2.5
+                },
+                {
+                  "type": "run",
+                  "label": "Løb/gang blok",
+                  "durationMin": 2.25,
+                  "repeats": 5,
+                  "recoverMin": 2
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
+                  "type": "walk",
+                  "label": "Gang ned",
+                  "durationMin": 1
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "walk",
+                  "label": "Rolig gang",
+                  "durationMin": 1
+                },
+                {
+                  "order": 2,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 2.5
+                },
+                {
+                  "order": 3,
+                  "type": "run",
+                  "label": "Løb/gang blok 1",
+                  "durationMin": 2.25,
+                  "sourceRepeatIndex": 1
+                },
+                {
+                  "order": 4,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 5,
+                  "type": "run",
+                  "label": "Løb/gang blok 2",
+                  "durationMin": 2.25,
+                  "sourceRepeatIndex": 2
+                },
+                {
+                  "order": 6,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 7,
+                  "type": "run",
+                  "label": "Løb/gang blok 3",
+                  "durationMin": 2.25,
+                  "sourceRepeatIndex": 3
+                },
+                {
+                  "order": 8,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 9,
+                  "type": "run",
+                  "label": "Løb/gang blok 4",
+                  "durationMin": 2.25,
+                  "sourceRepeatIndex": 4
+                },
+                {
+                  "order": 10,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2
+                },
+                {
+                  "order": 11,
+                  "type": "run",
+                  "label": "Løb/gang blok 5",
+                  "durationMin": 2.25,
+                  "sourceRepeatIndex": 5
+                },
+                {
+                  "order": 12,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
+                  "order": 13,
+                  "type": "walk",
+                  "label": "Gang ned",
+                  "durationMin": 1
+                }
+              ],
+              "structureSummary": "1m rolig gang -> 2.5m let jog -> 2.3m løb/gang blok 1 -> 2m pause -> 2.3m løb/gang blok 2 -> 2m pause -> 2.3m løb/gang blok 3 -> 2m pause -> 2.3m løb/gang blok 4 -> 2m pause -> 2.3m løb/gang blok 5 -> 1m let jog -> 1m gang ned",
+              "runningDurationMin": 15,
+              "openingDurationMin": 3.5,
+              "endingDurationMin": 2,
+              "flags": []
+            },
+            {
+              "id": "2-thursday-easy",
+              "dayOfWeek": "thursday",
+              "date": "2026-04-30",
+              "type": "easy",
+              "title": "Roligt løb",
+              "description": "Et jævnt pas hvor du finder rytme og bygger rolig kapacitet.",
+              "intent": "Skabe kontinuitet og overskud.",
+              "effortGuidance": "Hold et tempo hvor du stadig kan føre en kort samtale.",
+              "totalDurationMin": 9,
+              "estimatedLoad": 2.5,
+              "rawStructure": [
+                {
+                  "type": "recovery",
+                  "label": "Let jog start",
+                  "durationMin": 2
+                },
+                {
+                  "type": "steady",
+                  "label": "Roligt hovedsæt",
+                  "durationMin": 6
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 1
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "recovery",
+                  "label": "Let jog start",
+                  "durationMin": 2
+                },
+                {
+                  "order": 2,
+                  "type": "steady",
+                  "label": "Roligt hovedsæt",
+                  "durationMin": 6
+                },
+                {
+                  "order": 3,
+                  "type": "recovery",
+                  "label": "Let jog ned",
+                  "durationMin": 1
+                }
+              ],
+              "structureSummary": "2m let jog start -> 6m roligt hovedsæt -> 1m let jog ned",
+              "runningDurationMin": 9,
+              "openingDurationMin": 2,
+              "endingDurationMin": 1,
+              "flags": []
+            },
+            {
+              "id": "2-sunday-long",
+              "dayOfWeek": "sunday",
+              "date": "2026-05-03",
+              "type": "long",
+              "title": "Langt roligt pas",
+              "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
+              "intent": "Udvide den rolige kapacitet frem mod 5K.",
+              "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
+              "totalDurationMin": 27,
+              "estimatedLoad": 9.5,
+              "rawStructure": [
+                {
+                  "type": "walk",
+                  "label": "Rolig gang",
+                  "durationMin": 1
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 2.5
+                },
+                {
+                  "type": "steady",
+                  "label": "Lang rolig blok",
+                  "durationMin": 21.5
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
+                  "type": "walk",
+                  "label": "Gang ned",
+                  "durationMin": 1
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "walk",
+                  "label": "Rolig gang",
+                  "durationMin": 1
+                },
+                {
+                  "order": 2,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 2.5
+                },
+                {
+                  "order": 3,
+                  "type": "steady",
+                  "label": "Lang rolig blok",
+                  "durationMin": 21.5
+                },
+                {
+                  "order": 4,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
+                  "order": 5,
+                  "type": "walk",
+                  "label": "Gang ned",
+                  "durationMin": 1
+                }
+              ],
+              "structureSummary": "1m rolig gang -> 2.5m let jog -> 21.5m lang rolig blok -> 1m let jog -> 1m gang ned",
+              "runningDurationMin": 25,
+              "openingDurationMin": 3.5,
+              "endingDurationMin": 2,
+              "flags": []
+            }
+          ]
+        },
+        {
+          "weekNumber": 3,
+          "phase": "introduction",
+          "focus": "En roligere uge hvor kroppen får plads til at absorbere træningen.",
+          "weekSummary": "introduction · En roligere uge hvor kroppen får plads til at absorbere træningen.",
+          "estimatedLoad": 19,
+          "sessionCount": 3,
+          "flags": [],
+          "sessions": [
+            {
+              "id": "3-tuesday-run-walk",
+              "dayOfWeek": "tuesday",
+              "date": "2026-05-05",
+              "type": "run-walk",
+              "title": "Run-walk",
+              "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
+              "intent": "Skabe tryg rytme og løbetolerance.",
+              "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
+              "totalDurationMin": 27,
+              "estimatedLoad": 7,
+              "rawStructure": [
+                {
+                  "type": "walk",
+                  "label": "Rolig gang",
+                  "durationMin": 1
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 2.5
+                },
+                {
+                  "type": "run",
+                  "label": "Løb/gang blok",
+                  "durationMin": 2.5,
+                  "repeats": 5,
+                  "recoverMin": 2.25
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
+                  "type": "walk",
+                  "label": "Gang ned",
+                  "durationMin": 1
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "walk",
+                  "label": "Rolig gang",
+                  "durationMin": 1
+                },
+                {
+                  "order": 2,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 2.5
+                },
+                {
+                  "order": 3,
+                  "type": "run",
+                  "label": "Løb/gang blok 1",
+                  "durationMin": 2.5,
+                  "sourceRepeatIndex": 1
+                },
+                {
+                  "order": 4,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2.25
+                },
+                {
+                  "order": 5,
+                  "type": "run",
+                  "label": "Løb/gang blok 2",
+                  "durationMin": 2.5,
+                  "sourceRepeatIndex": 2
+                },
+                {
+                  "order": 6,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2.25
+                },
+                {
+                  "order": 7,
+                  "type": "run",
+                  "label": "Løb/gang blok 3",
+                  "durationMin": 2.5,
+                  "sourceRepeatIndex": 3
+                },
+                {
+                  "order": 8,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2.25
+                },
+                {
+                  "order": 9,
+                  "type": "run",
+                  "label": "Løb/gang blok 4",
+                  "durationMin": 2.5,
+                  "sourceRepeatIndex": 4
+                },
+                {
+                  "order": 10,
+                  "type": "pause",
+                  "label": "Pause",
+                  "durationMin": 2.25
+                },
+                {
+                  "order": 11,
+                  "type": "run",
+                  "label": "Løb/gang blok 5",
+                  "durationMin": 2.5,
+                  "sourceRepeatIndex": 5
+                },
+                {
+                  "order": 12,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
+                  "order": 13,
+                  "type": "walk",
+                  "label": "Gang ned",
+                  "durationMin": 1
+                }
+              ],
+              "structureSummary": "1m rolig gang -> 2.5m let jog -> 2.5m løb/gang blok 1 -> 2.3m pause -> 2.5m løb/gang blok 2 -> 2.3m pause -> 2.5m løb/gang blok 3 -> 2.3m pause -> 2.5m løb/gang blok 4 -> 2.3m pause -> 2.5m løb/gang blok 5 -> 1m let jog -> 1m gang ned",
+              "runningDurationMin": 16,
+              "openingDurationMin": 3.5,
+              "endingDurationMin": 2,
+              "flags": []
+            },
+            {
+              "id": "3-thursday-recovery",
+              "dayOfWeek": "thursday",
+              "date": "2026-05-07",
+              "type": "recovery",
+              "title": "Recovery-pas",
+              "description": "Et meget let pas som holder kroppen i gang uden at fylde meget i den samlede belastning.",
+              "intent": "Give bevægelse uden at stjæle restitution.",
+              "effortGuidance": "Hold det let fra start til slut.",
+              "totalDurationMin": 17.5,
+              "estimatedLoad": 3.5,
+              "rawStructure": [
+                {
+                  "type": "walk",
+                  "label": "Rolig gang",
+                  "durationMin": 1
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 2.5
+                },
+                {
+                  "type": "recovery",
+                  "label": "Meget let bevægelse",
+                  "durationMin": 12
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
+                  "type": "walk",
+                  "label": "Gang ned",
+                  "durationMin": 1
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "walk",
+                  "label": "Rolig gang",
+                  "durationMin": 1
+                },
+                {
+                  "order": 2,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 2.5
+                },
+                {
+                  "order": 3,
+                  "type": "recovery",
+                  "label": "Meget let bevægelse",
+                  "durationMin": 12
+                },
+                {
+                  "order": 4,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
+                  "order": 5,
+                  "type": "walk",
+                  "label": "Gang ned",
+                  "durationMin": 1
+                }
+              ],
+              "structureSummary": "1m rolig gang -> 2.5m let jog -> 12m meget let bevægelse -> 1m let jog -> 1m gang ned",
+              "runningDurationMin": 15.5,
+              "openingDurationMin": 3.5,
+              "endingDurationMin": 2,
+              "flags": []
+            },
+            {
+              "id": "3-sunday-long",
+              "dayOfWeek": "sunday",
+              "date": "2026-05-10",
+              "type": "long",
+              "title": "Langt roligt pas",
+              "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
+              "intent": "Udvide den rolige kapacitet frem mod 5K.",
+              "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
+              "totalDurationMin": 27,
+              "estimatedLoad": 8,
+              "rawStructure": [
+                {
+                  "type": "walk",
+                  "label": "Rolig gang",
+                  "durationMin": 1
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 2.5
+                },
+                {
+                  "type": "steady",
+                  "label": "Lang rolig blok",
+                  "durationMin": 21.5
+                },
+                {
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
+                  "type": "walk",
+                  "label": "Gang ned",
+                  "durationMin": 1
+                }
+              ],
+              "orderedStructure": [
+                {
+                  "order": 1,
+                  "type": "walk",
+                  "label": "Rolig gang",
+                  "durationMin": 1
+                },
+                {
+                  "order": 2,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 2.5
+                },
+                {
+                  "order": 3,
+                  "type": "steady",
+                  "label": "Lang rolig blok",
+                  "durationMin": 21.5
+                },
+                {
+                  "order": 4,
+                  "type": "recovery",
+                  "label": "Let jog",
+                  "durationMin": 1
+                },
+                {
+                  "order": 5,
+                  "type": "walk",
+                  "label": "Gang ned",
+                  "durationMin": 1
+                }
+              ],
+              "structureSummary": "1m rolig gang -> 2.5m let jog -> 21.5m lang rolig blok -> 1m let jog -> 1m gang ned",
+              "runningDurationMin": 25,
+              "openingDurationMin": 3.5,
+              "endingDurationMin": 2,
+              "flags": []
+            }
+          ]
+        }
+      ],
+      "reviewFlags": {
+        "sessionFlagCounts": {
+          "passive_start": 0,
+          "low_meaningful_running": 0,
+          "long_passive_finish": 0,
+          "muddy_structure": 0
+        },
+        "weekFlags": [
+          "partial_first_week"
+        ]
       }
     },
     {
@@ -11573,7 +12880,7 @@
         "runnerCategory": "continuous_beginner",
         "aerobicBase": 1,
         "runningSpecificity": 1,
-        "confidence": 2,
+        "confidence": 3,
         "injurySensitivity": 3,
         "progressionStyle": "conservative",
         "currentRunsPerWeek": 1,
@@ -11752,7 +13059,7 @@
               "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
               "intent": "Udvide den rolige kapacitet frem mod 5K.",
               "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
-              "totalDurationMin": 23.5,
+              "totalDurationMin": 24.5,
               "estimatedLoad": 17,
               "rawStructure": [
                 {
@@ -11768,7 +13075,7 @@
                 {
                   "type": "steady",
                   "label": "Lang rolig blok",
-                  "durationMin": 18
+                  "durationMin": 19
                 },
                 {
                   "type": "recovery",
@@ -11798,7 +13105,7 @@
                   "order": 3,
                   "type": "steady",
                   "label": "Lang rolig blok",
-                  "durationMin": 18
+                  "durationMin": 19
                 },
                 {
                   "order": 4,
@@ -11813,8 +13120,8 @@
                   "durationMin": 1
                 }
               ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 18m lang rolig blok -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 21.5,
+              "structureSummary": "1m rolig gang -> 2.5m let jog -> 19m lang rolig blok -> 1m let jog -> 1m gang ned",
+              "runningDurationMin": 22.5,
               "openingDurationMin": 3.5,
               "endingDurationMin": 2,
               "flags": []
@@ -11839,662 +13146,8 @@
               "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
               "intent": "Skabe tryg rytme og løbetolerance.",
               "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
-              "totalDurationMin": 25,
-              "estimatedLoad": 14,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "run",
-                  "label": "Løb/gang blok",
-                  "durationMin": 2.25,
-                  "repeats": 5,
-                  "recoverMin": 2
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "run",
-                  "label": "Løb/gang blok 1",
-                  "durationMin": 2.25,
-                  "sourceRepeatIndex": 1
-                },
-                {
-                  "order": 4,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 5,
-                  "type": "run",
-                  "label": "Løb/gang blok 2",
-                  "durationMin": 2.25,
-                  "sourceRepeatIndex": 2
-                },
-                {
-                  "order": 6,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 7,
-                  "type": "run",
-                  "label": "Løb/gang blok 3",
-                  "durationMin": 2.25,
-                  "sourceRepeatIndex": 3
-                },
-                {
-                  "order": 8,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 9,
-                  "type": "run",
-                  "label": "Løb/gang blok 4",
-                  "durationMin": 2.25,
-                  "sourceRepeatIndex": 4
-                },
-                {
-                  "order": 10,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 11,
-                  "type": "run",
-                  "label": "Løb/gang blok 5",
-                  "durationMin": 2.25,
-                  "sourceRepeatIndex": 5
-                },
-                {
-                  "order": 12,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 13,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 2.3m løb/gang blok 1 -> 2m pause -> 2.3m løb/gang blok 2 -> 2m pause -> 2.3m løb/gang blok 3 -> 2m pause -> 2.3m løb/gang blok 4 -> 2m pause -> 2.3m løb/gang blok 5 -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 15,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            },
-            {
-              "id": "2-sunday-long",
-              "dayOfWeek": "sunday",
-              "date": "2026-05-03",
-              "type": "long",
-              "title": "Langt roligt pas",
-              "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
-              "intent": "Udvide den rolige kapacitet frem mod 5K.",
-              "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
-              "totalDurationMin": 25,
-              "estimatedLoad": 17,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "steady",
-                  "label": "Lang rolig blok",
-                  "durationMin": 19.5
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "steady",
-                  "label": "Lang rolig blok",
-                  "durationMin": 19.5
-                },
-                {
-                  "order": 4,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 5,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 19.5m lang rolig blok -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 23,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            }
-          ]
-        },
-        {
-          "weekNumber": 3,
-          "phase": "continuous_running",
-          "focus": "En roligere uge hvor kroppen får plads til at absorbere træningen.",
-          "weekSummary": "continuous_running · En roligere uge hvor kroppen får plads til at absorbere træningen.",
-          "estimatedLoad": 30.5,
-          "sessionCount": 2,
-          "flags": [],
-          "sessions": [
-            {
-              "id": "3-wednesday-run-walk",
-              "dayOfWeek": "wednesday",
-              "date": "2026-05-06",
-              "type": "run-walk",
-              "title": "Run-walk",
-              "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
-              "intent": "Skabe tryg rytme og løbetolerance.",
-              "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
-              "totalDurationMin": 25.5,
-              "estimatedLoad": 14,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "run",
-                  "label": "Løb/gang blok",
-                  "durationMin": 2,
-                  "repeats": 5,
-                  "recoverMin": 2.5
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "run",
-                  "label": "Løb/gang blok 1",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 1
-                },
-                {
-                  "order": 4,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 5,
-                  "type": "run",
-                  "label": "Løb/gang blok 2",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 2
-                },
-                {
-                  "order": 6,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 7,
-                  "type": "run",
-                  "label": "Løb/gang blok 3",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 3
-                },
-                {
-                  "order": 8,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 9,
-                  "type": "run",
-                  "label": "Løb/gang blok 4",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 4
-                },
-                {
-                  "order": 10,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 11,
-                  "type": "run",
-                  "label": "Løb/gang blok 5",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 5
-                },
-                {
-                  "order": 12,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 13,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 2m løb/gang blok 1 -> 2.5m pause -> 2m løb/gang blok 2 -> 2.5m pause -> 2m løb/gang blok 3 -> 2.5m pause -> 2m løb/gang blok 4 -> 2.5m pause -> 2m løb/gang blok 5 -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 13.5,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            },
-            {
-              "id": "3-sunday-long",
-              "dayOfWeek": "sunday",
-              "date": "2026-05-10",
-              "type": "long",
-              "title": "Langt roligt pas",
-              "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
-              "intent": "Udvide den rolige kapacitet frem mod 5K.",
-              "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
-              "totalDurationMin": 25,
-              "estimatedLoad": 16.5,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "steady",
-                  "label": "Lang rolig blok",
-                  "durationMin": 19.5
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "steady",
-                  "label": "Lang rolig blok",
-                  "durationMin": 19.5
-                },
-                {
-                  "order": 4,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 5,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 19.5m lang rolig blok -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 23,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            }
-          ]
-        }
-      ],
-      "reviewFlags": {
-        "sessionFlagCounts": {
-          "passive_start": 0,
-          "low_meaningful_running": 0,
-          "long_passive_finish": 0,
-          "muddy_structure": 0
-        },
-        "weekFlags": []
-      }
-    },
-    {
-      "programId": "fixed:continuous-beginner-late-week-start:Continuous5K",
-      "scenarioId": "continuous-beginner-late-week-start",
-      "scenarioName": "Continuous beginner starting late in week",
-      "scenarioType": "fixed",
-      "scenarioFocus": "Late starts for a continuous beginner should still open gently and not skip the onboarding feel.",
-      "scenarioTags": [
-        "beginner",
-        "partial-week",
-        "late-start"
-      ],
-      "planType": "Continuous5K",
-      "goal": {
-        "goalDistance": "5K",
-        "goalIntent": "finish",
-        "startDate": "2026-04-24",
-        "targetDate": "2026-07-05",
-        "trainingDaysPerWeek": 3,
-        "preferredTrainingDays": [
-          "tuesday",
-          "thursday",
-          "sunday"
-        ]
-      },
-      "weeks": 11,
-      "userInputs": {
-        "baseProgramTrack": "getting_started",
-        "archetype": "motivated_novice",
-        "runnerCategory": "continuous_beginner",
-        "aerobicBase": 1,
-        "runningSpecificity": 1,
-        "confidence": 3,
-        "injurySensitivity": 3,
-        "progressionStyle": "conservative",
-        "currentRunsPerWeek": 2,
-        "currentWeeklyVolumeKm": 7,
-        "longestRunMinutes": 16,
-        "typicalWorkoutMinutes": 30,
-        "realisticTrainingDaysPerWeek": 3,
-        "trainingDaysPerWeek": 3,
-        "preferredTrainingDays": [
-          "tuesday",
-          "thursday",
-          "sunday"
-        ],
-        "startDate": "2026-04-24",
-        "targetDate": "2026-07-05",
-        "goalIntent": "finish",
-        "goalDistance": "5K"
-      },
-      "calendarAssumptions": {
-        "startDate": "2026-04-24",
-        "targetDate": "2026-07-05",
-        "preferredTrainingDays": [
-          "tuesday",
-          "thursday",
-          "sunday"
-        ],
-        "requestedTrainingDaysPerWeek": 3,
-        "firstWeekSessionCount": 1,
-        "partialFirstWeek": true
-      },
-      "reviewWeeks": [
-        {
-          "weekNumber": 1,
-          "phase": "introduction",
-          "focus": "Få rytme i træningen og lande sikkert i programmet.",
-          "weekSummary": "introduction · Få rytme i træningen og lande sikkert i programmet.",
-          "estimatedLoad": 19,
-          "sessionCount": 1,
-          "flags": [
-            "partial_first_week"
-          ],
-          "sessions": [
-            {
-              "id": "1-sunday-run-walk",
-              "dayOfWeek": "sunday",
-              "date": "2026-04-26",
-              "type": "run-walk",
-              "title": "Run-walk",
-              "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
-              "intent": "Skabe tryg rytme og løbetolerance.",
-              "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
-              "totalDurationMin": 23.5,
-              "estimatedLoad": 19,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "run",
-                  "label": "Løb/gang blok",
-                  "durationMin": 2,
-                  "repeats": 5,
-                  "recoverMin": 2
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "run",
-                  "label": "Løb/gang blok 1",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 1
-                },
-                {
-                  "order": 4,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 5,
-                  "type": "run",
-                  "label": "Løb/gang blok 2",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 2
-                },
-                {
-                  "order": 6,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 7,
-                  "type": "run",
-                  "label": "Løb/gang blok 3",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 3
-                },
-                {
-                  "order": 8,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 9,
-                  "type": "run",
-                  "label": "Løb/gang blok 4",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 4
-                },
-                {
-                  "order": 10,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 11,
-                  "type": "run",
-                  "label": "Løb/gang blok 5",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 5
-                },
-                {
-                  "order": 12,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 13,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 2m løb/gang blok 1 -> 2m pause -> 2m løb/gang blok 2 -> 2m pause -> 2m løb/gang blok 3 -> 2m pause -> 2m løb/gang blok 4 -> 2m pause -> 2m løb/gang blok 5 -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 13.5,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            }
-          ]
-        },
-        {
-          "weekNumber": 2,
-          "phase": "introduction",
-          "focus": "Bygge en stabil uge, hvor kroppen lærer træningen bedre at kende.",
-          "weekSummary": "introduction · Bygge en stabil uge, hvor kroppen lærer træningen bedre at kende.",
-          "estimatedLoad": 20.5,
-          "sessionCount": 3,
-          "flags": [],
-          "sessions": [
-            {
-              "id": "2-tuesday-run-walk",
-              "dayOfWeek": "tuesday",
-              "date": "2026-04-28",
-              "type": "run-walk",
-              "title": "Run-walk",
-              "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
-              "intent": "Skabe tryg rytme og løbetolerance.",
-              "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
               "totalDurationMin": 24,
-              "estimatedLoad": 7.5,
+              "estimatedLoad": 13.5,
               "rawStructure": [
                 {
                   "type": "walk",
@@ -12616,60 +13269,6 @@
               "flags": []
             },
             {
-              "id": "2-thursday-easy",
-              "dayOfWeek": "thursday",
-              "date": "2026-04-30",
-              "type": "easy",
-              "title": "Roligt løb",
-              "description": "Et jævnt pas hvor du finder rytme og bygger rolig kapacitet.",
-              "intent": "Skabe kontinuitet og overskud.",
-              "effortGuidance": "Hold et tempo hvor du stadig kan føre en kort samtale.",
-              "totalDurationMin": 9,
-              "estimatedLoad": 3,
-              "rawStructure": [
-                {
-                  "type": "recovery",
-                  "label": "Let jog start",
-                  "durationMin": 2
-                },
-                {
-                  "type": "steady",
-                  "label": "Roligt hovedsæt",
-                  "durationMin": 6
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "recovery",
-                  "label": "Let jog start",
-                  "durationMin": 2
-                },
-                {
-                  "order": 2,
-                  "type": "steady",
-                  "label": "Roligt hovedsæt",
-                  "durationMin": 6
-                },
-                {
-                  "order": 3,
-                  "type": "recovery",
-                  "label": "Let jog ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "2m let jog start -> 6m roligt hovedsæt -> 1m let jog ned",
-              "runningDurationMin": 9,
-              "openingDurationMin": 2,
-              "endingDurationMin": 1,
-              "flags": []
-            },
-            {
               "id": "2-sunday-long",
               "dayOfWeek": "sunday",
               "date": "2026-05-03",
@@ -12679,7 +13278,7 @@
               "intent": "Udvide den rolige kapacitet frem mod 5K.",
               "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
               "totalDurationMin": 26,
-              "estimatedLoad": 10,
+              "estimatedLoad": 17.5,
               "rawStructure": [
                 {
                   "type": "walk",
@@ -12752,21 +13351,21 @@
           "phase": "continuous_running",
           "focus": "En roligere uge hvor kroppen får plads til at absorbere træningen.",
           "weekSummary": "continuous_running · En roligere uge hvor kroppen får plads til at absorbere træningen.",
-          "estimatedLoad": 19.5,
-          "sessionCount": 3,
+          "estimatedLoad": 30.5,
+          "sessionCount": 2,
           "flags": [],
           "sessions": [
             {
-              "id": "3-tuesday-run-walk",
-              "dayOfWeek": "tuesday",
-              "date": "2026-05-05",
+              "id": "3-wednesday-run-walk",
+              "dayOfWeek": "wednesday",
+              "date": "2026-05-06",
               "type": "run-walk",
               "title": "Run-walk",
               "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
               "intent": "Skabe tryg rytme og løbetolerance.",
               "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
               "totalDurationMin": 23.5,
-              "estimatedLoad": 7,
+              "estimatedLoad": 13,
               "rawStructure": [
                 {
                   "type": "walk",
@@ -12888,82 +13487,6 @@
               "flags": []
             },
             {
-              "id": "3-thursday-recovery",
-              "dayOfWeek": "thursday",
-              "date": "2026-05-07",
-              "type": "recovery",
-              "title": "Recovery-pas",
-              "description": "Et meget let pas som holder kroppen i gang uden at fylde meget i den samlede belastning.",
-              "intent": "Give bevægelse uden at stjæle restitution.",
-              "effortGuidance": "Hold det let fra start til slut.",
-              "totalDurationMin": 17.5,
-              "estimatedLoad": 4,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "recovery",
-                  "label": "Meget let bevægelse",
-                  "durationMin": 12
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "recovery",
-                  "label": "Meget let bevægelse",
-                  "durationMin": 12
-                },
-                {
-                  "order": 4,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 5,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 12m meget let bevægelse -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 15.5,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            },
-            {
               "id": "3-sunday-long",
               "dayOfWeek": "sunday",
               "date": "2026-05-10",
@@ -12973,7 +13496,7 @@
               "intent": "Udvide den rolige kapacitet frem mod 5K.",
               "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
               "totalDurationMin": 26,
-              "estimatedLoad": 9,
+              "estimatedLoad": 17,
               "rawStructure": [
                 {
                   "type": "walk",
@@ -13049,9 +13572,7 @@
           "long_passive_finish": 0,
           "muddy_structure": 0
         },
-        "weekFlags": [
-          "partial_first_week"
-        ]
+        "weekFlags": []
       }
     },
     {
@@ -17825,918 +18346,6 @@
         "weekFlags": [
           "partial_first_week"
         ]
-      }
-    },
-    {
-      "programId": "fixed:easy-recovery-heavy-returner:Continuous5K",
-      "scenarioId": "easy-recovery-heavy-returner",
-      "scenarioName": "Easy/recovery-heavy returner",
-      "scenarioType": "fixed",
-      "scenarioFocus": "A protective return-to-running case should still contain real sessions, not just low-value transitions.",
-      "scenarioTags": [
-        "returning",
-        "easy-heavy",
-        "recovery"
-      ],
-      "planType": "Continuous5K",
-      "goal": {
-        "goalDistance": "5K",
-        "goalIntent": "finish_comfortably",
-        "startDate": "2026-04-21",
-        "targetDate": "2026-07-26",
-        "trainingDaysPerWeek": 3,
-        "preferredTrainingDays": [
-          "tuesday",
-          "thursday",
-          "sunday"
-        ]
-      },
-      "weeks": 14,
-      "userInputs": {
-        "baseProgramTrack": "returning",
-        "archetype": "returning_runner",
-        "runnerCategory": "continuous_beginner",
-        "aerobicBase": 1,
-        "runningSpecificity": 1,
-        "confidence": 2,
-        "injurySensitivity": 5,
-        "progressionStyle": "conservative",
-        "currentRunsPerWeek": 2,
-        "currentWeeklyVolumeKm": 6,
-        "longestRunMinutes": 14,
-        "typicalWorkoutMinutes": 24,
-        "realisticTrainingDaysPerWeek": 3,
-        "trainingDaysPerWeek": 3,
-        "preferredTrainingDays": [
-          "tuesday",
-          "thursday",
-          "sunday"
-        ],
-        "startDate": "2026-04-21",
-        "targetDate": "2026-07-26",
-        "goalIntent": "finish_comfortably",
-        "goalDistance": "5K"
-      },
-      "calendarAssumptions": {
-        "startDate": "2026-04-21",
-        "targetDate": "2026-07-26",
-        "preferredTrainingDays": [
-          "tuesday",
-          "thursday",
-          "sunday"
-        ],
-        "requestedTrainingDaysPerWeek": 3,
-        "firstWeekSessionCount": 3,
-        "partialFirstWeek": false
-      },
-      "reviewWeeks": [
-        {
-          "weekNumber": 1,
-          "phase": "introduction",
-          "focus": "Få rytme i træningen og lande sikkert i programmet.",
-          "weekSummary": "introduction · Få rytme i træningen og lande sikkert i programmet.",
-          "estimatedLoad": 33.5,
-          "sessionCount": 3,
-          "flags": [],
-          "sessions": [
-            {
-              "id": "1-tuesday-run-walk",
-              "dayOfWeek": "tuesday",
-              "date": "2026-04-21",
-              "type": "run-walk",
-              "title": "Run-walk",
-              "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
-              "intent": "Skabe tryg rytme og løbetolerance.",
-              "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
-              "totalDurationMin": 23.5,
-              "estimatedLoad": 13.5,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "run",
-                  "label": "Løb/gang blok",
-                  "durationMin": 2,
-                  "repeats": 5,
-                  "recoverMin": 2
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "run",
-                  "label": "Løb/gang blok 1",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 1
-                },
-                {
-                  "order": 4,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 5,
-                  "type": "run",
-                  "label": "Løb/gang blok 2",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 2
-                },
-                {
-                  "order": 6,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 7,
-                  "type": "run",
-                  "label": "Løb/gang blok 3",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 3
-                },
-                {
-                  "order": 8,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 9,
-                  "type": "run",
-                  "label": "Løb/gang blok 4",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 4
-                },
-                {
-                  "order": 10,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 11,
-                  "type": "run",
-                  "label": "Løb/gang blok 5",
-                  "durationMin": 2,
-                  "sourceRepeatIndex": 5
-                },
-                {
-                  "order": 12,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 13,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 2m løb/gang blok 1 -> 2m pause -> 2m løb/gang blok 2 -> 2m pause -> 2m løb/gang blok 3 -> 2m pause -> 2m løb/gang blok 4 -> 2m pause -> 2m løb/gang blok 5 -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 13.5,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            },
-            {
-              "id": "1-thursday-easy",
-              "dayOfWeek": "thursday",
-              "date": "2026-04-23",
-              "type": "easy",
-              "title": "Roligt løb",
-              "description": "Et jævnt pas hvor du finder rytme og bygger rolig kapacitet.",
-              "intent": "Skabe kontinuitet og overskud.",
-              "effortGuidance": "Hold et tempo hvor du stadig kan føre en kort samtale.",
-              "totalDurationMin": 9,
-              "estimatedLoad": 5,
-              "rawStructure": [
-                {
-                  "type": "recovery",
-                  "label": "Let jog start",
-                  "durationMin": 2
-                },
-                {
-                  "type": "steady",
-                  "label": "Roligt hovedsæt",
-                  "durationMin": 6
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "recovery",
-                  "label": "Let jog start",
-                  "durationMin": 2
-                },
-                {
-                  "order": 2,
-                  "type": "steady",
-                  "label": "Roligt hovedsæt",
-                  "durationMin": 6
-                },
-                {
-                  "order": 3,
-                  "type": "recovery",
-                  "label": "Let jog ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "2m let jog start -> 6m roligt hovedsæt -> 1m let jog ned",
-              "runningDurationMin": 9,
-              "openingDurationMin": 2,
-              "endingDurationMin": 1,
-              "flags": []
-            },
-            {
-              "id": "1-sunday-long",
-              "dayOfWeek": "sunday",
-              "date": "2026-04-26",
-              "type": "long",
-              "title": "Langt roligt pas",
-              "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
-              "intent": "Udvide den rolige kapacitet frem mod 5K.",
-              "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
-              "totalDurationMin": 22,
-              "estimatedLoad": 15,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "steady",
-                  "label": "Lang rolig blok",
-                  "durationMin": 16.5
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "steady",
-                  "label": "Lang rolig blok",
-                  "durationMin": 16.5
-                },
-                {
-                  "order": 4,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 5,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 16.5m lang rolig blok -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 20,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            }
-          ]
-        },
-        {
-          "weekNumber": 2,
-          "phase": "introduction",
-          "focus": "Bygge en stabil uge, hvor kroppen lærer træningen bedre at kende.",
-          "weekSummary": "introduction · Bygge en stabil uge, hvor kroppen lærer træningen bedre at kende.",
-          "estimatedLoad": 33.5,
-          "sessionCount": 3,
-          "flags": [],
-          "sessions": [
-            {
-              "id": "2-tuesday-run-walk",
-              "dayOfWeek": "tuesday",
-              "date": "2026-04-28",
-              "type": "run-walk",
-              "title": "Run-walk",
-              "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
-              "intent": "Skabe tryg rytme og løbetolerance.",
-              "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
-              "totalDurationMin": 25,
-              "estimatedLoad": 13.5,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "run",
-                  "label": "Løb/gang blok",
-                  "durationMin": 2.25,
-                  "repeats": 5,
-                  "recoverMin": 2
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "run",
-                  "label": "Løb/gang blok 1",
-                  "durationMin": 2.25,
-                  "sourceRepeatIndex": 1
-                },
-                {
-                  "order": 4,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 5,
-                  "type": "run",
-                  "label": "Løb/gang blok 2",
-                  "durationMin": 2.25,
-                  "sourceRepeatIndex": 2
-                },
-                {
-                  "order": 6,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 7,
-                  "type": "run",
-                  "label": "Løb/gang blok 3",
-                  "durationMin": 2.25,
-                  "sourceRepeatIndex": 3
-                },
-                {
-                  "order": 8,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 9,
-                  "type": "run",
-                  "label": "Løb/gang blok 4",
-                  "durationMin": 2.25,
-                  "sourceRepeatIndex": 4
-                },
-                {
-                  "order": 10,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2
-                },
-                {
-                  "order": 11,
-                  "type": "run",
-                  "label": "Løb/gang blok 5",
-                  "durationMin": 2.25,
-                  "sourceRepeatIndex": 5
-                },
-                {
-                  "order": 12,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 13,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 2.3m løb/gang blok 1 -> 2m pause -> 2.3m løb/gang blok 2 -> 2m pause -> 2.3m løb/gang blok 3 -> 2m pause -> 2.3m løb/gang blok 4 -> 2m pause -> 2.3m løb/gang blok 5 -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 15,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            },
-            {
-              "id": "2-thursday-easy",
-              "dayOfWeek": "thursday",
-              "date": "2026-04-30",
-              "type": "easy",
-              "title": "Roligt løb",
-              "description": "Et jævnt pas hvor du finder rytme og bygger rolig kapacitet.",
-              "intent": "Skabe kontinuitet og overskud.",
-              "effortGuidance": "Hold et tempo hvor du stadig kan føre en kort samtale.",
-              "totalDurationMin": 9,
-              "estimatedLoad": 5,
-              "rawStructure": [
-                {
-                  "type": "recovery",
-                  "label": "Let jog start",
-                  "durationMin": 2
-                },
-                {
-                  "type": "steady",
-                  "label": "Roligt hovedsæt",
-                  "durationMin": 6
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "recovery",
-                  "label": "Let jog start",
-                  "durationMin": 2
-                },
-                {
-                  "order": 2,
-                  "type": "steady",
-                  "label": "Roligt hovedsæt",
-                  "durationMin": 6
-                },
-                {
-                  "order": 3,
-                  "type": "recovery",
-                  "label": "Let jog ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "2m let jog start -> 6m roligt hovedsæt -> 1m let jog ned",
-              "runningDurationMin": 9,
-              "openingDurationMin": 2,
-              "endingDurationMin": 1,
-              "flags": []
-            },
-            {
-              "id": "2-sunday-long",
-              "dayOfWeek": "sunday",
-              "date": "2026-05-03",
-              "type": "long",
-              "title": "Langt roligt pas",
-              "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
-              "intent": "Udvide den rolige kapacitet frem mod 5K.",
-              "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
-              "totalDurationMin": 23.5,
-              "estimatedLoad": 15,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "steady",
-                  "label": "Lang rolig blok",
-                  "durationMin": 18
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "steady",
-                  "label": "Lang rolig blok",
-                  "durationMin": 18
-                },
-                {
-                  "order": 4,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 5,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 18m lang rolig blok -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 21.5,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            }
-          ]
-        },
-        {
-          "weekNumber": 3,
-          "phase": "introduction",
-          "focus": "En roligere uge hvor kroppen får plads til at absorbere træningen.",
-          "weekSummary": "introduction · En roligere uge hvor kroppen får plads til at absorbere træningen.",
-          "estimatedLoad": 30.5,
-          "sessionCount": 3,
-          "flags": [],
-          "sessions": [
-            {
-              "id": "3-tuesday-run-walk",
-              "dayOfWeek": "tuesday",
-              "date": "2026-05-05",
-              "type": "run-walk",
-              "title": "Run-walk",
-              "description": "Et roligt pas hvor løb og gang skiftes, så du bygger tolerance uden at forcere.",
-              "intent": "Skabe tryg rytme og løbetolerance.",
-              "effortGuidance": "Løb roligt. Du skal hele tiden kunne falde til ro i pauserne.",
-              "totalDurationMin": 27,
-              "estimatedLoad": 11.5,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "run",
-                  "label": "Løb/gang blok",
-                  "durationMin": 2.5,
-                  "repeats": 5,
-                  "recoverMin": 2.25
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "run",
-                  "label": "Løb/gang blok 1",
-                  "durationMin": 2.5,
-                  "sourceRepeatIndex": 1
-                },
-                {
-                  "order": 4,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2.25
-                },
-                {
-                  "order": 5,
-                  "type": "run",
-                  "label": "Løb/gang blok 2",
-                  "durationMin": 2.5,
-                  "sourceRepeatIndex": 2
-                },
-                {
-                  "order": 6,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2.25
-                },
-                {
-                  "order": 7,
-                  "type": "run",
-                  "label": "Løb/gang blok 3",
-                  "durationMin": 2.5,
-                  "sourceRepeatIndex": 3
-                },
-                {
-                  "order": 8,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2.25
-                },
-                {
-                  "order": 9,
-                  "type": "run",
-                  "label": "Løb/gang blok 4",
-                  "durationMin": 2.5,
-                  "sourceRepeatIndex": 4
-                },
-                {
-                  "order": 10,
-                  "type": "pause",
-                  "label": "Pause",
-                  "durationMin": 2.25
-                },
-                {
-                  "order": 11,
-                  "type": "run",
-                  "label": "Løb/gang blok 5",
-                  "durationMin": 2.5,
-                  "sourceRepeatIndex": 5
-                },
-                {
-                  "order": 12,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 13,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 2.5m løb/gang blok 1 -> 2.3m pause -> 2.5m løb/gang blok 2 -> 2.3m pause -> 2.5m løb/gang blok 3 -> 2.3m pause -> 2.5m løb/gang blok 4 -> 2.3m pause -> 2.5m løb/gang blok 5 -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 16,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            },
-            {
-              "id": "3-thursday-recovery",
-              "dayOfWeek": "thursday",
-              "date": "2026-05-07",
-              "type": "recovery",
-              "title": "Recovery-pas",
-              "description": "Et meget let pas som holder kroppen i gang uden at fylde meget i den samlede belastning.",
-              "intent": "Give bevægelse uden at stjæle restitution.",
-              "effortGuidance": "Hold det let fra start til slut.",
-              "totalDurationMin": 17.5,
-              "estimatedLoad": 6.5,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "recovery",
-                  "label": "Meget let bevægelse",
-                  "durationMin": 12
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "recovery",
-                  "label": "Meget let bevægelse",
-                  "durationMin": 12
-                },
-                {
-                  "order": 4,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 5,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 12m meget let bevægelse -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 15.5,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            },
-            {
-              "id": "3-sunday-long",
-              "dayOfWeek": "sunday",
-              "date": "2026-05-10",
-              "type": "long",
-              "title": "Langt roligt pas",
-              "description": "Den længste rolige træning i ugen, hvor du samler tid på benene uden jagt på fart.",
-              "intent": "Udvide den rolige kapacitet frem mod 5K.",
-              "effortGuidance": "Hold det bevidst roligt. Du skal gerne slutte med lidt overskud.",
-              "totalDurationMin": 23.5,
-              "estimatedLoad": 12.5,
-              "rawStructure": [
-                {
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "type": "steady",
-                  "label": "Lang rolig blok",
-                  "durationMin": 18
-                },
-                {
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "orderedStructure": [
-                {
-                  "order": 1,
-                  "type": "walk",
-                  "label": "Rolig gang",
-                  "durationMin": 1
-                },
-                {
-                  "order": 2,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 2.5
-                },
-                {
-                  "order": 3,
-                  "type": "steady",
-                  "label": "Lang rolig blok",
-                  "durationMin": 18
-                },
-                {
-                  "order": 4,
-                  "type": "recovery",
-                  "label": "Let jog",
-                  "durationMin": 1
-                },
-                {
-                  "order": 5,
-                  "type": "walk",
-                  "label": "Gang ned",
-                  "durationMin": 1
-                }
-              ],
-              "structureSummary": "1m rolig gang -> 2.5m let jog -> 18m lang rolig blok -> 1m let jog -> 1m gang ned",
-              "runningDurationMin": 21.5,
-              "openingDurationMin": 3.5,
-              "endingDurationMin": 2,
-              "flags": []
-            }
-          ]
-        }
-      ],
-      "reviewFlags": {
-        "sessionFlagCounts": {
-          "passive_start": 0,
-          "low_meaningful_running": 0,
-          "long_passive_finish": 0,
-          "muddy_structure": 0
-        },
-        "weekFlags": []
       }
     },
     {

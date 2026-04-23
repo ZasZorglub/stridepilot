@@ -1,13 +1,14 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildGoalPlan } from "../src/lib/coach/build5kPlan";
+import { interpretRunnerProfile } from "../src/lib/coach/interpreter";
 import {
   fixedProgramExportScenarios,
   programExportScenarios,
   stressProgramExportScenarios,
   type ProgramExportScenario,
 } from "../src/lib/coach/programExportScenarios";
-import type { TrainingPlan, WorkoutSession, WorkoutStructureSegment } from "../src/lib/coach/types";
+import type { OnboardingInterpretationInput, TrainingPlan, WorkoutSession, WorkoutStructureSegment } from "../src/lib/coach/types";
 
 type ExpandedSegment = {
   order: number;
@@ -63,10 +64,14 @@ interface ExportProgram {
   scenarioType: "fixed" | "stress";
   scenarioFocus: string;
   scenarioTags: string[];
+  comparisonGroup?: string;
   planType: TrainingPlan["planType"];
   goal: ProgramExportScenario["goal"];
   weeks: number;
   userInputs: {
+    recentRunningState?: NonNullable<OnboardingInterpretationInput["recentRunningState"]>;
+    onboardingTrack?: OnboardingInterpretationInput["onboardingTrack"];
+    currentAbility?: string;
     baseProgramTrack: ProgramExportScenario["profile"]["baseProgramTrack"];
     archetype: ProgramExportScenario["profile"]["archetype"];
     runnerCategory: ProgramExportScenario["profile"]["runnerCategory"];
@@ -306,8 +311,17 @@ function buildExportSession(session: WorkoutSession): ExportSession {
   };
 }
 
+function resolveScenarioProfile(scenario: ProgramExportScenario) {
+  if (!scenario.onboardingInput) {
+    return scenario.profile;
+  }
+
+  return interpretRunnerProfile(scenario.onboardingInput);
+}
+
 function buildExportProgram(scenario: ProgramExportScenario): ExportProgram {
-  const plan = buildGoalPlan(scenario.profile, scenario.goal);
+  const resolvedProfile = resolveScenarioProfile(scenario);
+  const plan = buildGoalPlan(resolvedProfile, scenario.goal);
   const reviewWeeks = plan.weeks.slice(0, Math.min(REVIEW_WEEKS, plan.weeks.length));
 
   const exportedWeeks = reviewWeeks.map((week, weekIndex) => {
@@ -346,23 +360,27 @@ function buildExportProgram(scenario: ProgramExportScenario): ExportProgram {
     scenarioType: scenario.scenarioType,
     scenarioFocus: scenario.focus,
     scenarioTags: scenario.tags,
+    comparisonGroup: scenario.comparisonGroup,
     planType: plan.planType,
     goal: scenario.goal,
     weeks: plan.weeks.length,
     userInputs: {
-      baseProgramTrack: scenario.profile.baseProgramTrack,
-      archetype: scenario.profile.archetype,
-      runnerCategory: scenario.profile.runnerCategory,
-      aerobicBase: scenario.profile.aerobicBase,
-      runningSpecificity: scenario.profile.runningSpecificity,
-      confidence: scenario.profile.confidence,
-      injurySensitivity: scenario.profile.injurySensitivity,
-      progressionStyle: scenario.profile.progressionStyle,
-      currentRunsPerWeek: scenario.profile.currentRunsPerWeek,
-      currentWeeklyVolumeKm: scenario.profile.currentWeeklyVolumeKm,
-      longestRunMinutes: scenario.profile.longestRunMinutes,
-      typicalWorkoutMinutes: scenario.profile.typicalWorkoutMinutes,
-      realisticTrainingDaysPerWeek: scenario.profile.realisticTrainingDaysPerWeek,
+      recentRunningState: scenario.onboardingInput?.recentRunningState,
+      onboardingTrack: scenario.onboardingInput?.onboardingTrack,
+      currentAbility: scenario.onboardingInput?.currentAbility,
+      baseProgramTrack: resolvedProfile.baseProgramTrack,
+      archetype: resolvedProfile.archetype,
+      runnerCategory: resolvedProfile.runnerCategory,
+      aerobicBase: resolvedProfile.aerobicBase,
+      runningSpecificity: resolvedProfile.runningSpecificity,
+      confidence: resolvedProfile.confidence,
+      injurySensitivity: resolvedProfile.injurySensitivity,
+      progressionStyle: resolvedProfile.progressionStyle,
+      currentRunsPerWeek: resolvedProfile.currentRunsPerWeek,
+      currentWeeklyVolumeKm: resolvedProfile.currentWeeklyVolumeKm,
+      longestRunMinutes: resolvedProfile.longestRunMinutes,
+      typicalWorkoutMinutes: resolvedProfile.typicalWorkoutMinutes,
+      realisticTrainingDaysPerWeek: resolvedProfile.realisticTrainingDaysPerWeek,
       trainingDaysPerWeek: scenario.goal.trainingDaysPerWeek,
       preferredTrainingDays: scenario.goal.preferredTrainingDays ?? [],
       preferredLongRunDay: scenario.goal.preferredLongRunDay,

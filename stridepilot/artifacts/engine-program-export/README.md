@@ -96,12 +96,26 @@ Review weeks per program: 3
 - Inputs: continuous_beginner · 3 days/week · 8 km/week · longest 20m
 - Flags: session=none | week=none
 
-## fixed:low-confidence-returner:Continuous5K
-- Scenario: Low-confidence returner (fixed)
-- Focus: A cautious comeback runner should feel protected without being reduced to passive filler.
-- Plan: Continuous5K · 5K finish_comfortably · 13 weeks
-- Inputs: continuous_beginner · 3 days/week · 5 km/week · longest 14m
-- Flags: session=none | week=none
+## fixed:recent-running-state-trio-recent:Continuous5K
+- Scenario: Recent-running-state trio: recent runner (fixed)
+- Focus: Comparison runner for recentRunningState. Inputs stay fixed except freshness so week 1 can be compared directly.
+- Plan: Continuous5K · 5K finish · 13 weeks
+- Inputs: continuous_beginner · 3 days/week · 8 km/week · longest 18m
+- Flags: session=none | week=partial_first_week
+
+## fixed:recent-running-state-trio-returning:Continuous5K
+- Scenario: Recent-running-state trio: returning runner (fixed)
+- Focus: Comparison runner for recentRunningState. Inputs stay fixed except freshness so week 1 can be compared directly.
+- Plan: Continuous5K · 5K finish · 13 weeks
+- Inputs: recreational · 3 days/week · 8 km/week · longest 18m
+- Flags: session=none | week=partial_first_week
+
+## fixed:recent-running-state-trio-long-break:Continuous5K
+- Scenario: Recent-running-state trio: long break or new runner (fixed)
+- Focus: Comparison runner for recentRunningState. Inputs stay fixed except freshness so week 1 can be compared directly.
+- Plan: Continuous5K · 5K finish · 13 weeks
+- Inputs: continuous_beginner · 3 days/week · 8 km/week · longest 18m
+- Flags: session=none | week=partial_first_week
 
 ## fixed:short-session-two-day-beginner:Continuous5K
 - Scenario: Short-session two-day beginner (fixed)
@@ -109,13 +123,6 @@ Review weeks per program: 3
 - Plan: Continuous5K · 5K finish · 10 weeks
 - Inputs: continuous_beginner · 2 days/week · 4 km/week · longest 12m
 - Flags: session=none | week=none
-
-## fixed:continuous-beginner-late-week-start:Continuous5K
-- Scenario: Continuous beginner starting late in week (fixed)
-- Focus: Late starts for a continuous beginner should still open gently and not skip the onboarding feel.
-- Plan: Continuous5K · 5K finish · 11 weeks
-- Inputs: continuous_beginner · 3 days/week · 7 km/week · longest 16m
-- Flags: session=none | week=partial_first_week
 
 ## fixed:strong-runner-late-week-start:TenKPerformance
 - Scenario: Stronger runner starting late in week (fixed)
@@ -158,13 +165,6 @@ Review weeks per program: 3
 - Plan: TenKPerformance · 10K improve · 14 weeks
 - Inputs: light_intermediate · 4 days/week · 29 km/week · longest 52m
 - Flags: session=none | week=partial_first_week
-
-## fixed:easy-recovery-heavy-returner:Continuous5K
-- Scenario: Easy/recovery-heavy returner (fixed)
-- Focus: A protective return-to-running case should still contain real sessions, not just low-value transitions.
-- Plan: Continuous5K · 5K finish_comfortably · 14 weeks
-- Inputs: continuous_beginner · 3 days/week · 6 km/week · longest 14m
-- Flags: session=none | week=none
 
 ## fixed:partial-week-two-day-beginner:Continuous5K
 - Scenario: Two-day beginner with partial opening week (fixed)

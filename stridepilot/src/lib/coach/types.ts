@@ -186,6 +186,7 @@ export interface WorkoutFeedback {
 
 export interface OnboardingInterpretationInput {
   onboardingTrack?: "getting_started" | "returning" | "running_consistently" | "goal_focused";
+  recentRunningState?: "recent" | "returning" | "long_break_or_new";
   onboardingText?: string;
   injuryHistory?: string;
   weakPoints?: string;

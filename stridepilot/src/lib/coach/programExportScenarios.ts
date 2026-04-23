@@ -1,9 +1,11 @@
 import { coachEvaluationScenarios, type CoachEvaluationScenario } from "./evaluationScenarios";
-import type { GoalConfig, RunnerProfile } from "./types";
+import type { GoalConfig, OnboardingInterpretationInput, RunnerProfile } from "./types";
 
 export interface ProgramExportScenario extends CoachEvaluationScenario {
   scenarioType: "fixed" | "stress";
   tags: string[];
+  onboardingInput?: OnboardingInterpretationInput;
+  comparisonGroup?: string;
 }
 
 function baseGoal(overrides: Partial<GoalConfig> = {}): GoalConfig {
@@ -34,6 +36,26 @@ function baseProfile(overrides: Partial<RunnerProfile> = {}): RunnerProfile {
     typicalWorkoutMinutes: 30,
     realisticTrainingDaysPerWeek: 3,
     ...overrides,
+  };
+}
+
+function baseComparisonOnboardingInput(
+  recentRunningState: NonNullable<OnboardingInterpretationInput["recentRunningState"]>,
+): OnboardingInterpretationInput {
+  return {
+    onboardingTrack: "getting_started",
+    recentRunningState,
+    currentAbility: "ti_femten_min",
+    activityLevel: "høj",
+    confidence: 3,
+    currentRunsPerWeek: 1,
+    currentWeeklyVolumeKm: 8,
+    longestRunMinutes: 18,
+    realisticTrainingDaysPerWeek: 3,
+    typicalWorkoutMinutes: 32,
+    preferredGuidance: "simple",
+    goalDistance: "5K",
+    goalType: "complete",
   };
 }
 
@@ -89,26 +111,79 @@ const additionalFixedScenarios: ProgramExportScenario[] = [
     ["beginner", "10k", "three-day"],
   ),
   fixedScenario(
-    "low-confidence-returner",
-    "Low-confidence returner",
-    "A cautious comeback runner should feel protected without being reduced to passive filler.",
+    "recent-running-state-trio-recent",
+    "Recent-running-state trio: recent runner",
+    "Comparison runner for recentRunningState. Inputs stay fixed except freshness so week 1 can be compared directly.",
+    baseProfile({
+      baseProgramTrack: "getting_started",
+      archetype: "fit_but_inexperienced",
+      runnerCategory: "continuous_beginner",
+      aerobicBase: 2,
+      runningSpecificity: 1,
+      confidence: 3,
+      injurySensitivity: 2,
+      progressionStyle: "conservative",
+      currentRunsPerWeek: 1,
+      currentWeeklyVolumeKm: 8,
+      longestRunMinutes: 18,
+      typicalWorkoutMinutes: 32,
+      realisticTrainingDaysPerWeek: 3,
+    }),
+    baseGoal({
+      startDate: "2026-04-24",
+      targetDate: "2026-07-19",
+    }),
+    ["comparison", "recent-running-state", "recent", "partial-week"],
+  ),
+  fixedScenario(
+    "recent-running-state-trio-returning",
+    "Recent-running-state trio: returning runner",
+    "Comparison runner for recentRunningState. Inputs stay fixed except freshness so week 1 can be compared directly.",
     baseProfile({
       baseProgramTrack: "returning",
       archetype: "returning_runner",
       runnerCategory: "continuous_beginner",
+      aerobicBase: 2,
+      runningSpecificity: 2,
+      confidence: 3,
+      injurySensitivity: 4,
+      progressionStyle: "conservative",
       currentRunsPerWeek: 1,
-      currentWeeklyVolumeKm: 5,
-      longestRunMinutes: 14,
-      confidence: 1,
-      injurySensitivity: 5,
-      typicalWorkoutMinutes: 28,
+      currentWeeklyVolumeKm: 8,
+      longestRunMinutes: 18,
+      typicalWorkoutMinutes: 32,
+      realisticTrainingDaysPerWeek: 3,
     }),
     baseGoal({
-      goalDistance: "5K",
-      goalIntent: "finish_comfortably",
+      startDate: "2026-04-24",
       targetDate: "2026-07-19",
     }),
-    ["returning", "low-confidence", "beginner"],
+    ["comparison", "recent-running-state", "returning", "partial-week"],
+  ),
+  fixedScenario(
+    "recent-running-state-trio-long-break",
+    "Recent-running-state trio: long break or new runner",
+    "Comparison runner for recentRunningState. Inputs stay fixed except freshness so week 1 can be compared directly.",
+    baseProfile({
+      baseProgramTrack: "getting_started",
+      archetype: "nervous_beginner",
+      runnerCategory: "true_beginner",
+      aerobicBase: 1,
+      runningSpecificity: 1,
+      confidence: 2,
+      injurySensitivity: 4,
+      progressionStyle: "conservative",
+      currentRunsPerWeek: 1,
+      currentWeeklyVolumeKm: 8,
+      longestRunMinutes: 18,
+      typicalWorkoutMinutes: 32,
+      realisticTrainingDaysPerWeek: 3,
+    }),
+    baseGoal({
+      startDate: "2026-04-24",
+      targetDate: "2026-07-19",
+    }),
+    ["comparison", "recent-running-state", "long-break-or-new", "partial-week"],
   ),
   fixedScenario(
     "short-session-two-day-beginner",
@@ -120,7 +195,7 @@ const additionalFixedScenarios: ProgramExportScenario[] = [
       currentRunsPerWeek: 1,
       currentWeeklyVolumeKm: 4,
       longestRunMinutes: 12,
-      confidence: 2,
+      confidence: 3,
       typicalWorkoutMinutes: 22,
       realisticTrainingDaysPerWeek: 2,
     }),
@@ -130,25 +205,6 @@ const additionalFixedScenarios: ProgramExportScenario[] = [
       targetDate: "2026-06-28",
     }),
     ["beginner", "two-day", "short-session"],
-  ),
-  fixedScenario(
-    "continuous-beginner-late-week-start",
-    "Continuous beginner starting late in week",
-    "Late starts for a continuous beginner should still open gently and not skip the onboarding feel.",
-    baseProfile({
-      runnerCategory: "continuous_beginner",
-      archetype: "motivated_novice",
-      currentRunsPerWeek: 2,
-      currentWeeklyVolumeKm: 7,
-      longestRunMinutes: 16,
-      confidence: 3,
-      typicalWorkoutMinutes: 30,
-    }),
-    baseGoal({
-      startDate: "2026-04-24",
-      targetDate: "2026-07-05",
-    }),
-    ["beginner", "partial-week", "late-start"],
   ),
   fixedScenario(
     "strong-runner-late-week-start",
@@ -316,30 +372,6 @@ const additionalFixedScenarios: ProgramExportScenario[] = [
     ["progression", "stronger", "review"],
   ),
   fixedScenario(
-    "easy-recovery-heavy-returner",
-    "Easy/recovery-heavy returner",
-    "A protective return-to-running case should still contain real sessions, not just low-value transitions.",
-    baseProfile({
-      baseProgramTrack: "returning",
-      archetype: "returning_runner",
-      runnerCategory: "continuous_beginner",
-      currentRunsPerWeek: 2,
-      currentWeeklyVolumeKm: 6,
-      longestRunMinutes: 14,
-      confidence: 2,
-      injurySensitivity: 5,
-      progressionStyle: "conservative",
-      typicalWorkoutMinutes: 24,
-      realisticTrainingDaysPerWeek: 3,
-    }),
-    baseGoal({
-      goalDistance: "5K",
-      goalIntent: "finish_comfortably",
-      targetDate: "2026-07-26",
-    }),
-    ["returning", "easy-heavy", "recovery"],
-  ),
-  fixedScenario(
     "partial-week-two-day-beginner",
     "Two-day beginner with partial opening week",
     "A two-day beginner who starts late should still get a trustworthy first session instead of a compressed ramp.",
@@ -389,6 +421,21 @@ const additionalFixedScenarios: ProgramExportScenario[] = [
     ["5k", "three-day", "stronger"],
   ),
 ];
+
+for (const scenario of additionalFixedScenarios) {
+  if (scenario.id === "recent-running-state-trio-recent") {
+    scenario.onboardingInput = baseComparisonOnboardingInput("recent");
+    scenario.comparisonGroup = "recent-running-state-trio-a";
+  }
+  if (scenario.id === "recent-running-state-trio-returning") {
+    scenario.onboardingInput = baseComparisonOnboardingInput("returning");
+    scenario.comparisonGroup = "recent-running-state-trio-a";
+  }
+  if (scenario.id === "recent-running-state-trio-long-break") {
+    scenario.onboardingInput = baseComparisonOnboardingInput("long_break_or_new");
+    scenario.comparisonGroup = "recent-running-state-trio-a";
+  }
+}
 
 const stressScenarios: ProgramExportScenario[] = [
   stressScenario(
