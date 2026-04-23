@@ -21,6 +21,7 @@ import { buildTenKDistancePlan } from "./buildTenKDistancePlan";
 import { deriveCalendarWeekCount, planStartWeekMonday } from "../calendar-week";
 import { orderTrainingDaysForLongRun } from "./week-structure";
 import { buildCapacityInterpretationPolicy, buildEarlyWeekRealismPolicy, buildEntryRealismPolicy, buildProgressionRealismPolicy, buildTrackPosturePolicy, ContinuityBand } from "./realismPolicy";
+import { firstSessionPolicy, runWalkMeaningfulRunningPolicy } from "./beginnerOnboardingPolicy";
 
 type LegacyPlanPhase = "introduction" | "continuous_running" | "capacity" | "race_preparation";
 
@@ -1257,6 +1258,7 @@ function buildSharedGoalPlan(profile: RunnerProfile, goalConfig: GoalConfig): Tr
   const totalWeeks = deriveTotalWeeks(goalConfig);
   const weekDays = orderTrainingDaysForLongRun(goalConfig);
   const startMonday = planStartWeekMonday(goalConfig.startDate);
+  const startDate = new Date(`${goalConfig.startDate}T00:00:00`);
   const phaseTimeline = buildPhaseTimeline(goalConfig, totalWeeks);
   const weeks: TrainingWeek[] = [];
   let previousLoad: number | null = null;
@@ -1304,23 +1306,62 @@ function buildSharedGoalPlan(profile: RunnerProfile, goalConfig: GoalConfig): Tr
     );
 
     const isGoalWeek = weekNumber === totalWeeks;
-    let sessions = types.map((type, index) =>
-      buildSessionByType(type, {
+    const scheduledEntries = types
+      .map((type, index) => {
+        const dayOfWeek = weekDays[index];
+        const date = addDays(startMonday, (weekNumber - 1) * 7 + dayOffset(dayOfWeek));
+        return { type, dayOfWeek, date, index };
+      })
+      .filter((entry) => !(weekNumber === 1 && entry.date.getTime() < startDate.getTime()));
+
+    let sessions = scheduledEntries.map((entry, scheduledIndex) => {
+      const actualSessionNumber = scheduledIndex + 1;
+      const firstSession = firstSessionPolicy({
+        profile,
+        goal: goalConfig,
+        weekNumber,
+        phase,
+        actualSessionNumber,
+        actualWeekSessionCount: scheduledEntries.length,
+        plannedWeekSessionCount: types.length,
+        plannedType: entry.type,
+        useRunWalk: weekState.useRunWalk,
+      });
+      const resolvedType = firstSession.protectedType;
+      const runWalkPolicy =
+        resolvedType === "run-walk"
+          ? runWalkMeaningfulRunningPolicy({
+              profile,
+              goal: goalConfig,
+              weekNumber,
+              phase,
+              actualSessionNumber,
+              actualWeekSessionCount: scheduledEntries.length,
+              plannedWeekSessionCount: types.length,
+              continuityBand: beginnerContinuityBand(profile),
+              intervalRunMin: smoothedWeekTargets.intervalRunMin,
+              repeats: smoothedWeekTargets.repeats,
+              walkBreakMin: weekState.walkBreakMin,
+              plannedTypes: types,
+            })
+          : null;
+
+      return buildSessionByType(resolvedType, {
         weekNumber,
         phase,
         profile,
         goal: goalConfig,
-        dayOfWeek: weekDays[index],
-        date: toIsoDate(addDays(startMonday, (weekNumber - 1) * 7 + dayOffset(weekDays[index]))),
+        dayOfWeek: entry.dayOfWeek,
+        date: toIsoDate(entry.date),
         isStabilizationWeek,
         continuousRunMin: smoothedWeekTargets.continuousRunMin,
         longRunMin: smoothedWeekTargets.longRunMin,
-        intervalRunMin: smoothedWeekTargets.intervalRunMin,
-        walkBreakMin: weekState.walkBreakMin,
-        repeats: smoothedWeekTargets.repeats,
-        isGoalSession: isGoalWeek && index === types.length - 1,
-      }),
-    );
+        intervalRunMin: runWalkPolicy?.intervalRunMin ?? smoothedWeekTargets.intervalRunMin,
+        walkBreakMin: runWalkPolicy?.walkBreakMin ?? weekState.walkBreakMin,
+        repeats: runWalkPolicy?.repeats ?? smoothedWeekTargets.repeats,
+        isGoalSession: isGoalWeek && entry.index === types.length - 1,
+      });
+    });
 
     const targetLoad = weeklyLoadTarget(
       profile,

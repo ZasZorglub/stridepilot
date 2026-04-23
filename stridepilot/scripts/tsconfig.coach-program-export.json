@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "../tmp-coach-program-export",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": "..",
+    "incremental": false
+  },
+  "include": [
+    "./coach-program-export.ts",
+    "../src/lib/coach/**/*.ts"
+  ]
+}

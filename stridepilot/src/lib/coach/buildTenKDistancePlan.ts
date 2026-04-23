@@ -13,6 +13,7 @@ import {
 import { buildPlanRationale, buildWeekRationales, buildWorkoutRationales, generatePlanExplanation } from "./explanations";
 import { GoalConfig, PlanPhase, PlanType, ProgressionCurves, RunnerCategory, RunnerProfile, TrainingPlan, TrainingWeek, WorkoutSession, WorkoutType } from "./types";
 import { buildEarlyWeekRealismPolicy, buildEntryRealismPolicy, buildProgressionRealismPolicy, buildTrackPosturePolicy, ContinuityBand } from "./realismPolicy";
+import { firstSessionPolicy } from "./beginnerOnboardingPolicy";
 import { runnerCategoryReason } from "./classification";
 import { cutbackInterval, orderTrainingDaysForLongRun, preferredLongRunDay } from "./week-structure";
 import { deriveCalendarWeekCount, planStartWeekMonday } from "../calendar-week";
@@ -405,12 +406,28 @@ export function buildTenKDistancePlan(profile: RunnerProfile, goal: GoalConfig):
     });
 
     const weekMonday = addDays(startMonday, (curveWeek.weekNumber - 1) * 7);
-    const sessions = types.flatMap((type, index) => {
-      const day = normalizedDays[index];
-      const date = addDays(weekMonday, dayOffset(day));
-      if (curveWeek.weekNumber === 1 && date.getTime() < startDate.getTime()) {
-        return [];
-      }
+    const scheduledEntries = types
+      .map((type, index) => {
+        const day = normalizedDays[index];
+        const date = addDays(weekMonday, dayOffset(day));
+        return { type, day, date, index };
+      })
+      .filter((entry) => !(curveWeek.weekNumber === 1 && entry.date.getTime() < startDate.getTime()));
+    const sessions = scheduledEntries.flatMap((entry, scheduledIndex) => {
+      const firstSession = firstSessionPolicy({
+        profile,
+        goal,
+        weekNumber: curveWeek.weekNumber,
+        phase: mapPhaseToPlanPhase(curveWeek.phase),
+        actualSessionNumber: scheduledIndex + 1,
+        actualWeekSessionCount: scheduledEntries.length,
+        plannedWeekSessionCount: types.length,
+        plannedType: entry.type,
+        useRunWalk: entry.type === "run-walk",
+      });
+      const type = firstSession.protectedType;
+      const day = entry.day;
+      const date = entry.date;
 
       const minutes = sessionMinutes(curveWeek, type, goal.trainingDaysPerWeek);
       const earlyWeekPolicy = buildEarlyWeekRealismPolicy({
@@ -446,7 +463,7 @@ export function buildTenKDistancePlan(profile: RunnerProfile, goal: GoalConfig):
           intervalRunMin: roundHalf(resolvedIntervalRunMin),
           walkBreakMin: earlyWeekPolicy.minWalkBreakMin ?? 2,
           repeats: minutes.repeats,
-          isGoalSession: curveWeek.weekNumber === totalWeeks && index === types.length - 1,
+          isGoalSession: curveWeek.weekNumber === totalWeeks && entry.index === types.length - 1,
         }),
       ];
     });

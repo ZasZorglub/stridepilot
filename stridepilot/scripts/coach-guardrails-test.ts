@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 
+import { buildGoalPlan } from "../src/lib/coach/build5kPlan";
 import {
   buildEasyWorkout,
   buildIntervalWorkout,
@@ -127,5 +128,75 @@ const recoveryCore = recovery.structure.filter((segment) => segment.label === "M
 assert.equal(recoveryCore.length, 1, "recovery sessions should stay structurally clean");
 assert.ok(sumDuration(openingSegments(recovery.structure)) <= 5, "recovery openings should stay concise");
 assert.ok(sumDuration(endingSegments(recovery.structure)) <= 4, "recovery cooldown should stay proportionate");
+
+const onboardingProfile = makeProfile({
+  runnerCategory: "true_beginner",
+  currentRunsPerWeek: 0,
+  currentWeeklyVolumeKm: 0,
+  longestRunMinutes: 0,
+  confidence: 1,
+  injurySensitivity: 4,
+  typicalWorkoutMinutes: 25,
+});
+const onboardingGoal: GoalConfig = {
+  ...beginnerGoal,
+  targetDate: "2026-07-12",
+  trainingDaysPerWeek: 3,
+  preferredTrainingDays: ["tuesday", "thursday", "sunday"],
+};
+const onboardingPlan = buildGoalPlan(onboardingProfile, onboardingGoal);
+const onboardingWeekOne = onboardingPlan.weeks[0]!;
+assert.equal(onboardingWeekOne.sessions.length, 3, "full opening week should keep all three sessions");
+assert.ok(
+  onboardingWeekOne.sessions.some((session) => session.type === "run-walk"),
+  "opening week should still protect the weakest beginner with run-walk structure",
+);
+assert.notDeepEqual(
+  onboardingWeekOne.sessions.map((session) => session.durationMin),
+  Array(onboardingWeekOne.sessions.length).fill(onboardingWeekOne.sessions[0]!.durationMin),
+  "opening week should not collapse into three identical beginner session durations",
+);
+const firstRunWalk = onboardingWeekOne.sessions.find((session) => session.type === "run-walk")!;
+const lastRunWalk = [...onboardingWeekOne.sessions].reverse().find((session) => session.type === "run-walk")!;
+const firstRunBlock = firstRunWalk.structure.find((segment) => segment.type === "run")!;
+const lastRunBlock = lastRunWalk.structure.find((segment) => segment.type === "run")!;
+const firstOpening = firstRunWalk.structure[0]!;
+const firstFinish = firstRunWalk.structure.at(-1)!;
+const firstRecoverTotal = ((firstRunBlock.repeats ?? 1) - 1) * (firstRunBlock.recoverMin ?? 0);
+const firstRunningTotal = firstRunBlock.durationMin * (firstRunBlock.repeats ?? 1);
+const firstRunWalkTotal = sumDuration(firstRunWalk.structure);
+assert.ok(
+  (lastRunBlock.durationMin * (lastRunBlock.repeats ?? 1)) >= (firstRunBlock.durationMin * (firstRunBlock.repeats ?? 1)),
+  "later onboarding run-walk sessions should preserve or improve meaningful running exposure",
+);
+assert.ok(
+  firstRunWalkTotal > 0 && firstRunningTotal / firstRunWalkTotal >= 0.45,
+  "the weakest beginner's first run-walk session should clear the meaningful-running floor",
+);
+assert.ok(
+  firstRecoverTotal <= firstRunningTotal,
+  "the weakest beginner's first run-walk session should not be pause-dominant",
+);
+assert.ok(
+  sumDuration([firstOpening, firstFinish]) <= 3.5,
+  "the weakest beginner's first run-walk session should keep framing light",
+);
+const onboardingWeekTwo = onboardingPlan.weeks[1]!;
+assert.notDeepEqual(
+  onboardingWeekTwo.sessions.map((session) => session.structure.map((segment) => `${segment.type}:${segment.durationMin}:${segment.repeats ?? 1}:${segment.recoverMin ?? 0}`).join("|")),
+  Array(onboardingWeekTwo.sessions.length).fill(
+    onboardingWeekTwo.sessions[0]!.structure.map((segment) => `${segment.type}:${segment.durationMin}:${segment.repeats ?? 1}:${segment.recoverMin ?? 0}`).join("|"),
+  ),
+  "week 2 for the weakest beginner should not collapse into repeated identical run-walk structures",
+);
+
+const partialGoal: GoalConfig = {
+  ...onboardingGoal,
+  startDate: "2026-04-22",
+};
+const partialPlan = buildGoalPlan(onboardingProfile, partialGoal);
+const partialWeekOne = partialPlan.weeks[0]!;
+assert.equal(partialWeekOne.sessions.length, 2, "partial opening week should only keep the surviving sessions");
+assert.equal(partialWeekOne.sessions[0]?.type, "run-walk", "the first actual beginner session in a partial week should stay introductory");
 
 console.log("coach-guardrails-test: ok");
