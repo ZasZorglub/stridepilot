@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
 import { buildGoalPlan } from "../src/lib/coach/build5kPlan";
+import { runWalkMeaningfulRunningPolicy } from "../src/lib/coach/beginnerOnboardingPolicy";
 import {
   buildEasyWorkout,
   buildIntervalWorkout,
@@ -84,6 +85,14 @@ function describe(session: ReturnType<typeof buildEasyWorkout>): string {
   return session.structure.map((segment) => `${segment.type}:${segment.durationMin}`).join(" | ");
 }
 
+// Accepted stabilization coverage:
+// - no passive starts
+// - no token easy sessions after established beginner capacity
+// - no pause-dominant beginner run-walk blocks in weeks 3-6
+// - capable 20+ minute beginners exit repeated run-walk earlier
+// - weak beginners stay protected
+// - stronger runners stay unchanged by beginner guardrails
+
 const shortEasy = buildEasyWorkout(makeContext());
 assert.equal(
   describe(shortEasy),
@@ -128,6 +137,113 @@ const recoveryCore = recovery.structure.filter((segment) => segment.label === "M
 assert.equal(recoveryCore.length, 1, "recovery sessions should stay structurally clean");
 assert.ok(sumDuration(openingSegments(recovery.structure)) <= 5, "recovery openings should stay concise");
 assert.ok(sumDuration(endingSegments(recovery.structure)) <= 4, "recovery cooldown should stay proportionate");
+
+const nonRegressingEasy = buildEasyWorkout(
+  makeContext({
+    weekNumber: 11,
+    phase: "race_preparation",
+    profile: makeProfile({
+      runnerCategory: "true_beginner",
+      currentRunsPerWeek: 0,
+      currentWeeklyVolumeKm: 0,
+      longestRunMinutes: 0,
+      confidence: 1,
+      injurySensitivity: 4,
+      typicalWorkoutMinutes: 25,
+    }),
+    continuousRunMin: 1,
+    intervalRunMin: 1.5,
+    repeats: 5,
+    walkBreakMin: 1.75,
+  }),
+);
+assert.ok(
+  nonRegressingEasy.durationMin > 5.5,
+  "easy sessions should not collapse into token 5-minute runs after meaningful beginner run-walk capacity is established",
+);
+assert.ok(
+  sumDuration(nonRegressingEasy.structure.filter((segment) => segment.type === "steady" || segment.type === "recovery")) >= 6,
+  "the rebuilt beginner easy session should stay conservative but keep a coach-credible amount of easy running",
+);
+const unchangedStrongerEasy = buildEasyWorkout(
+  makeContext({
+    weekNumber: 11,
+    phase: "race_preparation",
+    profile: makeProfile({
+      runnerCategory: "recreational",
+      currentRunsPerWeek: 3,
+      currentWeeklyVolumeKm: 24,
+      longestRunMinutes: 40,
+      confidence: 3,
+      injurySensitivity: 2,
+      typicalWorkoutMinutes: 35,
+    }),
+    continuousRunMin: 1,
+    intervalRunMin: 1.5,
+    repeats: 5,
+    walkBreakMin: 1.75,
+  }),
+);
+assert.equal(
+  unchangedStrongerEasy.durationMin,
+  5,
+  "the beginner easy-session floor should not spill into stronger runner workout shapes",
+);
+const earlyProgressionRunWalk = runWalkMeaningfulRunningPolicy({
+  profile: makeProfile({
+    runnerCategory: "continuous_beginner",
+    currentRunsPerWeek: 1,
+    currentWeeklyVolumeKm: 4,
+    longestRunMinutes: 15,
+    confidence: 2,
+    injurySensitivity: 3,
+  }),
+  goal: beginnerGoal,
+  weekNumber: 4,
+  phase: "continuous_running",
+  actualSessionNumber: 1,
+  actualWeekSessionCount: 2,
+  plannedWeekSessionCount: 2,
+  plannedTypes: ["run-walk", "long"],
+  continuityBand: "one_to_two_min",
+  intervalRunMin: 2,
+  repeats: 5,
+  walkBreakMin: 2.5,
+});
+const earlyProgressionRunningTotal = earlyProgressionRunWalk.intervalRunMin * earlyProgressionRunWalk.repeats;
+const earlyProgressionRecoverTotal = (earlyProgressionRunWalk.repeats - 1) * earlyProgressionRunWalk.walkBreakMin;
+assert.ok(
+  earlyProgressionRunningTotal / (earlyProgressionRunningTotal + earlyProgressionRecoverTotal) >= 0.55,
+  "weeks 3-6 beginner run-walk sessions should keep a clearly progressive running ratio",
+);
+const unaffectedStrongerRunWalk = runWalkMeaningfulRunningPolicy({
+  profile: makeProfile({
+    runnerCategory: "recreational",
+    archetype: "returning_runner",
+    currentRunsPerWeek: 3,
+    currentWeeklyVolumeKm: 20,
+    longestRunMinutes: 35,
+    confidence: 3,
+    injurySensitivity: 2,
+    baseProgramTrack: "returning",
+  }),
+  goal: beginnerGoal,
+  weekNumber: 4,
+  phase: "continuous_running",
+  actualSessionNumber: 1,
+  actualWeekSessionCount: 2,
+  plannedWeekSessionCount: 2,
+  plannedTypes: ["run-walk", "long"],
+  continuityBand: "one_to_two_min",
+  intervalRunMin: 2,
+  repeats: 5,
+  walkBreakMin: 2.5,
+});
+assert.deepEqual(
+  unaffectedStrongerRunWalk,
+  { intervalRunMin: 2, repeats: 5, walkBreakMin: 2.5 },
+  "the early progression run-walk ratio guardrail should stay limited to beginner-like runners",
+);
 
 const onboardingProfile = makeProfile({
   runnerCategory: "true_beginner",
@@ -198,6 +314,78 @@ const partialPlan = buildGoalPlan(onboardingProfile, partialGoal);
 const partialWeekOne = partialPlan.weeks[0]!;
 assert.equal(partialWeekOne.sessions.length, 2, "partial opening week should only keep the surviving sessions");
 assert.equal(partialWeekOne.sessions[0]?.type, "run-walk", "the first actual beginner session in a partial week should stay introductory");
+
+const capableBeginnerGoal: GoalConfig = {
+  ...beginnerGoal,
+  targetDate: "2026-08-15",
+  trainingDaysPerWeek: 3,
+};
+const recentCapablePlan = buildGoalPlan(
+  makeProfile({
+    baseProgramTrack: "getting_started",
+    archetype: "fit_but_inexperienced",
+    runnerCategory: "continuous_beginner",
+    aerobicBase: 3,
+    runningSpecificity: 3,
+    currentRunsPerWeek: 1,
+    currentWeeklyVolumeKm: 8,
+    longestRunMinutes: 22,
+    confidence: 3,
+    injurySensitivity: 2,
+    typicalWorkoutMinutes: 30,
+  }),
+  capableBeginnerGoal,
+);
+const returningCapablePlan = buildGoalPlan(
+  makeProfile({
+    baseProgramTrack: "returning",
+    archetype: "returning_runner",
+    runnerCategory: "continuous_beginner",
+    aerobicBase: 3,
+    runningSpecificity: 3,
+    currentRunsPerWeek: 1,
+    currentWeeklyVolumeKm: 8,
+    longestRunMinutes: 22,
+    confidence: 3,
+    injurySensitivity: 2,
+    typicalWorkoutMinutes: 30,
+  }),
+  capableBeginnerGoal,
+);
+const longBreakCapablePlan = buildGoalPlan(
+  makeProfile({
+    baseProgramTrack: "getting_started",
+    archetype: "nervous_beginner",
+    runnerCategory: "continuous_beginner",
+    aerobicBase: 3,
+    runningSpecificity: 3,
+    currentRunsPerWeek: 1,
+    currentWeeklyVolumeKm: 8,
+    longestRunMinutes: 22,
+    confidence: 2,
+    injurySensitivity: 3,
+    typicalWorkoutMinutes: 30,
+  }),
+  capableBeginnerGoal,
+);
+const trueBeginnerPlan = buildGoalPlan(onboardingProfile, capableBeginnerGoal);
+const countEarlyRunWalkSessions = (plan: ReturnType<typeof buildGoalPlan>): number =>
+  plan.weeks
+    .slice(0, 3)
+    .flatMap((week) => week.sessions)
+    .filter((session) => session.type === "run-walk").length;
+assert.ok(
+  countEarlyRunWalkSessions(recentCapablePlan) < countEarlyRunWalkSessions(longBreakCapablePlan),
+  "recent 20+ minute beginners should exit protective run-walk earlier than long-break beginners with the same nominal capacity",
+);
+assert.ok(
+  countEarlyRunWalkSessions(returningCapablePlan) <= countEarlyRunWalkSessions(longBreakCapablePlan),
+  "returning 20+ minute beginners should not stay in protective run-walk longer than equivalent long-break beginners",
+);
+assert.ok(
+  countEarlyRunWalkSessions(trueBeginnerPlan) > countEarlyRunWalkSessions(recentCapablePlan),
+  "true beginners should keep the safer run-walk opening block",
+);
 
 const recentFirstSession = buildRunWalkWorkout(
   makeContext({

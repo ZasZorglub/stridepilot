@@ -405,6 +405,29 @@ function buildEarlyBeginnerSimpleSession(
   });
 }
 
+function establishedBeginnerEasyMainMin(context: WorkoutBuildContext): number | null {
+  const category = runnerCategory(context.profile);
+  const beginnerLike =
+    category === "true_beginner" ||
+    category === "run_walk_beginner" ||
+    category === "continuous_beginner";
+  const postOnboardingPhase = context.phase !== "introduction";
+
+  if (!beginnerLike || !postOnboardingPhase) {
+    return null;
+  }
+
+  const establishedRunWalkCapacity = roundToHalf(context.intervalRunMin * Math.max(context.repeats, 1));
+  if (context.continuousRunMin >= 6 || establishedRunWalkCapacity < 7) {
+    return null;
+  }
+
+  // Once the runner is already handling a meaningful run-walk workload, later
+  // beginner phases should keep easy days coach-credible rather than shrinking
+  // back into a token 5-minute jog.
+  return roundToHalf(Math.max(6, Math.min(8, establishedRunWalkCapacity * 0.8)));
+}
+
 function distanceLabel(goal: GoalConfig): string {
   return goal.goalDistance === "5K" ? "5K" : goal.goalDistance === "10K" ? "10 km" : goal.goalDistance === "Halvmaraton" ? "halvmaraton" : "maraton";
 }
@@ -658,9 +681,12 @@ export function buildRunWalkWorkout(context: WorkoutBuildContext): WorkoutSessio
 }
 
 export function buildEasyWorkout(context: WorkoutBuildContext): WorkoutSession {
+  const establishedMainMin = establishedBeginnerEasyMainMin(context);
   const structure = earlyBeginnerShortSession(context)
     ? buildEarlyBeginnerSimpleSession(context, "steady", "Roligt hovedsæt", 6)
-    : buildCoachedStructure(context, [{ type: "steady", label: "Roligt løb", durationMin: context.continuousRunMin }]);
+    : establishedMainMin != null
+      ? buildEarlyBeginnerSimpleSession(context, "steady", "Roligt hovedsæt", establishedMainMin)
+      : buildCoachedStructure(context, [{ type: "steady", label: "Roligt løb", durationMin: context.continuousRunMin }]);
 
   return baseSession(
     context,

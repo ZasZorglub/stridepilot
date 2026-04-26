@@ -20,7 +20,7 @@ import { choosePlanType, classifyRunnerCategory } from "./classification";
 import { buildTenKDistancePlan } from "./buildTenKDistancePlan";
 import { deriveCalendarWeekCount, planStartWeekMonday } from "../calendar-week";
 import { orderTrainingDaysForLongRun } from "./week-structure";
-import { buildCapacityInterpretationPolicy, buildEarlyWeekRealismPolicy, buildEntryRealismPolicy, buildProgressionRealismPolicy, buildTrackPosturePolicy, ContinuityBand } from "./realismPolicy";
+import { beginnerRunWalkProtectionPosture, buildCapacityInterpretationPolicy, buildEarlyWeekRealismPolicy, buildEntryRealismPolicy, buildProgressionRealismPolicy, buildTrackPosturePolicy, ContinuityBand } from "./realismPolicy";
 import { firstSessionPolicy, runWalkMeaningfulRunningPolicy } from "./beginnerOnboardingPolicy";
 
 type LegacyPlanPhase = "introduction" | "continuous_running" | "capacity" | "race_preparation";
@@ -281,6 +281,17 @@ function allowRunWalk(profile: RunnerProfile, goal: GoalConfig): boolean {
 function shouldUseRunWalk(profile: RunnerProfile, phase: LegacyPlanPhase, weekNumberInPhase: number, goal: GoalConfig): boolean {
   if (!allowRunWalk(profile, goal)) return false;
   const continuityBand = beginnerContinuityBand(profile);
+  const protectionPosture = beginnerRunWalkProtectionPosture({
+    profile,
+    continuityBand,
+    beginnerLike: beginnerSafe(profile),
+  });
+  if (protectionPosture === "capable_recent_or_returning") {
+    return phase === "introduction" && weekNumberInPhase === 1;
+  }
+  if (protectionPosture === "capable_long_break") {
+    return phase === "introduction" && weekNumberInPhase <= 2;
+  }
   const capacityPolicy = buildCapacityInterpretationPolicy({
     profile,
     continuityBand,

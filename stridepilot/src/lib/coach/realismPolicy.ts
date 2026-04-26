@@ -69,7 +69,46 @@ export interface TrackPosturePolicy {
   preferControlledQualitySignal: boolean;
 }
 
+export type BeginnerRunWalkProtectionPosture = "standard" | "capable_recent_or_returning" | "capable_long_break";
+
+export function beginnerRunWalkProtectionPosture(params: {
+  profile: RunnerProfile;
+  continuityBand: ContinuityBand;
+  beginnerLike: boolean;
+}): BeginnerRunWalkProtectionPosture {
+  const { profile, continuityBand, beginnerLike } = params;
+  if (!beginnerLike) return "standard";
+  if (continuityBand !== "five_min" && continuityBand !== "established") return "standard";
+  const meaningfulCapacitySignal =
+    profile.longestRunMinutes >= 20 ||
+    profile.runnerCategory === "recreational" ||
+    (profile.currentRunsPerWeek >= 2 && profile.currentWeeklyVolumeKm >= 8 && profile.longestRunMinutes >= 18);
+  if (!meaningfulCapacitySignal) return "standard";
+  if (profile.confidence <= 1 || profile.injurySensitivity >= 5) return "standard";
+
+  const recentOrReturning =
+    profile.archetype === "fit_but_inexperienced" ||
+    profile.archetype === "motivated_novice" ||
+    profile.archetype === "returning_runner" ||
+    profile.baseProgramTrack === "returning" ||
+    profile.currentRunsPerWeek >= 2 ||
+    profile.currentWeeklyVolumeKm >= 12 ||
+    profile.longestRunMinutes >= 30 ||
+    profile.runnerCategory === "recreational";
+
+  if (recentOrReturning) return "capable_recent_or_returning";
+
+  if (profile.archetype === "nervous_beginner" || profile.baseProgramTrack === "getting_started") {
+    return "capable_long_break";
+  }
+
+  return "standard";
+}
+
 function protectedGettingStartedRunner(profile: RunnerProfile, continuityBand: ContinuityBand, beginnerLike: boolean): boolean {
+  if (beginnerRunWalkProtectionPosture({ profile, continuityBand, beginnerLike }) === "capable_recent_or_returning") {
+    return false;
+  }
   return (
     (profile.baseProgramTrack === "getting_started" || profile.baseProgramTrack === "returning") &&
     beginnerLike &&
@@ -85,6 +124,9 @@ function protectedGettingStartedRunner(profile: RunnerProfile, continuityBand: C
 }
 
 function lowCapacityGettingStartedRunner(profile: RunnerProfile, continuityBand: ContinuityBand, beginnerLike: boolean): boolean {
+  if (beginnerRunWalkProtectionPosture({ profile, continuityBand, beginnerLike }) === "capable_recent_or_returning") {
+    return false;
+  }
   return (
     (profile.baseProgramTrack === "getting_started" || profile.baseProgramTrack === "returning") &&
     beginnerLike &&
@@ -250,6 +292,27 @@ export function buildEarlyWeekRealismPolicy(params: {
   const protectedGettingStarted = protectedGettingStartedRunner(params.profile, params.continuityBand, params.beginnerLike);
   const lowCapacityGettingStarted = lowCapacityGettingStartedRunner(params.profile, params.continuityBand, params.beginnerLike);
   const lowCapacityRunWalk = lowCapacityGettingStarted && params.profile.realisticTrainingDaysPerWeek <= 3 && params.profile.currentRunsPerWeek <= 2;
+  const protectionPosture = beginnerRunWalkProtectionPosture(params);
+
+  if (protectionPosture === "capable_recent_or_returning") {
+    return {
+      preferRunWalk: params.phase === "introduction" && params.weekNumberInPhase === 1,
+      maxContinuousRunMin: params.phase === "introduction" ? 20 + (params.weekNumberInPhase - 1) * 2 : null,
+      maxLongRunMin: params.phase === "introduction" ? 34 + (params.weekNumberInPhase - 1) * 4 : null,
+      maxIntervalRunMin: params.phase === "introduction" ? 3 : null,
+      minWalkBreakMin: params.phase === "introduction" && params.weekNumberInPhase === 1 ? 1.25 : null,
+    };
+  }
+
+  if (protectionPosture === "capable_long_break") {
+    return {
+      preferRunWalk: params.phase === "introduction" && params.weekNumberInPhase <= 2,
+      maxContinuousRunMin: params.phase === "introduction" ? 18 + (params.weekNumberInPhase - 1) * 2 : null,
+      maxLongRunMin: params.phase === "introduction" ? 30 + (params.weekNumberInPhase - 1) * 4 : null,
+      maxIntervalRunMin: params.phase === "introduction" ? 3 : null,
+      minWalkBreakMin: params.phase === "introduction" ? 1.5 : null,
+    };
+  }
 
   if (!protectedGettingStarted && !lowCapacityGettingStarted) {
     return {

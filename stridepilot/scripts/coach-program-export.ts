@@ -3,12 +3,18 @@ import { join } from "node:path";
 import { buildGoalPlan } from "../src/lib/coach/build5kPlan";
 import { interpretRunnerProfile } from "../src/lib/coach/interpreter";
 import {
+  diagnosticProgramExportScenarios,
+  fixedDiagnosticProgramExportScenarios,
+  stressDiagnosticProgramExportScenarios,
+  type DiagnosticProgramScenario,
+} from "../src/lib/coach/programDiagnosticExportScenarios";
+import {
   fixedProgramExportScenarios,
   programExportScenarios,
   stressProgramExportScenarios,
   type ProgramExportScenario,
 } from "../src/lib/coach/programExportScenarios";
-import type { OnboardingInterpretationInput, TrainingPlan, WorkoutSession, WorkoutStructureSegment } from "../src/lib/coach/types";
+import type { GoalConfig, OnboardingInterpretationInput, RunnerProfile, TrainingPlan, WorkoutSession, WorkoutStructureSegment } from "../src/lib/coach/types";
 
 type ExpandedSegment = {
   order: number;
@@ -119,9 +125,58 @@ interface ExportBundle {
   programs: ExportProgram[];
 }
 
+interface DiagnosticExportWeek {
+  weekNumber: number;
+  phase: TrainingPlan["weeks"][number]["phase"];
+  focus: string;
+  estimatedLoad: number;
+  isStabilizationWeek: boolean;
+  sessionCount: number;
+  flags: WeekFlag[];
+  sessions: ExportSession[];
+}
+
+interface DiagnosticExportProgram {
+  id: string;
+  scenarioId: string;
+  scenarioName: string;
+  scenarioType: "fixed" | "stress";
+  focus: string;
+  tags: string[];
+  scenarioInputs: {
+    onboardingInput?: OnboardingInterpretationInput;
+    profileInput?: RunnerProfile;
+    goal: GoalConfig;
+  };
+  interpretedRunnerProfile: RunnerProfile;
+  generatedProgram: {
+    planType: TrainingPlan["planType"];
+    totalWeeks: number;
+    totalSessions: number;
+    explanationSummary: string[];
+    adjustmentCount: number;
+  };
+  weeks: DiagnosticExportWeek[];
+  reviewFlags: {
+    sessionFlagCounts: Record<SessionFlag, number>;
+    weekFlags: WeekFlag[];
+  };
+}
+
+interface DiagnosticExportBundle {
+  exportVersion: 1;
+  purpose: string;
+  generatedFromBranch?: string;
+  totalPrograms: number;
+  fixedPrograms: number;
+  stressPrograms: number;
+  programs: DiagnosticExportProgram[];
+}
+
 const REVIEW_WEEKS = 3;
 const OUTPUT_DIR = "/Users/anderschristiansloth/stridepilot/stridepilot/artifacts/engine-program-export";
 const OUTPUT_JSON = join(OUTPUT_DIR, "programs.json");
+const OUTPUT_DIAGNOSTIC_JSON = join(OUTPUT_DIR, "50-programs.json");
 const OUTPUT_MD = join(OUTPUT_DIR, "README.md");
 
 function roundHalf(value: number): number {
@@ -319,6 +374,18 @@ function resolveScenarioProfile(scenario: ProgramExportScenario) {
   return interpretRunnerProfile(scenario.onboardingInput);
 }
 
+function resolveDiagnosticScenarioProfile(scenario: DiagnosticProgramScenario): RunnerProfile {
+  if (scenario.onboardingInput) {
+    return interpretRunnerProfile(scenario.onboardingInput);
+  }
+
+  if (scenario.profile) {
+    return scenario.profile;
+  }
+
+  throw new Error(`Scenario ${scenario.id} does not provide onboardingInput or profile`);
+}
+
 function buildExportProgram(scenario: ProgramExportScenario): ExportProgram {
   const resolvedProfile = resolveScenarioProfile(scenario);
   const plan = buildGoalPlan(resolvedProfile, scenario.goal);
@@ -415,6 +482,12 @@ function buildMarkdownSummary(programs: ExportProgram[]): string {
     `Stress: ${stressProgramExportScenarios.length}`,
     `Review weeks per program: ${REVIEW_WEEKS}`,
     "",
+    "Diagnostic export",
+    `- Full 50-program artifact: ${OUTPUT_DIAGNOSTIC_JSON}`,
+    `- Fixed scenarios: ${fixedDiagnosticProgramExportScenarios.length}`,
+    `- Stress scenarios: ${stressDiagnosticProgramExportScenarios.length}`,
+    "- Purpose: expose meaningful or missing variation across runner types without changing engine behavior.",
+    "",
   ];
 
   for (const program of programs) {
@@ -453,14 +526,96 @@ function buildExportBundle(): ExportBundle {
   };
 }
 
+function buildDiagnosticProgram(scenario: DiagnosticProgramScenario): DiagnosticExportProgram {
+  const resolvedProfile = resolveDiagnosticScenarioProfile(scenario);
+  const plan = buildGoalPlan(resolvedProfile, scenario.goal);
+  const weeks = plan.weeks.map((week, weekIndex) => {
+    const sessions = week.sessions.map(buildExportSession);
+    return {
+      weekNumber: week.weekNumber,
+      phase: week.phase,
+      focus: week.focus,
+      estimatedLoad: roundHalf(week.estimatedLoad),
+      isStabilizationWeek: week.isStabilizationWeek,
+      sessionCount: week.sessions.length,
+      flags: detectWeekFlags(plan, plan.weeks, weekIndex),
+      sessions,
+    } satisfies DiagnosticExportWeek;
+  });
+
+  const sessionFlagCounts: Record<SessionFlag, number> = {
+    passive_start: 0,
+    low_meaningful_running: 0,
+    long_passive_finish: 0,
+    muddy_structure: 0,
+  };
+
+  for (const week of weeks) {
+    for (const session of week.sessions) {
+      for (const flag of session.flags) {
+        sessionFlagCounts[flag] += 1;
+      }
+    }
+  }
+
+  return {
+    id: `${scenario.scenarioType}:${scenario.id}:${plan.planType ?? "unknown"}`,
+    scenarioId: scenario.id,
+    scenarioName: scenario.name,
+    scenarioType: scenario.scenarioType,
+    focus: scenario.focus,
+    tags: scenario.tags,
+    scenarioInputs: {
+      onboardingInput: scenario.onboardingInput,
+      profileInput: scenario.profile,
+      goal: scenario.goal,
+    },
+    interpretedRunnerProfile: resolvedProfile,
+    generatedProgram: {
+      planType: plan.planType,
+      totalWeeks: plan.weeks.length,
+      totalSessions: plan.sessions.length,
+      explanationSummary: plan.explanationSummary,
+      adjustmentCount: plan.adjustments.length,
+    },
+    weeks,
+    reviewFlags: {
+      sessionFlagCounts,
+      weekFlags: [...new Set(weeks.flatMap((week) => week.flags))],
+    },
+  };
+}
+
+function buildDiagnosticExportBundle(): DiagnosticExportBundle {
+  const programs = diagnosticProgramExportScenarios.map(buildDiagnosticProgram);
+
+  if (programs.length !== 50) {
+    throw new Error(`Expected 50 diagnostic programs, received ${programs.length}`);
+  }
+
+  return {
+    exportVersion: 1,
+    purpose:
+      "Diagnostic export of 50 intentionally varied training plans for coach-style review of variation, onboarding behavior, and week-1 shape.",
+    generatedFromBranch: process.env.GIT_BRANCH,
+    totalPrograms: programs.length,
+    fixedPrograms: fixedDiagnosticProgramExportScenarios.length,
+    stressPrograms: stressDiagnosticProgramExportScenarios.length,
+    programs,
+  };
+}
+
 function main(): void {
   const bundle = buildExportBundle();
+  const diagnosticBundle = buildDiagnosticExportBundle();
 
   mkdirSync(OUTPUT_DIR, { recursive: true });
   writeFileSync(OUTPUT_JSON, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
+  writeFileSync(OUTPUT_DIAGNOSTIC_JSON, `${JSON.stringify(diagnosticBundle, null, 2)}\n`, "utf8");
   writeFileSync(OUTPUT_MD, buildMarkdownSummary(bundle.programs), "utf8");
 
   console.log(`Exported ${bundle.totalPrograms} programs to ${OUTPUT_JSON}`);
+  console.log(`Exported ${diagnosticBundle.totalPrograms} diagnostic programs to ${OUTPUT_DIAGNOSTIC_JSON}`);
   console.log(`Fixed scenarios: ${bundle.fixedPrograms}`);
   console.log(`Stress scenarios: ${bundle.stressPrograms}`);
   console.log(`Summary: ${OUTPUT_MD}`);

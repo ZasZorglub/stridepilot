@@ -31,6 +31,23 @@ export interface EarlyBeginnerBlockPolicyResult {
   maxPauseRatio: number;
 }
 
+function earlyProgressionRunWalkPolicy(
+  context: RunWalkMeaningfulRunningPolicyContext,
+): EarlyBeginnerBlockPolicyResult | null {
+  if (!beginnerOnboardingProfile(context.profile)) return null;
+  if (context.weekNumber < 3 || context.weekNumber > 6) return null;
+  if (context.phase !== "continuous_running" && context.phase !== "capacity") return null;
+
+  const weakest = weakestBeginnerProfile(context.profile);
+  return {
+    runMinutesBoostMin: weakest ? 0 : 0.25,
+    repeatBoost: 0,
+    walkBreakReductionMin: 0.5,
+    minTotalRunningMin: weakest ? 8.5 : 10.5,
+    maxPauseRatio: weakest ? 0.8 : 0.85,
+  };
+}
+
 interface BeginnerOnboardingBaseContext {
   profile: RunnerProfile;
   goal: GoalConfig;
@@ -263,25 +280,30 @@ export function earlyBeginnerBlockPolicy(
 }
 
 export function runWalkMeaningfulRunningPolicy(context: RunWalkMeaningfulRunningPolicyContext): RunWalkMeaningfulRunningResult {
-  if (!beginnerOnboardingProfile(context.profile) || context.phase !== "introduction" || context.weekNumber > 3) {
+  const earlyProgressionPolicy = earlyProgressionRunWalkPolicy(context);
+  const onboardingIntroPolicy =
+    beginnerOnboardingProfile(context.profile) && context.phase === "introduction" && context.weekNumber <= 3
+      ? earlyBeginnerBlockPolicy({
+          profile: context.profile,
+          goal: context.goal,
+          weekNumber: context.weekNumber,
+          phase: context.phase,
+          actualSessionNumber: context.actualSessionNumber,
+          actualWeekSessionCount: context.actualWeekSessionCount,
+          plannedWeekSessionCount: context.plannedWeekSessionCount,
+          plannedTypes: context.plannedTypes,
+          useRunWalk: true,
+        })
+      : null;
+
+  const blockPolicy = earlyProgressionPolicy ?? onboardingIntroPolicy;
+  if (!blockPolicy) {
     return {
       intervalRunMin: context.intervalRunMin,
       repeats: context.repeats,
       walkBreakMin: context.walkBreakMin,
     };
   }
-
-  const blockPolicy = earlyBeginnerBlockPolicy({
-    profile: context.profile,
-    goal: context.goal,
-    weekNumber: context.weekNumber,
-    phase: context.phase,
-    actualSessionNumber: context.actualSessionNumber,
-    actualWeekSessionCount: context.actualWeekSessionCount,
-    plannedWeekSessionCount: context.plannedWeekSessionCount,
-    plannedTypes: context.plannedTypes,
-    useRunWalk: true,
-  });
 
   let intervalRunMin = roundToQuarter(context.intervalRunMin + blockPolicy.runMinutesBoostMin);
   let repeats = context.repeats + blockPolicy.repeatBoost;

@@ -5,6 +5,12 @@ Fixed: 25
 Stress: 25
 Review weeks per program: 3
 
+Diagnostic export
+- Full 50-program artifact: /Users/anderschristiansloth/stridepilot/stridepilot/artifacts/engine-program-export/50-programs.json
+- Fixed scenarios: 25
+- Stress scenarios: 25
+- Purpose: expose meaningful or missing variation across runner types without changing engine behavior.
+
 ## fixed:beginner-low-confidence-short:RunWalk5K
 - Scenario: Complete beginner, low confidence, short sessions (fixed)
 - Focus: Entry-level realism and calm starts for a hesitant beginner with very little training history.
@@ -185,14 +191,14 @@ Review weeks per program: 3
 - Focus: Probe the weakest onboarding shape with low confidence and tight weekly frequency.
 - Plan: RunWalk5K · 5K finish · 9 weeks
 - Inputs: true_beginner · 2 days/week · 0 km/week · longest 0m
-- Flags: session=low_meaningful_running×1 | week=none
+- Flags: session=none | week=none
 
 ## stress:stress-02-runwalk-short-window:RunWalk5K
 - Scenario: Stress: run-walk with very short windows (stress)
 - Focus: Run-walk structure should survive under small session budgets.
 - Plan: RunWalk5K · 5K finish · 8 weeks
 - Inputs: run_walk_beginner · 3 days/week · 2 km/week · longest 6m
-- Flags: session=low_meaningful_running×1 | week=none
+- Flags: session=none | week=none
 
 ## stress:stress-03-continuous-beginner-10k:TenKDistance
 - Scenario: Stress: continuous beginner stretched to 10K (stress)
@@ -297,7 +303,7 @@ Review weeks per program: 3
 - Focus: A tiny opening week should still feel like a real plan start, not a compression artifact.
 - Plan: RunWalk5K · 5K finish · 11 weeks
 - Inputs: true_beginner · 2 days/week · 0 km/week · longest 0m
-- Flags: session=low_meaningful_running×2 | week=partial_first_week
+- Flags: session=low_meaningful_running×1 | week=partial_first_week
 
 ## stress:stress-18-progression-sensitive-5k:FiveKImprove
 - Scenario: Stress: progression-sensitive 5K improver (stress)
