@@ -206,7 +206,7 @@ export function beginnerWeekOneVariationPolicy(context: BeginnerWeekOneVariation
 export function earlyBeginnerBlockPolicy(
   context: BeginnerWeekOneVariationPolicyContext,
 ): EarlyBeginnerBlockPolicyResult {
-  if (!beginnerOnboardingProfile(context.profile) || context.phase !== "introduction" || context.weekNumber > 3 || !context.useRunWalk) {
+  if (!beginnerOnboardingProfile(context.profile) || context.phase !== "introduction" || context.weekNumber > 4 || !context.useRunWalk) {
     return {
       runMinutesBoostMin: 0,
       repeatBoost: 0,
@@ -228,9 +228,9 @@ export function earlyBeginnerBlockPolicy(
       minTotalRunningMin:
         beginnerCategory(context.profile) === "true_beginner"
           ? context.actualSessionNumber >= 3
-            ? 8
+            ? 9
             : context.actualSessionNumber === 2
-              ? 7
+              ? 8
               : 6
           : context.actualSessionNumber >= 2
             ? 10
@@ -247,6 +247,16 @@ export function earlyBeginnerBlockPolicy(
         : 0.5;
 
   if (weakest && repeatedRunWalkWeek) {
+    if (context.weekNumber === 4) {
+      return {
+        runMinutesBoostMin: 0,
+        repeatBoost: 0,
+        walkBreakReductionMin: 0,
+        minTotalRunningMin: 8.75,
+        maxPauseRatio: 0.9,
+      };
+    }
+
     return {
       runMinutesBoostMin: (context.weekNumber === 2 ? 0.25 : 0.5) + perSessionBoost,
       repeatBoost: context.weekNumber === 2 && context.actualSessionNumber === 3 ? 0 : 0,

@@ -103,6 +103,30 @@ function runWalkRunningRatio(session: { structure: Array<{ type: string; duratio
   return running / (running + pauses);
 }
 
+function weekRunningDuration(week: ReturnType<typeof buildGoalPlan>["weeks"][number]): number {
+  return week.sessions.reduce((total, session) => total + sessionRunningDuration(session), 0);
+}
+
+function longestContinuousRunBlock(week: ReturnType<typeof buildGoalPlan>["weeks"][number]): number {
+  return week.sessions.reduce((best, session) => {
+    const sessionBest = session.structure.reduce((segmentBest, segment) => {
+      const continuousTypes = segment.type === "run" || segment.type === "steady" || segment.type === "recovery";
+      if (!continuousTypes || (segment.repeats ?? 1) > 1) {
+        return segmentBest;
+      }
+      return Math.max(segmentBest, segment.durationMin);
+    }, 0);
+    return Math.max(best, sessionBest);
+  }, 0);
+}
+
+function weekToWeekIncrease(previous: number, next: number): number {
+  if (previous <= 0) {
+    return next > 0 ? Number.POSITIVE_INFINITY : 0;
+  }
+  return (next - previous) / previous;
+}
+
 // Accepted stabilization coverage:
 // - no passive starts
 // - no token easy sessions after established beginner capacity
@@ -405,6 +429,26 @@ assert.ok(
   "true beginners should keep the safer run-walk opening block",
 );
 
+const weakBeginnerWeek1Running = weekRunningDuration(trueBeginnerPlan.weeks[0]!);
+const weakBeginnerWeek3Running = weekRunningDuration(trueBeginnerPlan.weeks[2]!);
+const weakBeginnerWeek6Running = weekRunningDuration(trueBeginnerPlan.weeks[5]!);
+assert.ok(
+  weakBeginnerWeek3Running > weakBeginnerWeek1Running,
+  "weak beginner plans should show more meaningful running by week 3 than week 1",
+);
+assert.ok(
+  weakBeginnerWeek6Running > weakBeginnerWeek3Running,
+  "weak beginner plans should keep building meaningful running through week 6",
+);
+for (let index = 1; index < 6; index += 1) {
+  const previousWeekRunning = weekRunningDuration(trueBeginnerPlan.weeks[index - 1]!);
+  const nextWeekRunning = weekRunningDuration(trueBeginnerPlan.weeks[index]!);
+  assert.ok(
+    weekToWeekIncrease(previousWeekRunning, nextWeekRunning) <= 0.35,
+    "beginner weekly running load should progress conservatively without sharp jumps",
+  );
+}
+
 const weakBeginnerWeeksThreeToSix = trueBeginnerPlan.weeks.slice(2, 6);
 const weakBeginnerRunWalks = weakBeginnerWeeksThreeToSix.flatMap((week) => week.sessions).filter((session) => session.type === "run-walk");
 assert.ok(
@@ -439,6 +483,36 @@ assert.ok(
   countEarlyRunWalkSessions(longBreakCapablePlan) > countEarlyRunWalkSessions(recentCapablePlan),
   "cautious long-break beginners should remain more protected than equally capable recent beginners",
 );
+const recentLongestWeek1 = longestContinuousRunBlock(recentCapablePlan.weeks[0]!);
+const recentLaterPeak = Math.max(...recentCapablePlan.weeks.slice(1, 6).map((week) => longestContinuousRunBlock(week)));
+assert.ok(
+  recentLaterPeak > recentLongestWeek1,
+  "capable recent beginners should build to a longer continuous running block after the opening week",
+);
+const returningLongestWeek1 = longestContinuousRunBlock(returningCapablePlan.weeks[0]!);
+const returningLaterPeak = Math.max(...returningCapablePlan.weeks.slice(1, 6).map((week) => longestContinuousRunBlock(week)));
+assert.ok(
+  returningLaterPeak > returningLongestWeek1,
+  "capable returning beginners should also build to a longer continuous running block after the opening week",
+);
+const longBreakWeek1Running = weekRunningDuration(longBreakCapablePlan.weeks[0]!);
+const longBreakWeek6Running = weekRunningDuration(longBreakCapablePlan.weeks[5]!);
+assert.ok(
+  longBreakWeek6Running > longBreakWeek1Running,
+  "cautious long-break beginners should still show forward running progress by week 6",
+);
+assert.ok(
+  longestContinuousRunBlock(longBreakCapablePlan.weeks[2]!) <= recentLaterPeak,
+  "long-break beginners should remain slightly more protected than recent capable beginners in the early block",
+);
+for (let index = 1; index < 6; index += 1) {
+  const previousWeekRunning = weekRunningDuration(longBreakCapablePlan.weeks[index - 1]!);
+  const nextWeekRunning = weekRunningDuration(longBreakCapablePlan.weeks[index]!);
+  assert.ok(
+    weekToWeekIncrease(previousWeekRunning, nextWeekRunning) <= 0.35,
+    "cautious long-break beginner progression should also avoid aggressive week-to-week jumps",
+  );
+}
 
 const strongerReferencePlan = buildGoalPlan(
   makeProfile({
