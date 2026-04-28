@@ -21,7 +21,7 @@ import { buildTenKDistancePlan } from "./buildTenKDistancePlan";
 import { deriveCalendarWeekCount, planStartWeekMonday } from "../calendar-week";
 import { orderTrainingDaysForLongRun } from "./week-structure";
 import { beginnerRunWalkProtectionPosture, buildCapacityInterpretationPolicy, buildEarlyWeekRealismPolicy, buildEntryRealismPolicy, buildProgressionRealismPolicy, buildTrackPosturePolicy, ContinuityBand } from "./realismPolicy";
-import { firstSessionPolicy, runWalkMeaningfulRunningPolicy } from "./beginnerOnboardingPolicy";
+import { firstSessionPolicy, getBeginnerProgressionPolicy, runWalkMeaningfulRunningPolicy } from "./beginnerOnboardingPolicy";
 
 type LegacyPlanPhase = "introduction" | "continuous_running" | "capacity" | "race_preparation";
 
@@ -279,50 +279,17 @@ function allowRunWalk(profile: RunnerProfile, goal: GoalConfig): boolean {
 }
 
 function shouldUseRunWalk(profile: RunnerProfile, phase: LegacyPlanPhase, weekNumberInPhase: number, goal: GoalConfig): boolean {
-  if (!allowRunWalk(profile, goal)) return false;
-  const continuityBand = beginnerContinuityBand(profile);
-  const protectionPosture = beginnerRunWalkProtectionPosture({
+  const beginnerPolicy = getBeginnerProgressionPolicy({
     profile,
-    continuityBand,
-    beginnerLike: beginnerSafe(profile),
-  });
-  if (protectionPosture === "capable_recent_or_returning") {
-    return phase === "introduction" && weekNumberInPhase === 1;
-  }
-  if (protectionPosture === "capable_long_break") {
-    return phase === "introduction" && weekNumberInPhase <= 2;
-  }
-  const capacityPolicy = buildCapacityInterpretationPolicy({
-    profile,
-    continuityBand,
-    beginnerLike: beginnerSafe(profile),
-  });
-  const earlyWeekPolicy = buildEarlyWeekRealismPolicy({
-    profile,
-    continuityBand,
-    beginnerLike: beginnerSafe(profile),
+    goal,
+    weekNumber: weekNumberInPhase,
     phase,
     weekNumberInPhase,
+    actualSessionNumber: 1,
+    actualWeekSessionCount: 1,
+    plannedWeekSessionCount: 1,
   });
-  if (capacityPolicy.preferRunWalkByDefault && (phase === "introduction" || (phase === "continuous_running" && weekNumberInPhase <= 1))) {
-    return true;
-  }
-  if (earlyWeekPolicy.preferRunWalk) return true;
-  if (continuityBand === "ultra_zero") {
-    return phase === "introduction" || (phase === "continuous_running" && weekNumberInPhase === 1);
-  }
-  if (continuityBand === "one_to_two_min") {
-    return phase === "introduction" || (phase === "continuous_running" && weekNumberInPhase <= 1);
-  }
-  if (continuityBand === "five_min") {
-    return phase === "introduction" && weekNumberInPhase <= 2;
-  }
-  if (phase === "capacity" || phase === "race_preparation") return false;
-  if (goal.goalDistance === "Marathon" && phase !== "introduction") return false;
-  if (profile.archetype === "nervous_beginner") return weekNumberInPhase <= 3 || profile.runningSpecificity <= 2;
-  if (profile.archetype === "returning_runner") return phase === "introduction" && weekNumberInPhase <= 2 && profile.runningSpecificity <= 3;
-  if (profile.currentRunsPerWeek <= 1 && profile.longestRunMinutes <= 20) return weekNumberInPhase <= 2;
-  return phase === "introduction" && weekNumberInPhase === 1 && profile.runningSpecificity <= 2 && profile.confidence <= 2;
+  return beginnerPolicy.shouldPreferRunWalk;
 }
 
 type PerformanceMode = "non_performance" | "finish_like" | "conservative_performance" | "full_performance";
@@ -1327,7 +1294,24 @@ function buildSharedGoalPlan(profile: RunnerProfile, goalConfig: GoalConfig): Tr
 
     let sessions = scheduledEntries.map((entry, scheduledIndex) => {
       const actualSessionNumber = scheduledIndex + 1;
-      const firstSession = firstSessionPolicy({
+      const sessionBeginnerPolicy = getBeginnerProgressionPolicy({
+        profile,
+        goal: goalConfig,
+        weekNumber,
+        phase,
+        weekNumberInPhase: weekState.weekNumberInPhase,
+        actualSessionNumber,
+        actualWeekSessionCount: scheduledEntries.length,
+        plannedWeekSessionCount: types.length,
+        plannedType: entry.type,
+        plannedTypes: types,
+        useRunWalk: weekState.useRunWalk,
+        intervalRunMin: smoothedWeekTargets.intervalRunMin,
+        repeats: smoothedWeekTargets.repeats,
+        walkBreakMin: weekState.walkBreakMin,
+        continuousRunMin: smoothedWeekTargets.continuousRunMin,
+      });
+      const firstSession = sessionBeginnerPolicy.firstSessionProtection ?? firstSessionPolicy({
         profile,
         goal: goalConfig,
         weekNumber,
@@ -1349,7 +1333,7 @@ function buildSharedGoalPlan(profile: RunnerProfile, goalConfig: GoalConfig): Tr
               actualSessionNumber,
               actualWeekSessionCount: scheduledEntries.length,
               plannedWeekSessionCount: types.length,
-              continuityBand: beginnerContinuityBand(profile),
+              continuityBand: sessionBeginnerPolicy.continuityBand,
               intervalRunMin: smoothedWeekTargets.intervalRunMin,
               repeats: smoothedWeekTargets.repeats,
               walkBreakMin: weekState.walkBreakMin,
