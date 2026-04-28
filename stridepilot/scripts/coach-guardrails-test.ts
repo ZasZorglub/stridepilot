@@ -85,6 +85,24 @@ function describe(session: ReturnType<typeof buildEasyWorkout>): string {
   return session.structure.map((segment) => `${segment.type}:${segment.durationMin}`).join(" | ");
 }
 
+function sessionRunningDuration(session: { structure: Array<{ type: string; durationMin: number; repeats?: number | null }> }): number {
+  return session.structure
+    .filter((segment) => segment.type === "run" || segment.type === "steady" || segment.type === "recovery")
+    .reduce((total, segment) => total + segment.durationMin * (segment.repeats ?? 1), 0);
+}
+
+function sessionPauseDuration(session: { structure: Array<{ type: string; durationMin: number; repeats?: number | null; recoverMin?: number | null }> }): number {
+  return session.structure
+    .filter((segment) => segment.type === "run" && (segment.repeats ?? 1) > 1)
+    .reduce((total, segment) => total + ((segment.repeats ?? 1) - 1) * (segment.recoverMin ?? 0), 0);
+}
+
+function runWalkRunningRatio(session: { structure: Array<{ type: string; durationMin: number; repeats?: number | null; recoverMin?: number | null }> }): number {
+  const running = sessionRunningDuration(session);
+  const pauses = sessionPauseDuration(session);
+  return running / (running + pauses);
+}
+
 // Accepted stabilization coverage:
 // - no passive starts
 // - no token easy sessions after established beginner capacity
@@ -385,6 +403,76 @@ assert.ok(
 assert.ok(
   countEarlyRunWalkSessions(trueBeginnerPlan) > countEarlyRunWalkSessions(recentCapablePlan),
   "true beginners should keep the safer run-walk opening block",
+);
+
+const weakBeginnerWeeksThreeToSix = trueBeginnerPlan.weeks.slice(2, 6);
+const weakBeginnerRunWalks = weakBeginnerWeeksThreeToSix.flatMap((week) => week.sessions).filter((session) => session.type === "run-walk");
+assert.ok(
+  weakBeginnerRunWalks.length > 0,
+  "weak beginners should still be protected by run-walk onboarding into the early progression block",
+);
+for (const session of weakBeginnerRunWalks) {
+  assert.ok(
+    runWalkRunningRatio(session) >= 0.5,
+    "beginner run-walk sessions in weeks 3-6 should keep meaningful running rather than falling back to pause-heavy structures",
+  );
+}
+
+const postCapacityEasySessions = trueBeginnerPlan.weeks
+  .slice(3)
+  .flatMap((week) => week.sessions)
+  .filter((session) => session.type === "easy");
+assert.ok(
+  postCapacityEasySessions.every((session) => session.durationMin >= 9 && sessionRunningDuration(session) >= 6),
+  "beginner easy sessions should not collapse into token 5-minute runs once meaningful capacity has been established",
+);
+
+assert.ok(
+  recentCapablePlan.weeks.slice(1, 3).some((week) => week.sessions.some((session) => session.type === "easy")),
+  "capable recent beginners should move into calm easy running soon after the opening protected session",
+);
+assert.ok(
+  returningCapablePlan.weeks.slice(1, 3).some((week) => week.sessions.some((session) => session.type === "easy")),
+  "capable returning beginners should also exit repeated run-walk early once continuous capacity is already present",
+);
+assert.ok(
+  countEarlyRunWalkSessions(longBreakCapablePlan) > countEarlyRunWalkSessions(recentCapablePlan),
+  "cautious long-break beginners should remain more protected than equally capable recent beginners",
+);
+
+const strongerReferencePlan = buildGoalPlan(
+  makeProfile({
+    baseProgramTrack: "goal_focused",
+    archetype: "overeager_runner",
+    runnerCategory: "recreational",
+    aerobicBase: 4,
+    runningSpecificity: 4,
+    progressionStyle: "balanced",
+    currentRunsPerWeek: 4,
+    currentWeeklyVolumeKm: 32,
+    longestRunMinutes: 55,
+    typicalWorkoutMinutes: 45,
+    confidence: 3,
+    injurySensitivity: 2,
+    realisticTrainingDaysPerWeek: 4,
+  }),
+  {
+    goalDistance: "10K",
+    goalIntent: "improve",
+    targetDate: "2026-08-30",
+    trainingDaysPerWeek: 4,
+    startDate: "2026-04-21",
+  },
+);
+assert.deepEqual(
+  strongerReferencePlan.weeks[0]?.sessions.map((session) => session.type),
+  ["recovery", "strides", "long"],
+  "stronger-runner opening structure should remain unchanged by beginner guardrails",
+);
+assert.deepEqual(
+  strongerReferencePlan.weeks[1]?.sessions.map((session) => session.type),
+  ["easy", "recovery", "progression", "long"],
+  "stronger-runner second week should keep the established specific structure",
 );
 
 const recentFirstSession = buildRunWalkWorkout(
