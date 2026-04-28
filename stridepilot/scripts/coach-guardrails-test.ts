@@ -127,6 +127,30 @@ function weekToWeekIncrease(previous: number, next: number): number {
   return (next - previous) / previous;
 }
 
+function weekHasRunWalk(week: ReturnType<typeof buildGoalPlan>["weeks"][number]): boolean {
+  return week.sessions.some((session) => session.type === "run-walk");
+}
+
+function weekHasContinuousEasyFamily(week: ReturnType<typeof buildGoalPlan>["weeks"][number]): boolean {
+  return week.sessions.some((session) => session.type === "easy" || session.type === "recovery" || session.type === "long");
+}
+
+function runWalkWeeksInEarlyBlock(plan: ReturnType<typeof buildGoalPlan>, weeks = 6): number {
+  return plan.weeks.slice(0, weeks).filter(weekHasRunWalk).length;
+}
+
+function firstContinuousWeek(plan: ReturnType<typeof buildGoalPlan>, weeks = 6): number | null {
+  const index = plan.weeks.slice(0, weeks).findIndex((week) => weekHasContinuousEasyFamily(week) && !weekHasRunWalk(week));
+  return index === -1 ? null : index + 1;
+}
+
+function hasPostExitRunWalkOscillation(plan: ReturnType<typeof buildGoalPlan>, weeks = 6): boolean {
+  const earlyWeeks = plan.weeks.slice(0, weeks);
+  const exitIndex = earlyWeeks.findIndex((week) => weekHasContinuousEasyFamily(week) && !weekHasRunWalk(week));
+  if (exitIndex === -1) return false;
+  return earlyWeeks.slice(exitIndex + 1).some((week) => weekHasRunWalk(week));
+}
+
 // Accepted stabilization coverage:
 // - no passive starts
 // - no token easy sessions after established beginner capacity
@@ -428,6 +452,14 @@ assert.ok(
   countEarlyRunWalkSessions(trueBeginnerPlan) > countEarlyRunWalkSessions(recentCapablePlan),
   "true beginners should keep the safer run-walk opening block",
 );
+assert.ok(
+  runWalkWeeksInEarlyBlock(recentCapablePlan) < runWalkWeeksInEarlyBlock(trueBeginnerPlan),
+  "capable recent beginners should leave repeated run-walk weeks earlier than weak beginners",
+);
+assert.ok(
+  runWalkWeeksInEarlyBlock(returningCapablePlan) < runWalkWeeksInEarlyBlock(trueBeginnerPlan),
+  "capable returning beginners should also leave repeated run-walk weeks earlier than weak beginners",
+);
 
 const weakBeginnerWeek1Running = weekRunningDuration(trueBeginnerPlan.weeks[0]!);
 const weakBeginnerWeek3Running = weekRunningDuration(trueBeginnerPlan.weeks[2]!);
@@ -454,6 +486,11 @@ const weakBeginnerRunWalks = weakBeginnerWeeksThreeToSix.flatMap((week) => week.
 assert.ok(
   weakBeginnerRunWalks.length > 0,
   "weak beginners should still be protected by run-walk onboarding into the early progression block",
+);
+assert.equal(
+  weekHasRunWalk(trueBeginnerPlan.weeks[3]!),
+  true,
+  "weak beginners should not switch fully into continuous easy running before the protected opening block is complete",
 );
 for (const session of weakBeginnerRunWalks) {
   assert.ok(
@@ -483,6 +520,10 @@ assert.ok(
   countEarlyRunWalkSessions(longBreakCapablePlan) > countEarlyRunWalkSessions(recentCapablePlan),
   "cautious long-break beginners should remain more protected than equally capable recent beginners",
 );
+assert.ok(
+  runWalkWeeksInEarlyBlock(longBreakCapablePlan) > runWalkWeeksInEarlyBlock(recentCapablePlan),
+  "a cautious long-break beginner should stay in protected run-walk weeks longer than an equally capable recent beginner",
+);
 const recentLongestWeek1 = longestContinuousRunBlock(recentCapablePlan.weeks[0]!);
 const recentLaterPeak = Math.max(...recentCapablePlan.weeks.slice(1, 6).map((week) => longestContinuousRunBlock(week)));
 assert.ok(
@@ -504,6 +545,27 @@ assert.ok(
 assert.ok(
   longestContinuousRunBlock(longBreakCapablePlan.weeks[2]!) <= recentLaterPeak,
   "long-break beginners should remain slightly more protected than recent capable beginners in the early block",
+);
+const recentExitWeek = firstContinuousWeek(recentCapablePlan);
+const weakExitWeek = firstContinuousWeek(trueBeginnerPlan);
+const longBreakExitWeek = firstContinuousWeek(longBreakCapablePlan);
+assert.ok(
+  recentExitWeek != null && (weakExitWeek == null || recentExitWeek < weakExitWeek),
+  `capable recent beginners should transition into a fully continuous week earlier than weak beginners when weak beginners transition at all (recent=${recentExitWeek}, weak=${weakExitWeek})`,
+);
+assert.ok(
+  recentExitWeek != null && (longBreakExitWeek == null || longBreakExitWeek >= recentExitWeek),
+  `long-break capable beginners should not exit protected run-walk earlier than recent capable beginners (recent=${recentExitWeek}, long-break=${longBreakExitWeek})`,
+);
+assert.equal(
+  hasPostExitRunWalkOscillation(recentCapablePlan),
+  false,
+  "capable recent beginners should not flip from run-walk into continuous running and then back into run-walk during the same early block",
+);
+assert.equal(
+  hasPostExitRunWalkOscillation(returningCapablePlan),
+  false,
+  "capable returning beginners should not oscillate back into run-walk after exiting the protected opening block",
 );
 for (let index = 1; index < 6; index += 1) {
   const previousWeekRunning = weekRunningDuration(longBreakCapablePlan.weeks[index - 1]!);
