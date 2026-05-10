@@ -506,6 +506,25 @@ function workoutHeartRateDisplayLabel(rangeLabel: string, locale: SiteLocale = "
   return rangeLabel.replace(/\bbpm\b/i, "slag/min");
 }
 
+function workoutHeartRateDisplayState(
+  heartRateState: { rangeLabel: string; zoneLabel: string } | null | undefined,
+  locale: SiteLocale = "da",
+): { value: string; label: string } | null {
+  if (!heartRateState) return null;
+  const localized = workoutHeartRateDisplayLabel(heartRateState.rangeLabel, locale);
+  if (/\b(?:bpm|slag\/min)\b/i.test(localized)) {
+    return {
+      value: localized.replace(/\s*\b(?:bpm|slag\/min)\b\s*/i, "").trim(),
+      label: locale === "en" ? "BPM" : "SLAG/MIN",
+    };
+  }
+
+  return {
+    value: localized,
+    label: heartRateState.zoneLabel.toUpperCase(),
+  };
+}
+
 function stepCueText(step: WorkoutStep, locale: SiteLocale = "da"): string {
   if (locale === "en") {
     if (step.type === "warmup") return `Brisk walk for ${formatStepDuration(step)}`;
@@ -3710,6 +3729,10 @@ export default function Home() {
       }),
     [currentStep, runnerProfile.maxHeartRate, runnerProfile.pulseGuidanceEnabled, siteLocale],
   );
+  const currentWorkoutHeartRateDisplay = useMemo(
+    () => workoutHeartRateDisplayState(currentWorkoutHeartRateState, siteLocale),
+    [currentWorkoutHeartRateState, siteLocale],
+  );
   const currentWorkoutSegment = activeWorkoutCard?.visualProfile?.[stepIndex] ?? null;
   const currentWorkoutAccent = useMemo(
     () => (currentWorkoutSegment ? workoutSegmentAccent(currentWorkoutSegment) : workoutSegmentAccent({ zoneKey: "z2" })),
@@ -5182,34 +5205,49 @@ export default function Home() {
                 <div className={styles.liveWorkoutCard}>
                   {stepNotice && <p className={styles.stepNotice}>{stepNotice}</p>}
                   <div className={`${styles.trackTimerShell} ${isRunning ? styles.trackTimerShellActive : ""}`}>
-                    <div className={styles.trackTimerLane} aria-hidden="true">
-                      <div className={styles.trackTimerBase} style={{ background: currentWorkoutAccent.muted }} />
+                    <div className={styles.trackTimerTopRow}>
+                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Now" : "Nu"}</p>
+                      <p className={styles.phaseLabel}>{phaseName(currentStep, siteLocale)}</p>
+                    </div>
+                    <div
+                      className={styles.trackTimerTrack}
+                      style={{
+                        background: currentWorkoutAccent.muted,
+                        boxShadow: `0 0 0 1px ${currentWorkoutAccent.muted} inset`,
+                      }}
+                    >
                       <div
-                        className={styles.trackTimerProgress}
+                        className={styles.trackTimerPulseDot}
+                        aria-hidden="true"
                         style={{
                           background: currentWorkoutAccent.color,
-                          width: `${currentStepProgressPct}%`,
+                          left: `clamp(2.1rem, ${currentStepProgressPct}%, calc(100% - 2.1rem))`,
+                          boxShadow: `0 0 0 0.32rem ${currentWorkoutAccent.muted}, 0 0 1.4rem ${currentWorkoutAccent.color}`,
                         }}
                       />
-                    </div>
-                    <div className={styles.trackTimerCenter}>
-                      <div className={styles.trackTimerTopRow}>
-                        <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Now" : "Nu"}</p>
-                        <p className={styles.phaseLabel}>{phaseName(currentStep, siteLocale)}</p>
-                      </div>
-                      <div className={styles.trackTimerMetrics}>
-                        <div className={styles.trackTimerMainMetric}>
-                          <div className={styles.timerBig}>{formatClockCompact(remainingSec)}</div>
-                        </div>
-                        {currentWorkoutHeartRateState?.visible && (
-                          <div className={styles.trackTimerHeartRate}>
-                            <span className={styles.trackTimerHeartIcon} aria-hidden="true">♥</span>
-                            <div className={styles.trackTimerHeartText}>
-                              <strong>{workoutHeartRateDisplayLabel(currentWorkoutHeartRateState.rangeLabel, siteLocale)}</strong>
-                              <span>{currentWorkoutHeartRateState.zoneLabel}</span>
-                            </div>
+                      <div className={styles.trackTimerInner}>
+                        <div
+                          className={[
+                            styles.trackTimerMetrics,
+                            currentWorkoutHeartRateDisplay ? "" : styles.trackTimerMetricsSolo,
+                          ].join(" ").trim()}
+                        >
+                          <div className={styles.trackTimerMainMetric}>
+                            <div className={styles.timerBig}>{formatClockCompact(remainingSec)}</div>
                           </div>
-                        )}
+                          {currentWorkoutHeartRateDisplay && (
+                            <>
+                              <div className={styles.trackTimerDivider} aria-hidden="true" />
+                              <div className={styles.trackTimerHeartRate}>
+                                <span className={styles.trackTimerHeartIcon} aria-hidden="true">♥</span>
+                                <div className={styles.trackTimerHeartText}>
+                                  <strong>{currentWorkoutHeartRateDisplay.value}</strong>
+                                  <span>{currentWorkoutHeartRateDisplay.label}</span>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

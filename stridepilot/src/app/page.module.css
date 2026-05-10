@@ -3300,8 +3300,7 @@
 }
 
 .workoutStateRun .trackTimerHeartRate {
-  background: rgba(10, 24, 34, 0.28);
-  border-color: rgba(72, 182, 234, 0.26);
+  text-shadow: 0 0 18px rgba(52, 165, 218, 0.14);
 }
 
 .workoutStateWalk .liveWorkoutCard {
@@ -3343,8 +3342,7 @@
 }
 
 .workoutStateWalk .trackTimerHeartRate {
-  background: rgba(244, 248, 250, 0.08);
-  border-color: rgba(244, 248, 250, 0.16);
+  opacity: 0.92;
 }
 
 .workoutStatePaused .liveWorkoutCard {
@@ -3362,7 +3360,7 @@
 }
 
 .workoutStatePaused .workoutTopProfileSegmentCurrent,
-.workoutStatePaused .trackTimerProgress {
+.workoutStatePaused .trackTimerPulseDot {
   opacity: 0.72;
 }
 
@@ -3551,114 +3549,127 @@
 }
 
 .trackTimerShell {
-  position: relative;
-  width: min(100%, 34rem);
-  min-height: 9rem;
+  width: min(100%, 42rem);
   display: grid;
-  place-items: center;
-  padding: 0.15rem 0;
-}
-
-.trackTimerLane {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.trackTimerBase,
-.trackTimerProgress {
-  position: absolute;
-  inset-block: 0;
-  left: 0;
-  border-radius: inherit;
-}
-
-.trackTimerBase {
-  right: 0;
-}
-
-.trackTimerProgress {
-  transition: width 800ms linear, background 220ms ease;
-}
-
-.trackTimerShellActive .trackTimerProgress {
-  animation: workoutTrackGlow 2.2s ease-in-out infinite;
-}
-
-.workoutStateRun .trackTimerShellActive .trackTimerProgress {
-  animation: workoutTrackGlowRun 1.2s ease-in-out infinite;
-}
-
-.workoutStateWalk .trackTimerShellActive .trackTimerProgress {
-  animation: workoutTrackGlowWalk 4.2s ease-in-out infinite;
-}
-
-.workoutStatePaused .trackTimerShellActive .trackTimerProgress {
-  animation: none;
-}
-
-.trackTimerCenter {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  align-content: center;
-  gap: 0.58rem;
-  padding: 1.15rem 1.35rem;
+  gap: 0.9rem;
+  justify-items: center;
+  padding: 0.1rem 0 0.25rem;
 }
 
 .trackTimerTopRow {
   display: grid;
-  justify-items: start;
+  justify-items: center;
   gap: 0.14rem;
+}
+
+.trackTimerTrack {
+  position: relative;
+  width: 100%;
+  border-radius: 999px;
+  padding: 1.15rem;
+  overflow: hidden;
+}
+
+.trackTimerInner {
+  position: relative;
+  z-index: 1;
+  min-height: 10.5rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem 1.5rem;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 52%),
+    linear-gradient(180deg, rgba(10, 17, 24, 0.94), rgba(11, 18, 25, 0.98));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035),
+    inset 0 16px 34px rgba(255, 255, 255, 0.018);
+}
+
+.trackTimerPulseDot {
+  position: absolute;
+  top: 1.05rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  transition: left 800ms linear, background 220ms ease, box-shadow 220ms ease;
+}
+
+.trackTimerShellActive .trackTimerPulseDot {
+  animation: workoutTrackGlow 2.2s ease-in-out infinite;
+}
+
+.workoutStateRun .trackTimerShellActive .trackTimerPulseDot {
+  animation: workoutTrackGlowRun 1.2s ease-in-out infinite;
+}
+
+.workoutStateWalk .trackTimerShellActive .trackTimerPulseDot {
+  animation: workoutTrackGlowWalk 4.2s ease-in-out infinite;
+}
+
+.workoutStatePaused .trackTimerShellActive .trackTimerPulseDot {
+  animation: none;
 }
 
 .trackTimerMetrics {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 1rem;
+  gap: 1.15rem;
+  width: 100%;
+}
+
+.trackTimerMetricsSolo {
+  grid-template-columns: 1fr;
 }
 
 .trackTimerMainMetric {
   min-width: 0;
+  display: grid;
+  justify-items: center;
+}
+
+.trackTimerDivider {
+  width: 1px;
+  height: 4.7rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.06));
 }
 
 .trackTimerHeartRate {
-  display: inline-flex;
+  display: inline-grid;
+  grid-template-columns: auto auto;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.72rem 0.85rem;
-  border-radius: 18px;
-  border: 1px solid rgba(244, 248, 250, 0.14);
-  background: rgba(10, 24, 34, 0.22);
+  gap: 0.65rem;
   justify-self: end;
 }
 
 .trackTimerHeartIcon {
-  color: rgba(255, 241, 241, 0.92);
-  font-size: 1.05rem;
+  color: rgba(255, 251, 251, 0.98);
+  font-size: clamp(2.15rem, 5vw, 2.9rem);
   line-height: 1;
+  text-shadow: 0 0 18px rgba(52, 165, 218, 0.2);
 }
 
 .trackTimerHeartText {
   display: grid;
-  gap: 0.12rem;
+  gap: 0.18rem;
 }
 
 .trackTimerHeartText strong {
   color: #f7fbff;
-  font-size: 0.96rem;
+  font-size: clamp(2.3rem, 6vw, 3.4rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  line-height: 0.95;
 }
 
 .trackTimerHeartText span {
-  color: rgba(215, 226, 234, 0.72);
-  font-size: 0.72rem;
+  color: rgba(82, 189, 245, 0.96);
+  font-size: 0.95rem;
   font-weight: 650;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -3879,19 +3890,14 @@
 @media (prefers-reduced-motion: reduce) {
   .workoutCountdownMode .workoutCountdownCard,
   .workoutTopProfileSegmentPulse,
-  .trackTimerShellActive .trackTimerProgress {
+  .trackTimerShellActive .trackTimerPulseDot {
     animation: none;
   }
 }
 
 @media (max-width: 520px) {
   .trackTimerShell {
-    min-height: 10.4rem;
-  }
-
-  .trackTimerCenter {
-    padding: 1rem 1rem 1.05rem;
-    gap: 0.46rem;
+    width: 100%;
   }
 
   .trackTimerMetrics {
@@ -3899,13 +3905,22 @@
     gap: 0.7rem;
   }
 
+  .trackTimerInner {
+    min-height: 12rem;
+    padding: 1.15rem 1.1rem 1.25rem;
+  }
+
+  .trackTimerDivider {
+    width: 100%;
+    height: 1px;
+  }
+
   .trackTimerHeartRate {
-    justify-self: start;
-    padding: 0.64rem 0.74rem;
+    justify-self: center;
   }
 
   .trackTimerHeartText strong {
-    font-size: 0.9rem;
+    font-size: clamp(1.7rem, 9vw, 2.4rem);
   }
 }
 
