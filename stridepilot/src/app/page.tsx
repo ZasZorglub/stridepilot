@@ -92,6 +92,7 @@ import {
   buildWorkoutActionState,
   buildWorkoutCheckInState,
   buildWorkoutInterruptionNotice,
+  buildWorkoutStepHeartRateState,
   getNextWorkoutStep,
   hasRequiredWorkoutFeedback,
   shouldSpeakWorkoutCue,
@@ -500,6 +501,11 @@ function workoutStepPreview(step: WorkoutStep | null, locale: SiteLocale = "da")
   return `${formatStepDurationClock(step)} ${phaseName(step, locale).toLowerCase()}`;
 }
 
+function workoutHeartRateDisplayLabel(rangeLabel: string, locale: SiteLocale = "da"): string {
+  if (locale === "en") return rangeLabel;
+  return rangeLabel.replace(/\bbpm\b/i, "slag/min");
+}
+
 function stepCueText(step: WorkoutStep, locale: SiteLocale = "da"): string {
   if (locale === "en") {
     if (step.type === "warmup") return `Brisk walk for ${formatStepDuration(step)}`;
@@ -547,7 +553,7 @@ function workoutProfileSegmentClassName(segment: { level: "rest" | "easy" | "mod
 
 function workoutSegmentAccent(segment: { zoneKey: "z0" | "z1" | "z2" | "z3" | "z4" }): { color: string; muted: string } {
   if (segment.zoneKey === "z0") return { color: "rgba(242, 245, 247, 0.96)", muted: "rgba(242, 245, 247, 0.18)" };
-  if (segment.zoneKey === "z1") return { color: "rgba(154, 166, 178, 0.82)", muted: "rgba(154, 166, 178, 0.18)" };
+  if (segment.zoneKey === "z1") return { color: "rgba(244, 248, 250, 0.94)", muted: "rgba(244, 248, 250, 0.24)" };
   if (segment.zoneKey === "z2") return { color: "rgba(52, 165, 218, 0.9)", muted: "rgba(52, 165, 218, 0.18)" };
   if (segment.zoneKey === "z3") return { color: "rgba(232, 185, 65, 0.92)", muted: "rgba(232, 185, 65, 0.18)" };
   return { color: "rgba(212, 84, 84, 0.92)", muted: "rgba(212, 84, 84, 0.18)" };
@@ -3694,6 +3700,16 @@ export default function Home() {
     const currentCompleted = Math.max(0, currentStep.durationSec - remainingSec);
     return completedBeforeCurrent + currentCompleted;
   }, [activeSession, currentStep, remainingSec, stepIndex]);
+  const currentWorkoutHeartRateState = useMemo(
+    () =>
+      buildWorkoutStepHeartRateState({
+        step: currentStep,
+        pulseGuidanceEnabled: Boolean(runnerProfile.pulseGuidanceEnabled),
+        maxHeartRate: runnerProfile.maxHeartRate ?? null,
+        locale: siteLocale,
+      }),
+    [currentStep, runnerProfile.maxHeartRate, runnerProfile.pulseGuidanceEnabled, siteLocale],
+  );
   const currentWorkoutSegment = activeWorkoutCard?.visualProfile?.[stepIndex] ?? null;
   const currentWorkoutAccent = useMemo(
     () => (currentWorkoutSegment ? workoutSegmentAccent(currentWorkoutSegment) : workoutSegmentAccent({ zoneKey: "z2" })),
@@ -5166,27 +5182,35 @@ export default function Home() {
                 <div className={styles.liveWorkoutCard}>
                   {stepNotice && <p className={styles.stepNotice}>{stepNotice}</p>}
                   <div className={`${styles.trackTimerShell} ${isRunning ? styles.trackTimerShellActive : ""}`}>
-                    <svg viewBox="0 0 280 220" className={styles.trackTimerSvg} aria-hidden="true">
-                      <path
-                        d="M84 34 H196 A56 56 0 0 1 196 186 H84 A56 56 0 0 1 84 34 Z"
-                        pathLength={100}
-                        className={styles.trackTimerBase}
-                        style={{ stroke: currentWorkoutAccent.muted }}
-                      />
-                      <path
-                        d="M84 34 H196 A56 56 0 0 1 196 186 H84 A56 56 0 0 1 84 34 Z"
-                        pathLength={100}
+                    <div className={styles.trackTimerLane} aria-hidden="true">
+                      <div className={styles.trackTimerBase} style={{ background: currentWorkoutAccent.muted }} />
+                      <div
                         className={styles.trackTimerProgress}
                         style={{
-                          stroke: currentWorkoutAccent.color,
-                          strokeDasharray: `${currentStepProgressPct} 100`,
+                          background: currentWorkoutAccent.color,
+                          width: `${currentStepProgressPct}%`,
                         }}
                       />
-                    </svg>
+                    </div>
                     <div className={styles.trackTimerCenter}>
-                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Now" : "Nu"}</p>
-                      <p className={styles.phaseLabel}>{phaseName(currentStep, siteLocale)}</p>
-                      <div className={styles.timerBig}>{formatClockCompact(remainingSec)}</div>
+                      <div className={styles.trackTimerTopRow}>
+                        <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Now" : "Nu"}</p>
+                        <p className={styles.phaseLabel}>{phaseName(currentStep, siteLocale)}</p>
+                      </div>
+                      <div className={styles.trackTimerMetrics}>
+                        <div className={styles.trackTimerMainMetric}>
+                          <div className={styles.timerBig}>{formatClockCompact(remainingSec)}</div>
+                        </div>
+                        {currentWorkoutHeartRateState?.visible && (
+                          <div className={styles.trackTimerHeartRate}>
+                            <span className={styles.trackTimerHeartIcon} aria-hidden="true">♥</span>
+                            <div className={styles.trackTimerHeartText}>
+                              <strong>{workoutHeartRateDisplayLabel(currentWorkoutHeartRateState.rangeLabel, siteLocale)}</strong>
+                              <span>{currentWorkoutHeartRateState.zoneLabel}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {currentStep.cue && <p className={styles.trackTimerCue}>{currentStep.cue}</p>}
