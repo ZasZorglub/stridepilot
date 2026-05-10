@@ -5211,20 +5211,23 @@ export default function Home() {
                     </div>
                     <div
                       className={styles.trackTimerTrack}
-                      style={{
-                        background: currentWorkoutAccent.muted,
-                        boxShadow: `0 0 0 1px ${currentWorkoutAccent.muted} inset`,
-                      }}
                     >
-                      <div
-                        className={styles.trackTimerPulseDot}
-                        aria-hidden="true"
-                        style={{
-                          background: currentWorkoutAccent.color,
-                          left: `clamp(2.1rem, ${currentStepProgressPct}%, calc(100% - 2.1rem))`,
-                          boxShadow: `0 0 0 0.32rem ${currentWorkoutAccent.muted}, 0 0 1.4rem ${currentWorkoutAccent.color}`,
-                        }}
-                      />
+                      <svg className={styles.trackTimerSvg} viewBox="0 0 100 48" preserveAspectRatio="none" aria-hidden="true">
+                        <path
+                          className={styles.trackTimerTrackBase}
+                          d="M 12 24 C 12 17.37 17.37 12 24 12 H 76 C 82.63 12 88 17.37 88 24 C 88 30.63 82.63 36 76 36 H 24 C 17.37 36 12 30.63 12 24"
+                          pathLength={100}
+                          style={{ stroke: currentWorkoutAccent.muted }}
+                        />
+                        <path
+                          className={`${styles.trackTimerTrackProgress} ${isRunning ? styles.trackTimerTrackProgressActive : ""}`}
+                          d="M 12 24 C 12 17.37 17.37 12 24 12 H 76 C 82.63 12 88 17.37 88 24 C 88 30.63 82.63 36 76 36 H 24 C 17.37 36 12 30.63 12 24"
+                          pathLength={100}
+                          strokeDasharray={`${currentStepProgressPct} 100`}
+                          strokeDashoffset={0}
+                          style={{ stroke: currentWorkoutAccent.color }}
+                        />
+                      </svg>
                       <div className={styles.trackTimerInner}>
                         <div
                           className={[
