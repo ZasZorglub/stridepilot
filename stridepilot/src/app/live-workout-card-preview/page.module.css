@@ -1,0 +1,9 @@
+.previewPage {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 50% 0%, rgba(47, 155, 255, 0.12), transparent 28rem),
+    linear-gradient(180deg, #111923 0%, #080c12 100%);
+}

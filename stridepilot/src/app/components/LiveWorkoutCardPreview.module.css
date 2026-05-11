@@ -1,0 +1,223 @@
+.card {
+  width: min(100%, 390px);
+  border: 1px solid rgba(151, 178, 205, 0.16);
+  border-radius: 30px;
+  padding: 19px 16px 15px;
+  color: #f7fbff;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(57, 118, 176, 0.14), transparent 56%),
+    radial-gradient(circle at 18% 82%, rgba(30, 91, 147, 0.12), transparent 42%),
+    linear-gradient(180deg, rgba(25, 36, 49, 0.92), rgba(7, 12, 19, 0.98)),
+    #0a0f17;
+  box-shadow:
+    0 28px 62px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(83, 122, 160, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.075),
+    inset 0 -24px 44px rgba(0, 0, 0, 0.18);
+  text-align: center;
+}
+
+.notice {
+  margin: 0 0 0.1rem;
+  color: rgba(178, 215, 236, 0.8);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.header {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  margin-bottom: 14px;
+}
+
+.now {
+  color: rgba(143, 161, 179, 0.74);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.header h2 {
+  color: #edf5fc;
+  font-size: 1.16rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.liveCapsule {
+  position: relative;
+  width: 88%;
+  height: 101px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid rgba(164, 193, 218, 0.25);
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse at 33% 24%, rgba(45, 100, 151, 0.12), transparent 38%),
+    radial-gradient(ellipse at 82% 70%, rgba(18, 47, 78, 0.2), transparent 48%),
+    linear-gradient(180deg, rgba(13, 25, 38, 0.96), rgba(4, 10, 17, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.095),
+    inset 0 0 0 1px rgba(4, 10, 17, 0.76),
+    inset 0 -14px 24px rgba(0, 0, 0, 0.2),
+    0 14px 24px rgba(0, 0, 0, 0.18);
+  isolation: isolate;
+}
+
+.liveCapsule::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  z-index: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(68, 153, 230, 0.055), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%);
+  pointer-events: none;
+}
+
+.liveCapsule::after {
+  content: "";
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: 9px;
+  z-index: 1;
+  height: 1px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(131, 169, 198, 0.16), transparent);
+  pointer-events: none;
+}
+
+.capsuleAccent {
+  position: absolute;
+  left: 26px;
+  top: 9px;
+  z-index: 1;
+  width: calc(10px + (var(--progress) * 10px));
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(67, 154, 233, 0.12), rgba(109, 193, 250, 0.26), rgba(67, 154, 233, 0.06));
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.liveCapsuleContent {
+  position: absolute;
+  inset: 16px 32px 20px;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px minmax(88px, 0.58fr);
+  column-gap: 18px;
+  align-items: center;
+  transform: translateY(-2px);
+  pointer-events: none;
+}
+
+.liveCapsuleContentSolo {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
+.liveCapsuleContentSolo .timeBlock {
+  text-align: center;
+}
+
+.timeBlock {
+  min-width: 0;
+  text-align: left;
+}
+
+.timeBlock span {
+  display: block;
+  font-size: clamp(2.28rem, 9.6vw, 3.42rem);
+  font-weight: 660;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #f2f7fb;
+}
+
+.divider {
+  width: 1px;
+  height: 56px;
+  background: linear-gradient(180deg, transparent, rgba(172, 199, 222, 0.39), transparent);
+}
+
+.heartRateBlock {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding-left: 0;
+}
+
+.heartRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: rgba(239, 247, 253, 0.9);
+  line-height: 1;
+}
+
+.heartRow strong {
+  font-size: 1.24rem;
+  font-weight: 660;
+  letter-spacing: 0;
+}
+
+.heartIcon {
+  width: 14px;
+  height: 14px;
+  color: #f35c7b;
+  filter: drop-shadow(0 0 2px rgba(243, 92, 123, 0.18));
+}
+
+.heartRateLabel {
+  color: rgba(143, 161, 179, 0.58);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.cue {
+  margin: 11px auto 0;
+  max-width: 28ch;
+  color: rgba(174, 188, 202, 0.76);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.finalHint {
+  margin: 0.2rem auto 0;
+  color: rgba(174, 188, 202, 0.66);
+  font-size: 0.82rem;
+  line-height: 1.32;
+}
+
+@media (max-width: 390px) {
+  .card {
+    border-radius: 24px;
+    padding: 16px 13px 13px;
+  }
+
+  .liveCapsule {
+    width: 90%;
+    height: 100px;
+  }
+
+  .liveCapsuleContent {
+    inset: 16px 27px 20px;
+    grid-template-columns: minmax(0, 1fr) 1px minmax(80px, 0.56fr);
+    column-gap: 13px;
+  }
+
+  .heartRow strong {
+    font-size: 1.15rem;
+  }
+}
