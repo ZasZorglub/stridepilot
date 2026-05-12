@@ -2,7 +2,7 @@
   width: min(100%, 390px);
   display: grid;
   justify-items: center;
-  padding: 22px 18px 19px;
+  padding: 17px 16px 16px;
   border: 1px solid rgba(151, 178, 205, 0.13);
   border-radius: 30px;
   color: #f7fbff;
@@ -20,7 +20,7 @@
 
 .circularRingWrap {
   position: relative;
-  width: min(78vw, 268px);
+  width: min(74vw, 252px);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
@@ -41,17 +41,17 @@
 }
 
 .circularRingBase {
-  stroke: rgba(86, 105, 122, 0.26);
-  stroke-width: 8.8;
+  stroke: rgba(132, 151, 166, 0.34);
+  stroke-width: 7.6;
 }
 
 .circularRingProgress {
-  stroke: #286fa8;
-  stroke-width: 8.8;
+  stroke: #3b86b6;
+  stroke-width: 7.6;
   stroke-dasharray: var(--progress) 1;
   stroke-dashoffset: 0;
-  filter: drop-shadow(0 0 1px rgba(40, 111, 168, 0.04));
-  transition: stroke-dasharray 800ms linear;
+  filter: drop-shadow(0 0 2px rgba(59, 134, 182, 0.1));
+  transition: stroke-dasharray 900ms linear;
 }
 
 .circularCard[data-state="walk"] .circularRingProgress {
@@ -88,7 +88,7 @@
 }
 
 .circularCenter h2 {
-  margin: 0.12rem 0 0.58rem;
+  margin: 0.08rem 0 0.5rem;
   color: rgba(237, 245, 252, 0.94);
   font-size: 1.04rem;
   font-weight: 700;
@@ -109,7 +109,7 @@
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
-  margin-top: 0.86rem;
+  margin-top: 0.7rem;
   color: rgba(238, 247, 253, 0.76);
   font-size: 0.84rem;
   font-weight: 640;
@@ -130,7 +130,7 @@
 }
 
 .circularCue {
-  margin: 16px auto 0;
+  margin: 12px auto 0;
   max-width: 30ch;
   color: rgba(174, 188, 202, 0.76);
   font-size: 0.92rem;

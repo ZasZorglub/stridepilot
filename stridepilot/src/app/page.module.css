@@ -1974,8 +1974,13 @@
 }
 
 .primaryBtn {
-  background: #34a5da;
+  background: linear-gradient(135deg, #3cb0eb, #34a5da);
   color: #f2f5f7;
+  min-height: 4.7rem;
+  border-radius: 18px;
+  font-size: 1.02rem;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(52, 165, 218, 0.22);
 }
 
 .primaryBtn:hover {
@@ -2099,11 +2104,12 @@
 }
 
 .workoutPrimaryAction {
+  order: 3;
   margin-top: auto;
   margin-bottom: 0;
   display: grid;
-  gap: 0.36rem;
-  padding-top: 0.5rem;
+  gap: 0.75rem;
+  padding-top: 0.85rem;
   padding-bottom: calc(0.2rem + env(safe-area-inset-bottom));
   position: sticky;
   bottom: 0;
@@ -2124,28 +2130,25 @@
 .workoutHeaderCenter {
   min-width: 0;
   display: grid;
-  gap: 0.08rem;
+  gap: 0.18rem;
   text-align: center;
 }
 
 .workoutWeekContext {
   margin: 0;
   color: rgba(156, 207, 230, 0.82);
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-size: 0.92rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .workoutHeaderTitle {
   margin: 0;
   color: #f2f5f7;
-  font-size: 0.94rem;
-  line-height: 1.15;
-  font-weight: 650;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: clamp(2rem, 7vw, 3.2rem);
+  line-height: 1.05;
+  font-weight: 700;
 }
 
 .workoutBackBtn {
@@ -2153,10 +2156,11 @@
   background: rgba(154, 166, 178, 0.05);
   color: rgba(220, 230, 237, 0.9);
   border-radius: 999px;
-  min-height: 2.8rem;
-  padding: 0.58rem 0.82rem;
-  font-size: 0.74rem;
-  font-weight: 550;
+  min-height: 2.65rem;
+  min-width: 2.65rem;
+  padding: 0.5rem 0.72rem;
+  font-size: 0.76rem;
+  font-weight: 560;
   cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease;
 }
@@ -3264,16 +3268,16 @@
   min-height: inherit;
   display: grid;
   align-content: start;
-  gap: 0.85rem;
+  gap: 0.62rem;
 }
 
 .workoutStateRun .workoutActiveLayout {
-  gap: 0.72rem;
+  gap: 0.58rem;
 }
 
 .workoutStateRun .workoutSessionOverview {
-  opacity: 0.98;
-  gap: 0.58rem;
+  opacity: 0.72;
+  gap: 0.44rem;
 }
 
 .workoutStateRun .liveWorkoutCard {
@@ -3394,15 +3398,16 @@
 
 .workoutStateWalk .workoutNextSummary,
 .workoutStateWalk .workoutTopProfile {
-  background: rgba(18, 23, 29, 0.16);
+  background: rgba(18, 23, 29, 0.1);
 }
 
 .workoutStateWalk .workoutActiveLayout {
-  gap: 1rem;
+  gap: 0.64rem;
 }
 
 .workoutStateWalk .workoutSessionOverview {
-  gap: 0.84rem;
+  gap: 0.5rem;
+  opacity: 0.7;
 }
 
 .workoutStateWalk .workoutProgressHeader {
@@ -3440,80 +3445,100 @@
   box-shadow: 0 0 0 4px rgba(52, 165, 218, 0.18);
 }
 
-.workoutSessionOverview {
+.workoutTimerCardShell {
+  order: 1;
   display: grid;
-  gap: 0.7rem;
+  justify-items: center;
+  margin-top: -0.08rem;
+}
+
+.workoutSessionOverview {
+  order: 2;
+  width: min(100%, 390px);
+  margin: 0 auto;
+  display: grid;
+  gap: 0.48rem;
+  opacity: 0.74;
+}
+
+.workoutSessionOverview .workoutMiniLabel {
+  color: rgba(156, 207, 230, 0.52);
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
 }
 
 .workoutProgressHeader {
   display: flex;
   align-items: end;
   justify-content: space-between;
-  gap: 0.9rem;
-  opacity: 0.88;
+  gap: 0.72rem;
+  padding: 0 0.2rem;
+  opacity: 0.78;
 }
 
 .workoutProgressCount {
-  margin: 0.12rem 0 0;
-  color: rgba(225, 233, 238, 0.78);
-  font-size: 1rem;
+  margin: 0.1rem 0 0;
+  color: rgba(225, 233, 238, 0.7);
+  font-size: 0.9rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .workoutElapsedTime {
   margin: 0;
-  color: rgba(215, 226, 234, 0.5);
-  font-size: 0.8rem;
+  color: rgba(215, 226, 234, 0.42);
+  font-size: 0.78rem;
   font-weight: 550;
   font-variant-numeric: tabular-nums;
 }
 
 .workoutNextSummary {
   border: 0;
-  border-radius: 14px;
-  background: rgba(18, 23, 29, 0.18);
-  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  background: rgba(13, 18, 24, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+  padding: 0.76rem 0.86rem;
   display: grid;
-  gap: 0.3rem;
-  opacity: 0.92;
+  gap: 0.24rem;
+  opacity: 0.78;
 }
 
 .workoutNextSummary h3 {
-  margin: 0.1rem 0 0;
-  color: rgba(229, 236, 241, 0.84);
+  margin: 0.08rem 0 0;
+  color: rgba(242, 245, 247, 0.74);
   font-size: 0.96rem;
   line-height: 1.2;
 }
 
 .workoutNextCue {
   margin: 0;
-  color: rgba(215, 226, 234, 0.6);
-  font-size: 0.82rem;
+  color: rgba(215, 226, 234, 0.48);
+  font-size: 0.78rem;
   line-height: 1.35;
 }
 
 .workoutTopProfile {
   display: flex;
   align-items: center;
-  gap: 0.22rem;
-  padding: 0.85rem 0.75rem;
-  border-radius: 18px;
-  background: rgba(18, 23, 29, 0.12);
+  gap: 0.2rem;
+  padding: 0.52rem 0.58rem;
+  border-radius: 14px;
+  background: rgba(14, 19, 25, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.018);
   overflow: hidden;
 }
 
 .workoutTopProfileSegment {
-  min-width: 7px;
-  height: 14px;
+  min-width: 6px;
+  height: 8px;
   border-radius: 999px;
-  opacity: 0.5;
+  opacity: 0.42;
   transition: transform 180ms ease, opacity 180ms ease, height 180ms ease;
 }
 
 .workoutTopProfileSegmentCurrent {
-  height: 22px;
-  opacity: 0.92;
+  height: 14px;
+  opacity: 0.8;
 }
 
 .workoutTopProfileSegmentPulse {
@@ -3601,8 +3626,8 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.8rem;
-  margin-bottom: 0.15rem;
+  gap: 0.62rem;
+  margin-bottom: 0.02rem;
 }
 
 .workoutCompactProgress {
@@ -3814,16 +3839,16 @@
 .workoutMiniLabel {
   margin: 0;
   color: rgba(156, 207, 230, 0.82);
-  font-size: 0.68rem;
+  font-size: 0.82rem;
   font-weight: 650;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .workoutSecondaryControls {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 0.42rem;
+  gap: 0.75rem;
 }
 
 .workoutSecondaryControlsSingle {
@@ -3831,7 +3856,7 @@
 }
 
 .workoutManualControls {
-  margin-top: 0.2rem;
+  margin-top: 0.35rem;
   display: grid;
   gap: 0.28rem;
 }
@@ -3840,15 +3865,27 @@
   border: 0;
   background: transparent;
   color: rgba(215, 226, 234, 0.74);
-  min-height: 2.5rem;
-  padding: 0.34rem 0.2rem;
-  font-size: 0.84rem;
-  font-weight: 550;
+  min-height: 3.9rem;
+  padding: 0.54rem 0.4rem;
+  font-size: 0.98rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
 .workoutSecondaryAction:hover {
   color: rgba(242, 245, 247, 0.92);
+}
+
+.workoutSecondaryActionPrevious {
+  justify-self: center;
+}
+
+.workoutSecondaryActionNext {
+  border: 1px solid rgba(52, 165, 218, 0.45);
+  border-radius: 18px;
+  color: rgba(242, 245, 247, 0.96);
+  background: rgba(10, 18, 25, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(52, 165, 218, 0.08);
 }
 
 .completedWorkoutActions {

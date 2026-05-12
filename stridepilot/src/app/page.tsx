@@ -5204,17 +5204,19 @@ export default function Home() {
                     {nextWorkoutStep && <p className={styles.workoutNextCue}>{nextWorkoutStep.cue}</p>}
                   </div>
                 </div>
-                <LiveWorkoutCard
-                  state={circularWorkoutCardState}
-                  title={phaseName(currentStep, siteLocale)}
-                  remainingTime={formatClockCompact(remainingSec)}
-                  cue={currentStep.cue}
-                  heartRate={currentWorkoutHeartRateDisplay?.value}
-                  heartRateLabel={currentWorkoutHeartRateDisplay?.label}
-                  progress={currentStepProgressPct / 100}
-                  notice={stepNotice ?? undefined}
-                  finalHint={isLastWorkoutStep ? (siteLocale === "en" ? "Ready to finish the workout." : "Passet er klar til at blive afsluttet.") : undefined}
-                />
+                <div className={styles.workoutTimerCardShell}>
+                  <LiveWorkoutCard
+                    state={circularWorkoutCardState}
+                    title={phaseName(currentStep, siteLocale)}
+                    remainingTime={formatClockCompact(remainingSec)}
+                    cue={currentStep.cue}
+                    heartRate={currentWorkoutHeartRateDisplay?.value}
+                    heartRateLabel={currentWorkoutHeartRateDisplay?.label}
+                    progress={currentStepProgressPct / 100}
+                    notice={stepNotice ?? undefined}
+                    finalHint={isLastWorkoutStep ? (siteLocale === "en" ? "Ready to finish the workout." : "Passet er klar til at blive afsluttet.") : undefined}
+                  />
+                </div>
 
                 <div className={styles.workoutPrimaryAction}>
                   {isLastWorkoutStep ? (
@@ -5243,7 +5245,11 @@ export default function Home() {
                     <div className={styles.workoutManualControls}>
                       <div className={`${styles.workoutSecondaryControls} ${stepIndex === 0 ? styles.workoutSecondaryControlsSingle : ""}`}>
                         {stepIndex > 0 && (
-                          <button className={styles.workoutSecondaryAction} onClick={previousStep} type="button">
+                          <button
+                            className={`${styles.workoutSecondaryAction} ${styles.workoutSecondaryActionPrevious}`}
+                            onClick={previousStep}
+                            type="button"
+                          >
                             {workoutActionState.previousLabel}
                           </button>
                         )}
@@ -5266,7 +5272,11 @@ export default function Home() {
                             {workoutActionState.primaryLabel}
                           </button>
                         ) : (
-                          <button className={styles.workoutSecondaryAction} onClick={nextStep} type="button">
+                          <button
+                            className={`${styles.workoutSecondaryAction} ${styles.workoutSecondaryActionNext}`}
+                            onClick={nextStep}
+                            type="button"
+                          >
                             {workoutActionState.advanceLabel}
                           </button>
                         )}
