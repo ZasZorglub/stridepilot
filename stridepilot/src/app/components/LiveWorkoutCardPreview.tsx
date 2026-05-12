@@ -27,7 +27,39 @@ const previewData: LiveWorkoutCardPreviewData = {
 };
 
 export function LiveWorkoutCardPreview() {
-  return <LiveWorkoutCard {...previewData} />;
+  const normalizedProgress = Math.min(Math.max(previewData.progress, 0), 1);
+
+  return (
+    <section className={styles.circularCard} data-state={previewData.state} aria-label="Circular live workout preview">
+      <div className={styles.circularRingWrap}>
+        <svg className={styles.circularRing} viewBox="0 0 220 220" aria-hidden="true">
+          <circle className={styles.circularRingBase} cx="110" cy="110" r="91" pathLength="1" />
+          <circle
+            className={styles.circularRingProgress}
+            cx="110"
+            cy="110"
+            r="91"
+            pathLength="1"
+            style={{ "--progress": normalizedProgress } as CSSProperties}
+          />
+        </svg>
+        <div className={styles.circularCenter}>
+          <span className={styles.circularNow}>NU</span>
+          <h2>{previewData.title}</h2>
+          <strong>{previewData.remainingTime}</strong>
+          {previewData.heartRate && previewData.heartRateLabel && (
+            <span className={styles.circularHeartRate}>
+              <HeartIcon />
+              <span>{previewData.heartRate}</span>
+              <small>{previewData.heartRateLabel}</small>
+            </span>
+          )}
+        </div>
+      </div>
+
+      <p className={styles.circularCue}>{previewData.cue}</p>
+    </section>
+  );
 }
 
 export function LiveWorkoutCard({

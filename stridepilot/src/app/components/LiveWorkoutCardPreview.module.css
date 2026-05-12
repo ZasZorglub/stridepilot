@@ -1,3 +1,137 @@
+.circularCard {
+  width: min(100%, 390px);
+  display: grid;
+  justify-items: center;
+  padding: 22px 18px 19px;
+  border: 1px solid rgba(151, 178, 205, 0.15);
+  border-radius: 30px;
+  color: #f7fbff;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(52, 112, 166, 0.16), transparent 54%),
+    radial-gradient(circle at 50% 72%, rgba(10, 30, 52, 0.28), transparent 52%),
+    linear-gradient(180deg, rgba(21, 33, 47, 0.95), rgba(5, 10, 17, 0.99)),
+    #080d14;
+  box-shadow:
+    0 28px 62px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.065),
+    inset 0 -22px 44px rgba(0, 0, 0, 0.18);
+  text-align: center;
+}
+
+.circularRingWrap {
+  position: relative;
+  width: min(78vw, 268px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+.circularRing {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.circularRingBase,
+.circularRingProgress {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.circularRingBase {
+  stroke: rgba(86, 105, 122, 0.36);
+  stroke-width: 13;
+}
+
+.circularRingProgress {
+  stroke: #45a7ef;
+  stroke-width: 13;
+  stroke-dasharray: var(--progress) 1;
+  stroke-dashoffset: 0;
+  filter: drop-shadow(0 0 5px rgba(69, 167, 239, 0.16));
+}
+
+.circularCard[data-state="walk"] .circularRingProgress {
+  stroke: rgba(240, 246, 250, 0.86);
+}
+
+.circularCenter {
+  position: relative;
+  z-index: 1;
+  width: 68%;
+  aspect-ratio: 1;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(55, 103, 145, 0.16), transparent 45%),
+    linear-gradient(180deg, rgba(9, 19, 30, 0.96), rgba(4, 9, 15, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    inset 0 0 0 1px rgba(164, 193, 218, 0.05);
+}
+
+.circularNow {
+  color: rgba(143, 161, 179, 0.72);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.circularCenter h2 {
+  margin: 0.12rem 0 0.42rem;
+  color: #edf5fc;
+  font-size: 1.04rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.circularCenter > strong {
+  color: #f5f9fc;
+  font-size: clamp(3.05rem, 14vw, 4.3rem);
+  font-weight: 680;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.9;
+  letter-spacing: 0;
+}
+
+.circularHeartRate {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 0.68rem;
+  color: rgba(238, 247, 253, 0.9);
+  font-size: 0.96rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.circularHeartRate .heartIcon {
+  align-self: center;
+  width: 12px;
+  height: 12px;
+}
+
+.circularHeartRate small {
+  color: rgba(143, 161, 179, 0.62);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.circularCue {
+  margin: 16px auto 0;
+  max-width: 30ch;
+  color: rgba(174, 188, 202, 0.76);
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
 .card {
   width: min(100%, 390px);
   border: 1px solid rgba(151, 178, 205, 0.16);
