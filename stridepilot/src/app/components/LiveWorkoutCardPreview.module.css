@@ -51,6 +51,7 @@
   stroke-dasharray: var(--progress) 1;
   stroke-dashoffset: 0;
   filter: drop-shadow(0 0 1px rgba(40, 111, 168, 0.04));
+  transition: stroke-dasharray 800ms linear;
 }
 
 .circularCard[data-state="walk"] .circularRingProgress {

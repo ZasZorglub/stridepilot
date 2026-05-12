@@ -27,39 +27,7 @@ const previewData: LiveWorkoutCardPreviewData = {
 };
 
 export function LiveWorkoutCardPreview() {
-  const normalizedProgress = Math.min(Math.max(previewData.progress, 0), 1);
-
-  return (
-    <section className={styles.circularCard} data-state={previewData.state} aria-label="Circular live workout preview">
-      <div className={styles.circularRingWrap}>
-        <svg className={styles.circularRing} viewBox="0 0 220 220" aria-hidden="true">
-          <circle className={styles.circularRingBase} cx="110" cy="110" r="91" pathLength="1" />
-          <circle
-            className={styles.circularRingProgress}
-            cx="110"
-            cy="110"
-            r="91"
-            pathLength="1"
-            style={{ "--progress": normalizedProgress } as CSSProperties}
-          />
-        </svg>
-        <div className={styles.circularCenter}>
-          <span className={styles.circularNow}>NU</span>
-          <h2>{previewData.title}</h2>
-          <strong>{previewData.remainingTime}</strong>
-          {previewData.heartRate && previewData.heartRateLabel && (
-            <span className={styles.circularHeartRate}>
-              <HeartIcon />
-              <span>{previewData.heartRate}</span>
-              <small>{previewData.heartRateLabel}</small>
-            </span>
-          )}
-        </div>
-      </div>
-
-      <p className={styles.circularCue}>{previewData.cue}</p>
-    </section>
-  );
+  return <LiveWorkoutCard {...previewData} />;
 }
 
 export function LiveWorkoutCard({
@@ -77,38 +45,35 @@ export function LiveWorkoutCard({
   const hasHeartRate = heartRate !== undefined && heartRate !== null && heartRate !== "" && Boolean(heartRateLabel);
 
   return (
-    <section className={styles.card} data-state={state} aria-label="Live workout">
+    <section className={styles.circularCard} data-state={state} aria-label="Live workout">
       {notice && <p className={styles.notice}>{notice}</p>}
-      <header className={styles.header}>
-        <span className={styles.now}>NU</span>
-        <h2>{title}</h2>
-      </header>
-
-      <div
-        className={styles.liveCapsule}
-        style={{ "--progress": normalizedProgress } as CSSProperties}
-      >
-        <span className={styles.capsuleAccent} aria-hidden="true" />
-        <div className={`${styles.liveCapsuleContent} ${hasHeartRate ? "" : styles.liveCapsuleContentSolo}`.trim()}>
-          <div className={styles.timeBlock}>
-            <span>{remainingTime}</span>
-          </div>
+      <div className={styles.circularRingWrap}>
+        <svg className={styles.circularRing} viewBox="0 0 220 220" aria-hidden="true">
+          <circle className={styles.circularRingBase} cx="110" cy="110" r="91" pathLength="1" />
+          <circle
+            className={styles.circularRingProgress}
+            cx="110"
+            cy="110"
+            r="91"
+            pathLength="1"
+            style={{ "--progress": normalizedProgress } as CSSProperties}
+          />
+        </svg>
+        <div className={styles.circularCenter}>
+          <span className={styles.circularNow}>NU</span>
+          <h2>{title}</h2>
+          <strong>{remainingTime}</strong>
           {hasHeartRate && (
-            <>
-              <span className={styles.divider} aria-hidden="true" />
-              <div className={styles.heartRateBlock}>
-                <span className={styles.heartRow}>
-                  <HeartIcon />
-                  <strong>{heartRate}</strong>
-                </span>
-                <span className={styles.heartRateLabel}>{heartRateLabel}</span>
-              </div>
-            </>
+            <span className={styles.circularHeartRate}>
+              <HeartIcon />
+              <span>{heartRate}</span>
+              <small>{heartRateLabel}</small>
+            </span>
           )}
         </div>
       </div>
 
-      {cue && <p className={styles.cue}>{cue}</p>}
+      {cue && <p className={styles.circularCue}>{cue}</p>}
       {finalHint && <p className={styles.finalHint}>{finalHint}</p>}
     </section>
   );
