@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import styles from "./LiveWorkoutCardPreview.module.css";
 
 type LiveWorkoutCardPreviewData = {
-  state: "run";
+  state: "run" | "walk" | "warmup" | "cooldown";
   title: string;
   remainingTime: string;
   cue: string;

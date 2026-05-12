@@ -3734,16 +3734,17 @@ export default function Home() {
     () => workoutHeartRateDisplayState(currentWorkoutHeartRateState, siteLocale),
     [currentWorkoutHeartRateState, siteLocale],
   );
-  const currentWorkoutSegment = activeWorkoutCard?.visualProfile?.[stepIndex] ?? null;
-  const currentWorkoutAccent = useMemo(
-    () => (currentWorkoutSegment ? workoutSegmentAccent(currentWorkoutSegment) : workoutSegmentAccent({ zoneKey: "z2" })),
-    [currentWorkoutSegment],
-  );
   const workoutStateClassName = useMemo(() => {
     if (!isRunning) return styles.workoutStatePaused;
     if (currentStep?.type === "run") return styles.workoutStateRun;
     return styles.workoutStateWalk;
   }, [currentStep?.type, isRunning]);
+  const circularWorkoutCardState = useMemo(() => {
+    if (currentStep?.type === "run") return "run";
+    if (currentStep?.type === "walk") return "walk";
+    if (currentStep?.type === "warmup") return "warmup";
+    return "cooldown";
+  }, [currentStep?.type]);
   const workoutCheckInState = useMemo(
     () => buildWorkoutCheckInState(showDetailedFeedback, siteLocale),
     [showDetailedFeedback, siteLocale],
@@ -5203,77 +5204,17 @@ export default function Home() {
                     {nextWorkoutStep && <p className={styles.workoutNextCue}>{nextWorkoutStep.cue}</p>}
                   </div>
                 </div>
-                {isRunning && currentStep.type === "run" ? (
-                  <LiveWorkoutCard
-                    state="run"
-                    title={phaseName(currentStep, siteLocale)}
-                    remainingTime={formatClockCompact(remainingSec)}
-                    cue={currentStep.cue}
-                    heartRate={currentWorkoutHeartRateDisplay?.value}
-                    heartRateLabel={currentWorkoutHeartRateDisplay?.label}
-                    progress={currentStepProgressPct / 100}
-                    notice={stepNotice ?? undefined}
-                    finalHint={isLastWorkoutStep ? (siteLocale === "en" ? "Ready to finish the workout." : "Passet er klar til at blive afsluttet.") : undefined}
-                  />
-                ) : (
-                  <div className={styles.liveWorkoutCard}>
-                    {stepNotice && <p className={styles.stepNotice}>{stepNotice}</p>}
-                    <div className={`${styles.trackTimerShell} ${isRunning ? styles.trackTimerShellActive : ""}`}>
-                      <div className={styles.trackTimerTopRow}>
-                        <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Now" : "Nu"}</p>
-                        <p className={styles.phaseLabel}>{phaseName(currentStep, siteLocale)}</p>
-                      </div>
-                      <div
-                        className={styles.trackTimerTrack}
-                      >
-                        <svg className={styles.trackTimerSvg} viewBox="0 0 100 48" preserveAspectRatio="none" aria-hidden="true">
-                          <path
-                            className={styles.trackTimerTrackBase}
-                            d="M 12 24 C 12 17.37 17.37 12 24 12 H 76 C 82.63 12 88 17.37 88 24 C 88 30.63 82.63 36 76 36 H 24 C 17.37 36 12 30.63 12 24"
-                            pathLength={100}
-                            style={{ stroke: currentWorkoutAccent.muted }}
-                          />
-                          <path
-                            className={`${styles.trackTimerTrackProgress} ${isRunning ? styles.trackTimerTrackProgressActive : ""}`}
-                            d="M 12 24 C 12 17.37 17.37 12 24 12 H 76 C 82.63 12 88 17.37 88 24 C 88 30.63 82.63 36 76 36 H 24 C 17.37 36 12 30.63 12 24"
-                            pathLength={100}
-                            strokeDasharray={`${currentStepProgressPct} 100`}
-                            strokeDashoffset={0}
-                            style={{ stroke: currentWorkoutAccent.color }}
-                          />
-                        </svg>
-                        <div className={styles.trackTimerInner}>
-                          <div
-                            className={[
-                              styles.trackTimerMetrics,
-                              currentWorkoutHeartRateDisplay ? "" : styles.trackTimerMetricsSolo,
-                            ].join(" ").trim()}
-                          >
-                            <div className={styles.trackTimerMainMetric}>
-                              <div className={styles.timerBig}>{formatClockCompact(remainingSec)}</div>
-                            </div>
-                            {currentWorkoutHeartRateDisplay && (
-                              <>
-                                <div className={styles.trackTimerDivider} aria-hidden="true" />
-                                <div className={styles.trackTimerHeartRate}>
-                                  <span className={styles.trackTimerHeartIcon} aria-hidden="true">♥</span>
-                                  <div className={styles.trackTimerHeartText}>
-                                    <strong>{currentWorkoutHeartRateDisplay.value}</strong>
-                                    <span>{currentWorkoutHeartRateDisplay.label}</span>
-                                  </div>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    {currentStep.cue && <p className={styles.trackTimerCue}>{currentStep.cue}</p>}
-                    {isLastWorkoutStep && (
-                      <p className={styles.workoutFinalHint}>{siteLocale === "en" ? "Ready to finish the workout." : "Passet er klar til at blive afsluttet."}</p>
-                    )}
-                  </div>
-                )}
+                <LiveWorkoutCard
+                  state={circularWorkoutCardState}
+                  title={phaseName(currentStep, siteLocale)}
+                  remainingTime={formatClockCompact(remainingSec)}
+                  cue={currentStep.cue}
+                  heartRate={currentWorkoutHeartRateDisplay?.value}
+                  heartRateLabel={currentWorkoutHeartRateDisplay?.label}
+                  progress={currentStepProgressPct / 100}
+                  notice={stepNotice ?? undefined}
+                  finalHint={isLastWorkoutStep ? (siteLocale === "en" ? "Ready to finish the workout." : "Passet er klar til at blive afsluttet.") : undefined}
+                />
 
                 <div className={styles.workoutPrimaryAction}>
                   {isLastWorkoutStep ? (

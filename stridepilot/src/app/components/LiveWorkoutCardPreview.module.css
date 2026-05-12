@@ -58,6 +58,11 @@
   stroke: rgba(240, 246, 250, 0.86);
 }
 
+.circularCard[data-state="warmup"] .circularRingProgress,
+.circularCard[data-state="cooldown"] .circularRingProgress {
+  stroke: rgba(126, 160, 186, 0.78);
+}
+
 .circularCenter {
   position: relative;
   z-index: 1;
