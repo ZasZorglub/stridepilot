@@ -3,17 +3,13 @@
   display: grid;
   justify-items: center;
   padding: 16px 10px 8px;
-  border: 1px solid rgba(151, 178, 205, 0.03);
+  border: 0;
   border-radius: 30px;
   color: #f7fbff;
   background:
-    radial-gradient(circle at 50% 18%, rgba(52, 112, 166, 0.055), transparent 56%),
-    radial-gradient(circle at 50% 72%, rgba(10, 30, 52, 0.075), transparent 54%),
-    linear-gradient(180deg, rgba(19, 30, 43, 0.38), rgba(5, 10, 17, 0.52)),
-    rgba(8, 13, 20, 0.28);
-  box-shadow:
-    0 14px 36px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.018);
+    radial-gradient(circle at 50% 42%, rgba(12, 24, 36, 0.34), transparent 67%),
+    radial-gradient(circle at 50% 20%, rgba(52, 112, 166, 0.035), transparent 58%);
+  box-shadow: none;
   text-align: center;
 }
 
@@ -36,21 +32,25 @@
 .circularRingBase,
 .circularRingProgress {
   fill: none;
-  stroke-linecap: butt;
 }
 
 .circularRingBase {
-  stroke: rgba(156, 174, 188, 0.42);
+  stroke: rgba(174, 190, 202, 0.45);
   stroke-width: 7.6;
+  stroke-linecap: butt;
 }
 
 .circularRingProgress {
-  stroke: #4a91b9;
+  stroke: #5798bd;
   stroke-width: 7.6;
-  stroke-dasharray: var(--progress) 1;
+  stroke-linecap: round;
+  stroke-dasharray: var(--visible-progress) 1;
   stroke-dashoffset: 0;
-  filter: drop-shadow(0 0 1px rgba(74, 145, 185, 0.14));
-  transition: stroke-dasharray 900ms linear;
+  filter: drop-shadow(0 0 1px rgba(87, 152, 189, 0.12));
+  transition:
+    stroke-dasharray 1100ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    stroke 700ms ease,
+    opacity 420ms ease;
 }
 
 .circularCard[data-state="walk"] .circularRingProgress {
@@ -72,11 +72,12 @@
   justify-items: center;
   border-radius: 999px;
   background:
-    radial-gradient(circle at 50% 20%, rgba(55, 103, 145, 0.12), transparent 45%),
-    linear-gradient(180deg, rgba(9, 19, 30, 0.95), rgba(4, 9, 15, 0.98));
+    radial-gradient(circle at 50% 20%, rgba(55, 103, 145, 0.1), transparent 45%),
+    linear-gradient(180deg, rgba(9, 19, 30, 0.86), rgba(4, 9, 15, 0.9));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.045),
-    inset 0 0 0 1px rgba(164, 193, 218, 0.05);
+    0 12px 30px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.034),
+    inset 0 0 0 1px rgba(164, 193, 218, 0.04);
 }
 
 .circularNow {
