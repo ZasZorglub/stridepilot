@@ -1,5 +1,5 @@
 .circularCard {
-  width: min(100%, 374px);
+  width: min(100%, 430px);
   display: grid;
   justify-items: center;
   padding: 16px 10px 8px;
@@ -15,7 +15,7 @@
 
 .circularRingWrap {
   position: relative;
-  width: min(71vw, 242px);
+  width: min(80vw, 278px);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
@@ -90,7 +90,7 @@
 .circularCenter h2 {
   margin: 0.08rem 0 0.5rem;
   color: rgba(237, 245, 252, 0.94);
-  font-size: 1.04rem;
+  font-size: 1.08rem;
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
@@ -98,7 +98,7 @@
 
 .circularCenter > strong {
   color: rgba(245, 249, 252, 0.96);
-  font-size: clamp(2.56rem, 11.8vw, 3.6rem);
+  font-size: clamp(2.78rem, 12.8vw, 4.08rem);
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   line-height: 0.9;
@@ -130,7 +130,7 @@
 }
 
 .circularCue {
-  margin: 12px auto 0;
+  margin: 14px auto 0;
   max-width: 30ch;
   color: rgba(174, 188, 202, 0.76);
   font-size: 0.92rem;
