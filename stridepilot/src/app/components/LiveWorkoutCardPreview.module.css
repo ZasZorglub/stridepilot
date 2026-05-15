@@ -2,7 +2,7 @@
   width: min(100%, 440px);
   display: grid;
   justify-items: center;
-  padding: 10px 6px 6px;
+  padding: 8px 6px 0;
   border: 0;
   border-radius: 0;
   color: #f7fbff;
@@ -35,30 +35,30 @@
 }
 
 .circularRingBase {
-  stroke: rgba(174, 190, 202, 0.19);
-  stroke-width: 9;
+  stroke: rgba(174, 190, 202, 0.16);
+  stroke-width: 8.6;
   stroke-linecap: round;
 }
 
 .circularRingProgress {
-  stroke: rgba(136, 188, 213, 0.94);
-  stroke-width: 10.8;
+  stroke: rgba(148, 196, 218, 0.9);
+  stroke-width: 9.8;
   stroke-linecap: round;
   stroke-dasharray: var(--progress) 1;
   stroke-dashoffset: 0;
   transition:
-    stroke-dasharray 1400ms cubic-bezier(0.22, 0.61, 0.36, 1),
-    stroke 700ms ease,
-    opacity 420ms ease;
+    stroke-dasharray 900ms linear,
+    stroke 520ms ease,
+    opacity 320ms ease;
 }
 
 .circularCard[data-state="walk"] .circularRingProgress {
-  stroke: rgba(229, 236, 241, 0.88);
+  stroke: rgba(224, 232, 238, 0.84);
 }
 
 .circularCard[data-state="warmup"] .circularRingProgress,
 .circularCard[data-state="cooldown"] .circularRingProgress {
-  stroke: rgba(147, 176, 197, 0.82);
+  stroke: rgba(151, 180, 199, 0.8);
 }
 
 .circularCenter {
@@ -80,16 +80,16 @@
 }
 
 .circularNow {
-  color: rgba(143, 161, 179, 0.72);
-  font-size: 0.66rem;
+  color: rgba(143, 161, 179, 0.58);
+  font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
 }
 
 .circularCenter h2 {
-  margin: 0.08rem 0 0.5rem;
-  color: rgba(237, 245, 252, 0.94);
-  font-size: 1.08rem;
+  margin: 0.12rem 0 0.48rem;
+  color: rgba(237, 245, 252, 0.88);
+  font-size: 1.02rem;
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
@@ -108,9 +108,9 @@
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
-  margin-top: 0.7rem;
-  color: rgba(238, 247, 253, 0.76);
-  font-size: 0.84rem;
+  margin-top: 0.64rem;
+  color: rgba(238, 247, 253, 0.7);
+  font-size: 0.82rem;
   font-weight: 640;
   line-height: 1;
 }
@@ -122,19 +122,19 @@
 }
 
 .circularHeartRate small {
-  color: rgba(143, 161, 179, 0.5);
+  color: rgba(143, 161, 179, 0.46);
   font-size: 0.43rem;
   font-weight: 700;
   letter-spacing: 0.12em;
 }
 
 .circularCue {
-  margin: 10px auto 0;
-  max-width: 30ch;
-  color: rgba(174, 188, 202, 0.76);
+  margin: 12px auto 0;
+  max-width: 32ch;
+  color: rgba(188, 201, 212, 0.74);
   font-size: 0.92rem;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .card {
