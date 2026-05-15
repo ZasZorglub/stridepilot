@@ -1532,6 +1532,18 @@
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
 }
 
+.workoutDetailsOverlayCard {
+  max-height: min(42rem, calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.workoutDetailsHeader {
+  min-height: 0;
+  display: grid;
+  gap: 0.48rem;
+}
+
 @media (max-width: 719px) {
   .page {
     padding-top: calc(3.35rem + env(safe-area-inset-top));
@@ -1709,6 +1721,29 @@
   .inlineOverlayCard {
     padding: 0.88rem;
     border-radius: 16px;
+  }
+
+  .workoutDetailsOverlay {
+    padding:
+      calc(0.72rem + env(safe-area-inset-top))
+      0.72rem
+      calc(0.72rem + env(safe-area-inset-bottom));
+  }
+
+  .workoutDetailsOverlayCard {
+    max-height: calc(100dvh - 1.44rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
+  .workoutDetailsStepList {
+    max-height: min(42dvh, 18rem);
+  }
+
+  .workoutDetailsActions {
+    margin: 0.12rem -0.88rem -0.88rem;
+    padding:
+      0.64rem
+      0.88rem
+      calc(0.72rem + env(safe-area-inset-bottom));
   }
 
   .quickChip,
@@ -2073,6 +2108,24 @@
   flex-wrap: wrap;
   gap: 0.55rem;
   align-items: center;
+}
+
+.workoutDetailsActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin: 0.16rem -0.95rem -0.95rem;
+  padding: 0.68rem 0.95rem 0.95rem;
+  border-top: 1px solid rgba(52, 165, 218, 0.12);
+  background:
+    linear-gradient(180deg, rgba(13, 17, 22, 0), rgba(13, 17, 22, 0.98) 30%, rgba(13, 17, 22, 0.99));
+}
+
+.workoutDetailsActions .primaryBtn,
+.workoutDetailsActions .secondaryBtn {
+  flex: 1 1 0;
+  min-height: 3.15rem;
+  border-radius: 14px;
 }
 
 .recommendationPrimaryBtn {
@@ -3029,6 +3082,28 @@
   margin: 0.4rem 0 0;
   display: grid;
   gap: 0.42rem;
+}
+
+.workoutDetailsStepList {
+  min-height: 0;
+  max-height: clamp(10rem, 44dvh, 20rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.12rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.workoutDetailsStepList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.workoutDetailsStepList::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(156, 207, 230, 0.22);
+}
+
+.workoutDetailsStepList::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .workoutDetailRow {

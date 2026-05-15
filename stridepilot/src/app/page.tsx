@@ -5079,26 +5079,27 @@ export default function Home() {
                 </div>
               </div>
             {focusedProgramSession && focusedProgramDate && (
-              <section className={styles.inlineOverlay}>
+              <section className={`${styles.inlineOverlay} ${styles.workoutDetailsOverlay}`}>
                 <div className={styles.inlineOverlayBackdrop} onClick={() => setFocusedProgramDayIso(null)} />
-                <article className={styles.inlineOverlayCard}>
-                      <>
-                  <p className={styles.dayFocusWeekday}>{dayLabel(focusedProgramSession.dayOfWeek, siteLocale).toUpperCase()}</p>
-                  <h3>{focusedWorkoutCard?.title ?? sessionDisplayTitle(focusedProgramSession, goal.distance, siteLocale)}</h3>
-                  <p className={styles.subtleStrong}>{focusedWorkoutCard?.duration ?? formatReadableDurationFromSeconds(sessionTotalDurationSec(focusedProgramSession))}</p>
-                  <p className={styles.dayFocusStructure}>{focusedWorkoutCard?.shortStructureSummary ?? sessionStructureSummary(focusedProgramSession, siteLocale)}</p>
-                  {focusedWorkoutCard?.visualProfile && (
-                    <div className={styles.dayIntensityBar} aria-hidden="true">
-                      {focusedWorkoutCard.visualProfile.map((segment, index) => (
-                        <span
-                          key={`${focusedProgramSession.id}-focus-intensity-${index}`}
-                          className={workoutProfileSegmentClassName(segment)}
-                          style={{ flexGrow: Math.max(1, segment.durationSec) }}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  <ol className={styles.workoutDetailList}>
+                <article className={`${styles.inlineOverlayCard} ${styles.workoutDetailsOverlayCard}`}>
+                  <div className={styles.workoutDetailsHeader}>
+                    <p className={styles.dayFocusWeekday}>{dayLabel(focusedProgramSession.dayOfWeek, siteLocale).toUpperCase()}</p>
+                    <h3>{focusedWorkoutCard?.title ?? sessionDisplayTitle(focusedProgramSession, goal.distance, siteLocale)}</h3>
+                    <p className={styles.subtleStrong}>{focusedWorkoutCard?.duration ?? formatReadableDurationFromSeconds(sessionTotalDurationSec(focusedProgramSession))}</p>
+                    <p className={styles.dayFocusStructure}>{focusedWorkoutCard?.shortStructureSummary ?? sessionStructureSummary(focusedProgramSession, siteLocale)}</p>
+                    {focusedWorkoutCard?.visualProfile && (
+                      <div className={styles.dayIntensityBar} aria-hidden="true">
+                        {focusedWorkoutCard.visualProfile.map((segment, index) => (
+                          <span
+                            key={`${focusedProgramSession.id}-focus-intensity-${index}`}
+                            className={workoutProfileSegmentClassName(segment)}
+                            style={{ flexGrow: Math.max(1, segment.durationSec) }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <ol className={`${styles.workoutDetailList} ${styles.workoutDetailsStepList}`}>
                     {focusedProgramSession.steps.map((step, index) => (
                       <li key={`${focusedProgramSession.id}-detail-step-${index}`} className={styles.workoutDetailRow}>
                         <span className={styles.workoutDetailIndex}>{index + 1}</span>
@@ -5110,15 +5111,14 @@ export default function Home() {
                       </li>
                     ))}
                   </ol>
-                  <div className={styles.topActions}>
+                  <div className={`${styles.topActions} ${styles.workoutDetailsActions}`}>
                     <button type="button" className={styles.primaryBtn} onClick={() => openWorkoutSession(focusedProgramSession.id)}>
                       {siteLocale === "en" ? "Start run" : "Start tur"}
                     </button>
-                    <button type="button" className={styles.textBtn} onClick={() => setFocusedProgramDayIso(null)}>
+                    <button type="button" className={styles.secondaryBtn} onClick={() => setFocusedProgramDayIso(null)}>
                       {siteLocale === "en" ? "Back" : "Tilbage"}
                     </button>
                   </div>
-                      </>
                 </article>
               </section>
             )}
