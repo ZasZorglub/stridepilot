@@ -882,6 +882,7 @@
   background-image: url("/images/stridepilot_workout.png");
   max-width: none;
   min-height: 100dvh;
+  height: 100dvh;
   margin: 0;
   border-radius: 0;
 }
@@ -948,13 +949,22 @@
 }
 
 .workoutOverlay {
+  height: 100%;
+  display: grid;
+  align-items: stretch;
   padding:
-    calc(0.62rem + env(safe-area-inset-top))
+    calc(0.74rem + env(safe-area-inset-top))
     0.58rem
-    calc(0.54rem + env(safe-area-inset-bottom));
+    calc(0.7rem + env(safe-area-inset-bottom));
   background:
     radial-gradient(circle at 50% 30%, rgba(23, 42, 58, 0.38), transparent 58%),
     rgba(8, 12, 17, 0.78);
+}
+
+.workoutOverlay .grid:has(.workoutActiveCard) {
+  width: 100%;
+  min-height: 0;
+  height: 100%;
 }
 
 .loadingOverlay {
@@ -2164,14 +2174,14 @@
 
 .workoutPrimaryAction {
   order: 3;
-  margin-top: 0.1rem;
+  flex: 0 0 auto;
+  margin-top: clamp(0.32rem, 1.2dvh, 0.82rem);
   margin-bottom: 0;
   display: grid;
   gap: 0.38rem;
-  padding-top: 0.16rem;
-  padding-bottom: calc(0.28rem + env(safe-area-inset-bottom));
-  position: sticky;
-  bottom: 0;
+  padding-top: 0.18rem;
+  padding-bottom: calc(0.08rem + env(safe-area-inset-bottom));
+  position: static;
   background: linear-gradient(180deg, transparent, rgba(8, 12, 17, 0.5));
   backdrop-filter: none;
 }
@@ -3299,6 +3309,7 @@
 }
 
 .workoutStatusNotice {
+  flex: 0 0 auto;
   margin: 0.12rem 0 0.65rem;
   border: 1px solid rgba(52, 165, 218, 0.18);
   border-radius: 12px;
@@ -3310,11 +3321,13 @@
 }
 
 .workoutActiveCard {
-  min-height: 0;
+  min-height: 100%;
+  height: 100%;
   border-color: transparent;
   background: transparent;
   box-shadow: none;
   padding: 0;
+  overflow: hidden;
 }
 
 .workoutCountdownMode {
@@ -3360,14 +3373,15 @@
 }
 
 .workoutActiveLayout {
-  min-height: inherit;
-  display: grid;
-  align-content: start;
-  gap: 0.46rem;
+  min-height: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.4rem, 1.05dvh, 0.72rem);
 }
 
 .workoutStateRun .workoutActiveLayout {
-  gap: 0.42rem;
+  gap: clamp(0.38rem, 1dvh, 0.68rem);
 }
 
 .workoutStateRun .workoutSessionOverview {
@@ -3495,7 +3509,7 @@
 }
 
 .workoutStateWalk .workoutActiveLayout {
-  gap: 0.42rem;
+  gap: clamp(0.38rem, 1dvh, 0.68rem);
 }
 
 .workoutStateWalk .workoutSessionOverview {
@@ -3541,15 +3555,36 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+.workoutActiveCard .workoutHeaderCenter {
+  gap: 0.12rem;
+}
+
+.workoutActiveCard .workoutWeekContext {
+  color: rgba(156, 207, 230, 0.62);
+  font-size: 0.66rem;
+  letter-spacing: 0.07em;
+}
+
+.workoutActiveCard .workoutHeaderTitle {
+  color: rgba(242, 245, 247, 0.86);
+  font-size: clamp(1rem, 4.2vw, 1.42rem);
+  line-height: 1.08;
+}
+
 .workoutTimerCardShell {
   order: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
+  place-items: center;
   justify-items: center;
-  margin-top: -0.1rem;
+  margin-top: 0;
+  padding: clamp(0.15rem, 1.4dvh, 1rem) 0;
 }
 
 .workoutSessionOverview {
   order: 2;
+  flex: 0 0 auto;
   width: min(100%, 390px);
   margin: 0 auto;
   display: grid;
@@ -3719,6 +3754,7 @@
 }
 
 .workoutCompactTopBar {
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
@@ -3985,6 +4021,41 @@
   color: rgba(242, 245, 247, 0.66);
   background: rgba(10, 18, 25, 0.06);
   box-shadow: none;
+}
+
+@media (max-height: 720px) {
+  .workoutOverlay {
+    padding:
+      calc(0.48rem + env(safe-area-inset-top))
+      0.58rem
+      calc(0.42rem + env(safe-area-inset-bottom));
+  }
+
+  .workoutActiveLayout {
+    gap: 0.28rem;
+  }
+
+  .workoutTimerCardShell {
+    padding: 0;
+  }
+
+  .workoutSessionOverview {
+    gap: 0.12rem;
+  }
+
+  .workoutNextSummary {
+    padding-top: 0.28rem;
+  }
+
+  .workoutPrimaryAction {
+    margin-top: 0.18rem;
+    gap: 0.24rem;
+    padding-top: 0.08rem;
+  }
+
+  .workoutManualControls {
+    margin-top: 0.04rem;
+  }
 }
 
 .completedWorkoutActions {
