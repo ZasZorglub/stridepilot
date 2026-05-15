@@ -15,7 +15,7 @@
 
 .circularRingWrap {
   position: relative;
-  width: min(82vw, 306px);
+  width: min(84vw, 318px);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
@@ -35,14 +35,14 @@
 }
 
 .circularRingBase {
-  stroke: rgba(174, 190, 202, 0.23);
-  stroke-width: 8.4;
+  stroke: rgba(174, 190, 202, 0.19);
+  stroke-width: 9;
   stroke-linecap: round;
 }
 
 .circularRingProgress {
-  stroke: rgba(114, 176, 207, 0.9);
-  stroke-width: 9.8;
+  stroke: rgba(136, 188, 213, 0.94);
+  stroke-width: 10.8;
   stroke-linecap: round;
   stroke-dasharray: var(--progress) 1;
   stroke-dashoffset: 0;
@@ -53,18 +53,18 @@
 }
 
 .circularCard[data-state="walk"] .circularRingProgress {
-  stroke: rgba(240, 246, 250, 0.86);
+  stroke: rgba(229, 236, 241, 0.88);
 }
 
 .circularCard[data-state="warmup"] .circularRingProgress,
 .circularCard[data-state="cooldown"] .circularRingProgress {
-  stroke: rgba(126, 160, 186, 0.78);
+  stroke: rgba(147, 176, 197, 0.82);
 }
 
 .circularCenter {
   position: relative;
   z-index: 1;
-  width: 73%;
+  width: 72%;
   aspect-ratio: 1;
   display: grid;
   align-content: center;
@@ -74,9 +74,9 @@
     radial-gradient(circle at 50% 20%, rgba(55, 103, 145, 0.08), transparent 46%),
     linear-gradient(180deg, rgba(9, 19, 30, 0.78), rgba(4, 9, 15, 0.84));
   box-shadow:
-    0 10px 26px rgba(0, 0, 0, 0.13),
+    0 14px 30px rgba(0, 0, 0, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.034),
-    inset 0 0 0 1px rgba(164, 193, 218, 0.04);
+    inset 0 0 0 1px rgba(164, 193, 218, 0.055);
 }
 
 .circularNow {

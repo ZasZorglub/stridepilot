@@ -2111,11 +2111,11 @@
 
 .workoutPrimaryAction {
   order: 3;
-  margin-top: -0.06rem;
+  margin-top: -0.12rem;
   margin-bottom: 0;
   display: grid;
-  gap: 0.32rem;
-  padding-top: 0.18rem;
+  gap: 0.24rem;
+  padding-top: 0.08rem;
   padding-bottom: calc(0.2rem + env(safe-area-inset-bottom));
   position: sticky;
   bottom: 0;
@@ -3291,8 +3291,8 @@
 }
 
 .workoutStateRun .workoutSessionOverview {
-  opacity: 0.72;
-  gap: 0.18rem;
+  opacity: 0.62;
+  gap: 0.14rem;
 }
 
 .workoutStateRun .liveWorkoutCard {
@@ -3419,8 +3419,8 @@
 }
 
 .workoutStateWalk .workoutSessionOverview {
-  gap: 0.18rem;
-  opacity: 0.7;
+  gap: 0.14rem;
+  opacity: 0.6;
 }
 
 .workoutStateWalk .workoutProgressHeader {
@@ -3445,17 +3445,17 @@
 .workoutStatePaused .timerBig,
 .workoutStatePaused .trackTimerCue,
 .workoutStatePaused .workoutMiniLabel {
-  color: rgba(220, 230, 237, 0.76);
+  color: rgba(220, 230, 237, 0.68);
   text-shadow: none;
 }
 
 .workoutStatePaused .workoutTopProfileSegmentCurrent,
 .workoutStatePaused .trackTimerTrackProgress {
-  opacity: 0.72;
+  opacity: 0.58;
 }
 
 .workoutStatePaused .workoutPrimaryAction .primaryBtn {
-  box-shadow: 0 0 0 4px rgba(52, 165, 218, 0.18);
+  box-shadow: 0 0 0 3px rgba(52, 165, 218, 0.12);
 }
 
 .workoutTimerCardShell {
@@ -3470,8 +3470,8 @@
   width: min(100%, 390px);
   margin: 0 auto;
   display: grid;
-  gap: 0.18rem;
-  opacity: 0.74;
+  gap: 0.14rem;
+  opacity: 0.64;
 }
 
 .workoutSessionOverview .workoutMiniLabel {
@@ -3485,22 +3485,22 @@
   align-items: end;
   justify-content: space-between;
   gap: 0.72rem;
-  padding: 0 0.46rem;
-  opacity: 0.76;
+  padding: 0 0.58rem;
+  opacity: 0.64;
 }
 
 .workoutProgressCount {
   margin: 0.1rem 0 0;
-  color: rgba(225, 233, 238, 0.78);
-  font-size: 0.9rem;
+  color: rgba(225, 233, 238, 0.66);
+  font-size: 0.84rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .workoutElapsedTime {
   margin: 0;
-  color: rgba(215, 226, 234, 0.54);
-  font-size: 0.78rem;
+  color: rgba(215, 226, 234, 0.44);
+  font-size: 0.74rem;
   font-weight: 550;
   font-variant-numeric: tabular-nums;
 }
@@ -3510,31 +3510,31 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  padding: 0.42rem 0.48rem 0.22rem;
+  padding: 0.34rem 0.58rem 0.12rem;
   display: grid;
-  gap: 0.16rem;
-  opacity: 0.72;
+  gap: 0.12rem;
+  opacity: 0.62;
 }
 
 .workoutNextSummary h3 {
   margin: 0.08rem 0 0;
-  color: rgba(242, 245, 247, 0.82);
-  font-size: 0.96rem;
+  color: rgba(242, 245, 247, 0.74);
+  font-size: 0.9rem;
   line-height: 1.2;
 }
 
 .workoutNextCue {
   margin: 0;
-  color: rgba(215, 226, 234, 0.62);
-  font-size: 0.78rem;
+  color: rgba(215, 226, 234, 0.5);
+  font-size: 0.74rem;
   line-height: 1.35;
 }
 
 .workoutTopProfile {
   display: flex;
   align-items: center;
-  gap: 0.2rem;
-  padding: 0.38rem 0.48rem;
+  gap: 0.16rem;
+  padding: 0.32rem 0.58rem;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -3543,15 +3543,15 @@
 
 .workoutTopProfileSegment {
   min-width: 6px;
-  height: 8px;
+  height: 6px;
   border-radius: 999px;
-  opacity: 0.42;
+  opacity: 0.28;
   transition: transform 180ms ease, opacity 180ms ease, height 180ms ease;
 }
 
 .workoutTopProfileSegmentCurrent {
-  height: 14px;
-  opacity: 0.8;
+  height: 10px;
+  opacity: 0.58;
 }
 
 .workoutTopProfileSegmentPulse {
@@ -3560,7 +3560,7 @@
 
 .workoutStateRun .workoutTopProfileSegmentPulse {
   animation-duration: 1.45s;
-  filter: drop-shadow(0 0 6px rgba(52, 165, 218, 0.28));
+  filter: none;
 }
 
 .workoutStateWalk .workoutTopProfileSegmentPulse {
@@ -3869,24 +3869,25 @@
 }
 
 .workoutManualControls {
-  margin-top: 0.35rem;
+  margin-top: 0.08rem;
   display: grid;
-  gap: 0.28rem;
+  gap: 0.12rem;
+  opacity: 0.74;
 }
 
 .workoutSecondaryAction {
   border: 0;
   background: transparent;
-  color: rgba(215, 226, 234, 0.74);
-  min-height: 3.9rem;
-  padding: 0.54rem 0.4rem;
-  font-size: 0.98rem;
+  color: rgba(215, 226, 234, 0.58);
+  min-height: 3.3rem;
+  padding: 0.4rem 0.3rem;
+  font-size: 0.9rem;
   font-weight: 650;
   cursor: pointer;
 }
 
 .workoutSecondaryAction:hover {
-  color: rgba(242, 245, 247, 0.92);
+  color: rgba(242, 245, 247, 0.82);
 }
 
 .workoutSecondaryActionPrevious {
@@ -3894,11 +3895,11 @@
 }
 
 .workoutSecondaryActionNext {
-  border: 1px solid rgba(52, 165, 218, 0.45);
-  border-radius: 18px;
-  color: rgba(242, 245, 247, 0.96);
-  background: rgba(10, 18, 25, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(52, 165, 218, 0.08);
+  border: 1px solid rgba(52, 165, 218, 0.18);
+  border-radius: 14px;
+  color: rgba(242, 245, 247, 0.78);
+  background: rgba(10, 18, 25, 0.08);
+  box-shadow: none;
 }
 
 .completedWorkoutActions {
