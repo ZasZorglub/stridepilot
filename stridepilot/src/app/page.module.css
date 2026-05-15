@@ -2174,13 +2174,16 @@
 
 .workoutPrimaryAction {
   order: 3;
-  flex: 0 0 auto;
+  flex: 0 0 calc(7.36rem + env(safe-area-inset-bottom));
   margin-top: clamp(0.32rem, 1.2dvh, 0.82rem);
   margin-bottom: 0;
   display: grid;
+  grid-template-rows: minmax(3.8rem, auto) minmax(3.1rem, auto);
+  align-content: end;
   gap: 0.38rem;
   padding-top: 0.18rem;
   padding-bottom: calc(0.08rem + env(safe-area-inset-bottom));
+  min-height: calc(7.36rem + env(safe-area-inset-bottom));
   position: static;
   background: linear-gradient(180deg, transparent, rgba(8, 12, 17, 0.5));
   backdrop-filter: none;
@@ -2275,11 +2278,11 @@
 .workoutPrimaryAction .primaryBtn {
   width: 100%;
   min-height: 3.8rem;
-  border: 1px solid rgba(151, 203, 229, 0.16);
-  background: linear-gradient(180deg, rgba(70, 164, 210, 0.92), rgba(43, 129, 171, 0.92));
+  border: 1px solid rgba(169, 218, 241, 0.22);
+  background: linear-gradient(180deg, rgba(78, 178, 226, 0.96), rgba(47, 139, 183, 0.96));
   box-shadow:
     0 12px 26px rgba(4, 11, 17, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 .textBtn {
@@ -3385,7 +3388,7 @@
 }
 
 .workoutStateRun .workoutSessionOverview {
-  opacity: 0.66;
+  opacity: 0.78;
   gap: 0.22rem;
 }
 
@@ -3514,7 +3517,7 @@
 
 .workoutStateWalk .workoutSessionOverview {
   gap: 0.22rem;
-  opacity: 0.64;
+  opacity: 0.76;
 }
 
 .workoutStateWalk .workoutProgressHeader {
@@ -3549,10 +3552,10 @@
 }
 
 .workoutStatePaused .workoutPrimaryAction .primaryBtn {
-  background: linear-gradient(180deg, rgba(67, 143, 181, 0.82), rgba(38, 105, 139, 0.86));
+  background: linear-gradient(180deg, rgba(72, 158, 201, 0.9), rgba(43, 124, 164, 0.92));
   box-shadow:
     0 10px 22px rgba(4, 11, 17, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .workoutActiveCard .workoutHeaderCenter {
@@ -3589,11 +3592,11 @@
   margin: 0 auto;
   display: grid;
   gap: 0.22rem;
-  opacity: 0.66;
+  opacity: 0.76;
 }
 
 .workoutSessionOverview .workoutMiniLabel {
-  color: rgba(156, 207, 230, 0.54);
+  color: rgba(174, 215, 234, 0.66);
   font-size: 0.64rem;
   letter-spacing: 0.06em;
 }
@@ -3604,12 +3607,12 @@
   justify-content: space-between;
   gap: 0.72rem;
   padding: 0 0.62rem;
-  opacity: 0.68;
+  opacity: 0.8;
 }
 
 .workoutProgressCount {
   margin: 0.12rem 0 0;
-  color: rgba(225, 233, 238, 0.62);
+  color: rgba(233, 240, 245, 0.72);
   font-size: 0.82rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -3617,7 +3620,7 @@
 
 .workoutElapsedTime {
   margin: 0;
-  color: rgba(215, 226, 234, 0.42);
+  color: rgba(218, 229, 237, 0.54);
   font-size: 0.72rem;
   font-weight: 550;
   font-variant-numeric: tabular-nums;
@@ -3631,19 +3634,19 @@
   padding: 0.4rem 0.62rem 0.08rem;
   display: grid;
   gap: 0.16rem;
-  opacity: 0.66;
+  opacity: 0.76;
 }
 
 .workoutNextSummary h3 {
   margin: 0.08rem 0 0;
-  color: rgba(242, 245, 247, 0.7);
+  color: rgba(245, 248, 250, 0.8);
   font-size: 0.88rem;
   line-height: 1.2;
 }
 
 .workoutNextCue {
   margin: 0;
-  color: rgba(215, 226, 234, 0.48);
+  color: rgba(219, 230, 238, 0.58);
   font-size: 0.74rem;
   line-height: 1.35;
 }
@@ -3663,13 +3666,13 @@
   min-width: 6px;
   height: 5px;
   border-radius: 999px;
-  opacity: 0.24;
+  opacity: 0.34;
   transition: transform 180ms ease, opacity 180ms ease, height 180ms ease;
 }
 
 .workoutTopProfileSegmentCurrent {
   height: 9px;
-  opacity: 0.56;
+  opacity: 0.72;
 }
 
 .workoutTopProfileSegmentPulse {
@@ -3988,17 +3991,18 @@
 }
 
 .workoutManualControls {
-  margin-top: 0.12rem;
+  min-height: 3.1rem;
+  margin-top: 0;
   display: grid;
   gap: 0.16rem;
-  opacity: 0.68;
+  opacity: 0.76;
 }
 
 .workoutSecondaryAction {
-  border: 1px solid transparent;
+  border: 1px solid rgba(154, 166, 178, 0.1);
   border-radius: 14px;
   background: transparent;
-  color: rgba(215, 226, 234, 0.5);
+  color: rgba(225, 235, 242, 0.62);
   min-height: 3.1rem;
   padding: 0.38rem 0.42rem;
   font-size: 0.86rem;
@@ -4017,9 +4021,9 @@
 }
 
 .workoutSecondaryActionNext {
-  border-color: rgba(154, 166, 178, 0.14);
-  color: rgba(242, 245, 247, 0.66);
-  background: rgba(10, 18, 25, 0.06);
+  border-color: rgba(167, 200, 218, 0.18);
+  color: rgba(246, 249, 251, 0.76);
+  background: rgba(15, 27, 37, 0.12);
   box-shadow: none;
 }
 
@@ -4051,10 +4055,12 @@
     margin-top: 0.18rem;
     gap: 0.24rem;
     padding-top: 0.08rem;
+    flex-basis: calc(7.12rem + env(safe-area-inset-bottom));
+    min-height: calc(7.12rem + env(safe-area-inset-bottom));
   }
 
   .workoutManualControls {
-    margin-top: 0.04rem;
+    margin-top: 0;
   }
 }
 
