@@ -5213,7 +5213,6 @@ export default function Home() {
                     heartRate={currentWorkoutHeartRateDisplay?.value}
                     heartRateLabel={currentWorkoutHeartRateDisplay?.label}
                     progress={currentStepProgressPct / 100}
-                    notice={stepNotice ?? undefined}
                     finalHint={isLastWorkoutStep ? (siteLocale === "en" ? "Ready to finish the workout." : "Passet er klar til at blive afsluttet.") : undefined}
                   />
                 </div>
