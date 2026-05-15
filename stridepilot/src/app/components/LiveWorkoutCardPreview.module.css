@@ -1,21 +1,21 @@
 .circularCard {
-  width: min(100%, 430px);
+  width: min(100%, 440px);
   display: grid;
   justify-items: center;
-  padding: 16px 10px 8px;
+  padding: 10px 6px 6px;
   border: 0;
-  border-radius: 30px;
+  border-radius: 0;
   color: #f7fbff;
   background:
-    radial-gradient(circle at 50% 42%, rgba(12, 24, 36, 0.34), transparent 67%),
-    radial-gradient(circle at 50% 20%, rgba(52, 112, 166, 0.035), transparent 58%);
+    radial-gradient(circle at 50% 44%, rgba(12, 24, 36, 0.28), transparent 68%),
+    radial-gradient(circle at 50% 18%, rgba(52, 112, 166, 0.028), transparent 60%);
   box-shadow: none;
   text-align: center;
 }
 
 .circularRingWrap {
   position: relative;
-  width: min(80vw, 278px);
+  width: min(82vw, 306px);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
@@ -35,20 +35,19 @@
 }
 
 .circularRingBase {
-  stroke: rgba(174, 190, 202, 0.45);
-  stroke-width: 7.6;
-  stroke-linecap: butt;
+  stroke: rgba(174, 190, 202, 0.23);
+  stroke-width: 8.4;
+  stroke-linecap: round;
 }
 
 .circularRingProgress {
-  stroke: #5798bd;
-  stroke-width: 7.6;
+  stroke: rgba(114, 176, 207, 0.9);
+  stroke-width: 9.8;
   stroke-linecap: round;
-  stroke-dasharray: var(--visible-progress) 1;
+  stroke-dasharray: var(--progress) 1;
   stroke-dashoffset: 0;
-  filter: drop-shadow(0 0 1px rgba(87, 152, 189, 0.12));
   transition:
-    stroke-dasharray 1100ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    stroke-dasharray 1400ms cubic-bezier(0.22, 0.61, 0.36, 1),
     stroke 700ms ease,
     opacity 420ms ease;
 }
@@ -65,17 +64,17 @@
 .circularCenter {
   position: relative;
   z-index: 1;
-  width: 75%;
+  width: 73%;
   aspect-ratio: 1;
   display: grid;
   align-content: center;
   justify-items: center;
   border-radius: 999px;
   background:
-    radial-gradient(circle at 50% 20%, rgba(55, 103, 145, 0.1), transparent 45%),
-    linear-gradient(180deg, rgba(9, 19, 30, 0.86), rgba(4, 9, 15, 0.9));
+    radial-gradient(circle at 50% 20%, rgba(55, 103, 145, 0.08), transparent 46%),
+    linear-gradient(180deg, rgba(9, 19, 30, 0.78), rgba(4, 9, 15, 0.84));
   box-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.16),
+    0 10px 26px rgba(0, 0, 0, 0.13),
     inset 0 1px 0 rgba(255, 255, 255, 0.034),
     inset 0 0 0 1px rgba(164, 193, 218, 0.04);
 }
@@ -98,7 +97,7 @@
 
 .circularCenter > strong {
   color: rgba(245, 249, 252, 0.96);
-  font-size: clamp(2.78rem, 12.8vw, 4.08rem);
+  font-size: clamp(3.05rem, 13.4vw, 4.48rem);
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   line-height: 0.9;
@@ -130,7 +129,7 @@
 }
 
 .circularCue {
-  margin: 14px auto 0;
+  margin: 10px auto 0;
   max-width: 30ch;
   color: rgba(174, 188, 202, 0.76);
   font-size: 0.92rem;

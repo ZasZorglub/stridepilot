@@ -42,7 +42,6 @@ export function LiveWorkoutCard({
   notice,
 }: LiveWorkoutCardProps) {
   const normalizedProgress = Math.min(Math.max(progress, 0), 1);
-  const visibleProgress = normalizedProgress <= 0 ? 0.04 : Math.min(1, Math.max(normalizedProgress, 0.075));
   const hasHeartRate = heartRate !== undefined && heartRate !== null && heartRate !== "" && Boolean(heartRateLabel);
 
   return (
@@ -57,7 +56,7 @@ export function LiveWorkoutCard({
             cy="110"
             r="91"
             pathLength="1"
-            style={{ "--progress": normalizedProgress, "--visible-progress": visibleProgress } as CSSProperties}
+            style={{ "--progress": normalizedProgress } as CSSProperties}
           />
         </svg>
         <div className={styles.circularCenter}>
