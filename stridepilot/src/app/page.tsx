@@ -5136,22 +5136,24 @@ export default function Home() {
           >
             {!activeSession && <p>{ui.workout.chooseWorkout}</p>}
             {activeSession && currentStep && !workoutCompleted && workoutStartCountdown !== null && (
-              <div className={styles.workoutCountdownCard}>
+              <>
                 <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label={ui.workout.closeWorkoutAria}>
                   {workoutActionState.closeLabel}
                 </button>
-                <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Starting in" : "Starter om"}</p>
-                <h2 className={styles.workoutCountdownTitle}>{sessionDisplayTitle(activeSession, goal.distance, siteLocale)}</h2>
-                <p className={styles.subtleInline}>
-                  {isGoalEventSession(activeSession)
-                    ? `${goalEventDistanceLabel(goal.distance, siteLocale)} · ${siteLocale === "en" ? "race day" : "måldag"}`
-                    : formatReadableDurationFromSeconds(activeSessionDuration * 60)}
-                </p>
-                <div className={styles.workoutCountdownNumber}>{workoutStartCountdown}</div>
-                <p className={styles.workoutCountdownFirst}>
-                  {siteLocale === "en" ? "First:" : "Først:"} {workoutStepPreview(currentStep, siteLocale)}
-                </p>
-              </div>
+                <div className={styles.workoutCountdownCard}>
+                  <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Starting in" : "Starter om"}</p>
+                  <h2 className={styles.workoutCountdownTitle}>{sessionDisplayTitle(activeSession, goal.distance, siteLocale)}</h2>
+                  <p className={styles.subtleInline}>
+                    {isGoalEventSession(activeSession)
+                      ? `${goalEventDistanceLabel(goal.distance, siteLocale)} · ${siteLocale === "en" ? "race day" : "måldag"}`
+                      : formatReadableDurationFromSeconds(activeSessionDuration * 60)}
+                  </p>
+                  <div className={styles.workoutCountdownNumber}>{workoutStartCountdown}</div>
+                  <p className={styles.workoutCountdownFirst}>
+                    {siteLocale === "en" ? "First:" : "Først:"} {workoutStepPreview(currentStep, siteLocale)}
+                  </p>
+                </div>
+              </>
             )}
             {activeSession && currentStep && !workoutCompleted && workoutStartCountdown === null && (
               <div className={styles.workoutActiveLayout}>
