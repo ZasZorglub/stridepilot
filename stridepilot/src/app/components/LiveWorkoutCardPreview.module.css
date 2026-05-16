@@ -131,8 +131,8 @@
 }
 
 .circularCue {
-  margin: 12px auto 0;
-  max-width: 32ch;
+  margin: 18px auto 0;
+  max-width: 30ch;
   color: rgba(203, 216, 226, 0.82);
   font-size: 0.92rem;
   font-weight: 500;

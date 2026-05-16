@@ -3400,16 +3400,16 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: clamp(0.4rem, 1.05dvh, 0.72rem);
+  gap: clamp(0.5rem, 1.18dvh, 0.86rem);
 }
 
 .workoutStateRun .workoutActiveLayout {
-  gap: clamp(0.38rem, 1dvh, 0.68rem);
+  gap: clamp(0.48rem, 1.14dvh, 0.82rem);
 }
 
 .workoutStateRun .workoutSessionOverview {
   opacity: 0.82;
-  gap: 0.22rem;
+  gap: 0.28rem;
 }
 
 .workoutStateRun .liveWorkoutCard {
@@ -3532,11 +3532,11 @@
 }
 
 .workoutStateWalk .workoutActiveLayout {
-  gap: clamp(0.38rem, 1dvh, 0.68rem);
+  gap: clamp(0.48rem, 1.14dvh, 0.82rem);
 }
 
 .workoutStateWalk .workoutSessionOverview {
-  gap: 0.22rem;
+  gap: 0.28rem;
   opacity: 0.8;
 }
 
@@ -3579,7 +3579,7 @@
 }
 
 .workoutActiveCard .workoutHeaderCenter {
-  gap: 0.12rem;
+  gap: 0.06rem;
 }
 
 .workoutActiveCard .workoutWeekContext {
@@ -3602,16 +3602,16 @@
   place-items: center;
   justify-items: center;
   margin-top: 0;
-  padding: clamp(0.15rem, 1.4dvh, 1rem) 0;
+  padding: clamp(0.15rem, 1.4dvh, 1rem) 0 clamp(0.38rem, 1.7dvh, 1.2rem);
 }
 
 .workoutSessionOverview {
   order: 2;
   flex: 0 0 auto;
-  width: min(100%, 390px);
+  width: min(100%, 360px);
   margin: 0 auto;
   display: grid;
-  gap: 0.22rem;
+  gap: 0.28rem;
   opacity: 0.8;
 }
 
@@ -3674,8 +3674,8 @@
 .workoutTopProfile {
   display: flex;
   align-items: center;
-  gap: 0.14rem;
-  padding: 0.34rem 0.62rem;
+  gap: 0.1rem;
+  padding: 0.26rem 0.56rem;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -3684,7 +3684,7 @@
 
 .workoutTopProfileSegment {
   min-width: 6px;
-  height: 5px;
+  height: 4px;
   border-radius: 999px;
   opacity: 0.3;
   transform: scaleY(0.84);
@@ -3692,7 +3692,7 @@
 }
 
 .workoutTopProfileSegmentCurrent {
-  height: 9px;
+  height: 7px;
   opacity: 0.76;
   box-shadow: 0 0 0 1px rgba(220, 235, 244, 0.14) !important;
   transform: scaleY(0.9);
@@ -4063,15 +4063,15 @@
   }
 
   .workoutActiveLayout {
-    gap: 0.28rem;
+    gap: 0.34rem;
   }
 
   .workoutTimerCardShell {
-    padding: 0;
+    padding: 0 0 0.18rem;
   }
 
   .workoutSessionOverview {
-    gap: 0.12rem;
+    gap: 0.16rem;
   }
 
   .workoutNextSummary {
