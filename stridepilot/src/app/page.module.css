@@ -2181,7 +2181,7 @@
 .workoutPrimaryAction {
   order: 3;
   flex: 0 0 calc(7.1rem + env(safe-area-inset-bottom));
-  margin-top: clamp(0.18rem, 0.8dvh, 0.56rem);
+  margin-top: clamp(0.08rem, 0.48dvh, 0.36rem);
   margin-bottom: 0;
   display: grid;
   grid-template-rows: minmax(3.8rem, auto) minmax(3.1rem, auto);
@@ -3408,8 +3408,8 @@
 }
 
 .workoutStateRun .workoutSessionOverview {
-  opacity: 0.54;
-  gap: 0.22rem;
+  opacity: 0.72;
+  gap: 0.18rem;
 }
 
 .workoutStateRun .liveWorkoutCard {
@@ -3536,8 +3536,8 @@
 }
 
 .workoutStateWalk .workoutSessionOverview {
-  gap: 0.22rem;
-  opacity: 0.5;
+  gap: 0.18rem;
+  opacity: 0.68;
 }
 
 .workoutStateWalk .workoutProgressHeader {
@@ -3611,12 +3611,12 @@
   width: min(100%, 315px);
   margin: 0 auto;
   display: grid;
-  gap: 0.14rem;
-  opacity: 0.34;
+  gap: 0.12rem;
+  opacity: 0.68;
 }
 
 .workoutSessionOverview .workoutMiniLabel {
-  color: rgba(178, 218, 236, 0.34);
+  color: rgba(178, 218, 236, 0.58);
   font-size: 0.6rem;
   letter-spacing: 0.05em;
 }
@@ -3627,12 +3627,12 @@
   justify-content: space-between;
   gap: 0.72rem;
   padding: 0 0.74rem;
-  opacity: 0.36;
+  opacity: 0.78;
 }
 
 .workoutProgressCount {
   margin: 0.06rem 0 0;
-  color: rgba(236, 243, 248, 0.42);
+  color: rgba(236, 243, 248, 0.72);
   font-size: 0.76rem;
   font-weight: 590;
   font-variant-numeric: tabular-nums;
@@ -3640,7 +3640,7 @@
 
 .workoutElapsedTime {
   margin: 0;
-  color: rgba(222, 232, 239, 0.26);
+  color: rgba(222, 232, 239, 0.52);
   font-size: 0.68rem;
   font-weight: 550;
   font-variant-numeric: tabular-nums;
@@ -3651,22 +3651,22 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  padding: 0.18rem 0.74rem 0;
+  padding: 0.16rem 0.74rem 0;
   display: grid;
   gap: 0.06rem;
-  opacity: 0.34;
+  opacity: 0.74;
 }
 
 .workoutNextSummary h3 {
   margin: 0.04rem 0 0;
-  color: rgba(245, 248, 250, 0.44);
+  color: rgba(245, 248, 250, 0.76);
   font-size: 0.8rem;
   line-height: 1.2;
 }
 
 .workoutNextCue {
   margin: 0;
-  color: rgba(219, 230, 238, 0.24);
+  color: rgba(219, 230, 238, 0.46);
   font-size: 0.68rem;
   line-height: 1.3;
 }
@@ -3686,14 +3686,14 @@
   min-width: 6px;
   height: 2px;
   border-radius: 999px;
-  opacity: 0.07;
+  opacity: 0.16;
   transform: scaleY(0.62);
   transition: transform 180ms ease, opacity 180ms ease, height 180ms ease;
 }
 
 .workoutTopProfileSegmentCurrent {
   height: 3px;
-  opacity: 0.24;
+  opacity: 0.48;
   box-shadow: none !important;
   transform: scaleY(0.7);
 }
@@ -4018,14 +4018,14 @@
   margin-top: 0;
   display: grid;
   gap: 0.16rem;
-  opacity: 0.42;
+  opacity: 0.56;
 }
 
 .workoutSecondaryAction {
-  border: 1px solid rgba(154, 166, 178, 0.035);
+  border: 1px solid rgba(154, 166, 178, 0.06);
   border-radius: 14px;
   background: transparent;
-  color: rgba(225, 235, 242, 0.3);
+  color: rgba(225, 235, 242, 0.42);
   min-height: 3.1rem;
   padding: 0.38rem 0.42rem;
   font-size: 0.86rem;
@@ -4044,9 +4044,9 @@
 }
 
 .workoutSecondaryActionNext {
-  border-color: rgba(167, 200, 218, 0.055);
-  color: rgba(246, 249, 251, 0.4);
-  background: rgba(15, 27, 37, 0.025);
+  border-color: rgba(167, 200, 218, 0.09);
+  color: rgba(246, 249, 251, 0.52);
+  background: rgba(15, 27, 37, 0.035);
   box-shadow: none;
 }
 
