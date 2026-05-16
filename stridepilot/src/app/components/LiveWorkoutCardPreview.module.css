@@ -35,14 +35,14 @@
 }
 
 .circularRingBase {
-  stroke: rgba(196, 211, 222, 0.26);
-  stroke-width: 8.6;
+  stroke: rgba(196, 211, 222, 0.24);
+  stroke-width: 7.8;
   stroke-linecap: round;
 }
 
 .circularRingProgress {
   stroke: rgba(79, 190, 248, 0.98);
-  stroke-width: 10.2;
+  stroke-width: 9.2;
   stroke-linecap: round;
   stroke-dasharray: var(--progress) 1;
   stroke-dashoffset: 0;
@@ -73,12 +73,12 @@
   justify-items: center;
   border-radius: 999px;
   background:
-    radial-gradient(circle at 50% 20%, rgba(55, 103, 145, 0.08), transparent 46%),
-    linear-gradient(180deg, rgba(9, 19, 30, 0.78), rgba(4, 9, 15, 0.84));
+    radial-gradient(circle at 50% 20%, rgba(55, 103, 145, 0.045), transparent 46%),
+    linear-gradient(180deg, rgba(9, 19, 30, 0.62), rgba(4, 9, 15, 0.7));
   box-shadow:
-    0 14px 30px rgba(0, 0, 0, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.034),
-    inset 0 0 0 1px rgba(164, 193, 218, 0.055);
+    0 12px 26px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.028),
+    inset 0 0 0 1px rgba(164, 193, 218, 0.046);
 }
 
 .circularNow {

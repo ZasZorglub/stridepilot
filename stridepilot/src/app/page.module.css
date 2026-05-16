@@ -3666,13 +3666,16 @@
   min-width: 6px;
   height: 5px;
   border-radius: 999px;
-  opacity: 0.42;
+  opacity: 0.3;
+  transform: scaleY(0.84);
   transition: transform 180ms ease, opacity 180ms ease, height 180ms ease;
 }
 
 .workoutTopProfileSegmentCurrent {
   height: 9px;
-  opacity: 0.86;
+  opacity: 0.76;
+  box-shadow: 0 0 0 1px rgba(220, 235, 244, 0.14) !important;
+  transform: scaleY(0.9);
 }
 
 .workoutTopProfileSegmentPulse {
@@ -4137,12 +4140,12 @@
 
 @keyframes workoutPulse {
   0%, 100% {
-    transform: scaleY(1);
-    opacity: 1;
+    transform: scaleY(0.9);
+    opacity: 0.82;
   }
   50% {
-    transform: scaleY(1.08);
-    opacity: 0.88;
+    transform: scaleY(0.98);
+    opacity: 0.76;
   }
 }
 
