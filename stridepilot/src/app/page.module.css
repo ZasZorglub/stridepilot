@@ -3388,7 +3388,7 @@
 }
 
 .workoutStateRun .workoutSessionOverview {
-  opacity: 0.78;
+  opacity: 0.82;
   gap: 0.22rem;
 }
 
@@ -3517,7 +3517,7 @@
 
 .workoutStateWalk .workoutSessionOverview {
   gap: 0.22rem;
-  opacity: 0.76;
+  opacity: 0.8;
 }
 
 .workoutStateWalk .workoutProgressHeader {
@@ -3548,7 +3548,7 @@
 
 .workoutStatePaused .workoutTopProfileSegmentCurrent,
 .workoutStatePaused .trackTimerTrackProgress {
-  opacity: 0.58;
+  opacity: 0.66;
 }
 
 .workoutStatePaused .workoutPrimaryAction .primaryBtn {
@@ -3592,11 +3592,11 @@
   margin: 0 auto;
   display: grid;
   gap: 0.22rem;
-  opacity: 0.76;
+  opacity: 0.8;
 }
 
 .workoutSessionOverview .workoutMiniLabel {
-  color: rgba(174, 215, 234, 0.66);
+  color: rgba(178, 218, 236, 0.72);
   font-size: 0.64rem;
   letter-spacing: 0.06em;
 }
@@ -3607,12 +3607,12 @@
   justify-content: space-between;
   gap: 0.72rem;
   padding: 0 0.62rem;
-  opacity: 0.8;
+  opacity: 0.84;
 }
 
 .workoutProgressCount {
   margin: 0.12rem 0 0;
-  color: rgba(233, 240, 245, 0.72);
+  color: rgba(236, 243, 248, 0.78);
   font-size: 0.82rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -3620,7 +3620,7 @@
 
 .workoutElapsedTime {
   margin: 0;
-  color: rgba(218, 229, 237, 0.54);
+  color: rgba(222, 232, 239, 0.6);
   font-size: 0.72rem;
   font-weight: 550;
   font-variant-numeric: tabular-nums;
@@ -3666,13 +3666,13 @@
   min-width: 6px;
   height: 5px;
   border-radius: 999px;
-  opacity: 0.34;
+  opacity: 0.42;
   transition: transform 180ms ease, opacity 180ms ease, height 180ms ease;
 }
 
 .workoutTopProfileSegmentCurrent {
   height: 9px;
-  opacity: 0.72;
+  opacity: 0.86;
 }
 
 .workoutTopProfileSegmentPulse {

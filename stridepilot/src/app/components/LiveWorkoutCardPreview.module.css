@@ -35,13 +35,13 @@
 }
 
 .circularRingBase {
-  stroke: rgba(188, 203, 214, 0.2);
+  stroke: rgba(196, 211, 222, 0.26);
   stroke-width: 8.6;
   stroke-linecap: round;
 }
 
 .circularRingProgress {
-  stroke: rgba(109, 194, 235, 0.96);
+  stroke: rgba(79, 190, 248, 0.98);
   stroke-width: 10.2;
   stroke-linecap: round;
   stroke-dasharray: var(--progress) 1;
@@ -53,12 +53,14 @@
 }
 
 .circularCard[data-state="walk"] .circularRingProgress {
-  stroke: rgba(238, 244, 248, 0.92);
+  stroke: rgba(246, 250, 252, 0.96);
+  stroke-linecap: butt;
 }
 
 .circularCard[data-state="warmup"] .circularRingProgress,
 .circularCard[data-state="cooldown"] .circularRingProgress {
-  stroke: rgba(174, 203, 220, 0.88);
+  stroke: rgba(198, 221, 233, 0.94);
+  stroke-linecap: butt;
 }
 
 .circularCenter {
