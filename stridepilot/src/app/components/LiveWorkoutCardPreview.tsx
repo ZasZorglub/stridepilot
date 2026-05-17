@@ -14,6 +14,7 @@ type LiveWorkoutCardPreviewData = {
 type LiveWorkoutCardProps = LiveWorkoutCardPreviewData & {
   finalHint?: string;
   notice?: string;
+  transitionKey?: string | number;
 };
 
 const previewData: LiveWorkoutCardPreviewData = {
@@ -40,9 +41,11 @@ export function LiveWorkoutCard({
   progress,
   finalHint,
   notice,
+  transitionKey,
 }: LiveWorkoutCardProps) {
   const normalizedProgress = Math.min(Math.max(progress, 0), 1);
   const hasHeartRate = heartRate !== undefined && heartRate !== null && heartRate !== "" && Boolean(heartRateLabel);
+  const contentTransitionKey = transitionKey ?? `${state}-${title}`;
 
   return (
     <section className={styles.circularCard} data-state={state} aria-label="Live workout">
@@ -51,6 +54,7 @@ export function LiveWorkoutCard({
         <svg className={styles.circularRing} viewBox="0 0 220 220" aria-hidden="true">
           <circle className={styles.circularRingBase} cx="110" cy="110" r="91" pathLength="1" />
           <circle
+            key={`progress-${contentTransitionKey}`}
             className={styles.circularRingProgress}
             cx="110"
             cy="110"
@@ -61,8 +65,8 @@ export function LiveWorkoutCard({
         </svg>
         <div className={styles.circularCenter}>
           <span className={styles.circularNow}>NU</span>
-          <h2>{title}</h2>
-          <strong>{remainingTime}</strong>
+          <h2 key={`title-${contentTransitionKey}`}>{title}</h2>
+          <strong key={`time-${contentTransitionKey}`}>{remainingTime}</strong>
           {hasHeartRate && (
             <span className={styles.circularHeartRate}>
               <HeartIcon />
@@ -73,7 +77,7 @@ export function LiveWorkoutCard({
         </div>
       </div>
 
-      {cue && <p className={styles.circularCue}>{cue}</p>}
+      {cue && <p key={`cue-${contentTransitionKey}`} className={styles.circularCue}>{cue}</p>}
       {finalHint && <p className={styles.finalHint}>{finalHint}</p>}
     </section>
   );

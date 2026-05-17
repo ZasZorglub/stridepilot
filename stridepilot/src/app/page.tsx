@@ -502,6 +502,15 @@ function workoutStepPreview(step: WorkoutStep | null, locale: SiteLocale = "da")
   return `${formatStepDurationClock(step)} ${phaseName(step, locale).toLowerCase()}`;
 }
 
+function triggerWorkoutHaptic(pattern: number | number[]): void {
+  if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
+  try {
+    navigator.vibrate(pattern);
+  } catch {
+    // Haptics are best-effort only; unsupported browsers should stay quiet.
+  }
+}
+
 function workoutHeartRateDisplayLabel(rangeLabel: string, locale: SiteLocale = "da"): string {
   if (locale === "en") return rangeLabel;
   return rangeLabel.replace(/\bbpm\b/i, "slag/min");
@@ -2365,6 +2374,7 @@ export default function Home() {
     if (stage !== "workout" || !activeSession || workoutCompleted || workoutStartCountdown === null) return;
 
     if (workoutStartCountdown <= 1) {
+      triggerWorkoutHaptic(8);
       setWorkoutStartCountdown(null);
       if (!speechEnabled && audioMode !== "off") {
         const initialized = initSpeech();
@@ -2485,6 +2495,7 @@ export default function Home() {
       return;
     }
 
+    triggerWorkoutHaptic([18, 32, 18]);
     setStepIndex(nextStep);
     setRemainingSec(activeSession.steps[nextStep].durationSec);
     setStepNotice(transitionNoticeForStep(activeSession.steps[nextStep], siteLocale));
@@ -3331,6 +3342,9 @@ export default function Home() {
   function goToStep(index: number) {
     if (!activeSession) return;
     const safeIndex = clampInt(index, 0, activeSession.steps.length - 1);
+    if (safeIndex !== stepIndex) {
+      triggerWorkoutHaptic([18, 32, 18]);
+    }
     setIsRunning(false);
     cancelCue();
     void releaseWakeLock();
@@ -3353,6 +3367,7 @@ export default function Home() {
     }
     cancelCue();
     const next = stepIndex + 1;
+    triggerWorkoutHaptic([18, 32, 18]);
     setStepNotice(transitionNoticeForStep(activeSession.steps[next], siteLocale));
     setStepIndex(next);
     setRemainingSec(activeSession.steps[next].durationSec);
@@ -3366,6 +3381,18 @@ export default function Home() {
   function previousStep() {
     if (!activeSession) return;
     goToStep(Math.max(stepIndex - 1, 0));
+  }
+
+  function toggleWorkoutRunning() {
+    const nextRunning = !isRunning;
+    triggerWorkoutHaptic(nextRunning ? 18 : 10);
+    if (!nextRunning) {
+      cancelCue();
+    } else {
+      setWorkoutInterruptionNotice(null);
+      lastTickAtRef.current = Date.now();
+    }
+    setIsRunning(nextRunning);
   }
 
   function setVisibleWeek(nextWeek: number, options?: { scrollIntoView?: boolean }) {
@@ -5211,6 +5238,7 @@ export default function Home() {
                 <div className={styles.workoutTimerCardShell}>
                   <LiveWorkoutCard
                     state={circularWorkoutCardState}
+                    transitionKey={`${activeSession.id}-${stepIndex}`}
                     title={phaseName(currentStep, siteLocale)}
                     remainingTime={formatClockCompact(remainingSec)}
                     cue={currentStep.cue}
@@ -5229,17 +5257,7 @@ export default function Home() {
                   ) : (
                     <button
                       className={styles.primaryBtn}
-                      onClick={() => {
-                        setIsRunning((v) => {
-                          const next = !v;
-                          if (!next) cancelCue();
-                          if (next) {
-                            setWorkoutInterruptionNotice(null);
-                            lastTickAtRef.current = Date.now();
-                          }
-                          return next;
-                        });
-                      }}
+                      onClick={toggleWorkoutRunning}
                     >
                       {workoutActionState.primaryLabel}
                     </button>
@@ -5259,17 +5277,7 @@ export default function Home() {
                         {isLastWorkoutStep ? (
                           <button
                             className={styles.workoutSecondaryAction}
-                            onClick={() => {
-                              setIsRunning((v) => {
-                                const next = !v;
-                                if (!next) cancelCue();
-                                if (next) {
-                                  setWorkoutInterruptionNotice(null);
-                                  lastTickAtRef.current = Date.now();
-                                }
-                                return next;
-                              });
-                            }}
+                            onClick={toggleWorkoutRunning}
                             type="button"
                           >
                             {workoutActionState.primaryLabel}

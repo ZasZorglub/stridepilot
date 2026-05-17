@@ -46,6 +46,7 @@
   stroke-linecap: round;
   stroke-dasharray: var(--progress) 1;
   stroke-dashoffset: 0;
+  animation: circularRingAccentEnter 560ms ease-out both;
   transition:
     stroke-dasharray 900ms linear,
     stroke 520ms ease,
@@ -95,6 +96,7 @@
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
+  animation: circularPhaseEnter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .circularCenter > strong {
@@ -104,6 +106,7 @@
   font-variant-numeric: tabular-nums;
   line-height: 0.9;
   letter-spacing: 0;
+  animation: circularTimerEnter 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .circularHeartRate {
@@ -138,6 +141,59 @@
   font-weight: 590;
   line-height: 1.56;
   text-shadow: 0 12px 30px rgba(0, 0, 0, 0.36);
+  animation: circularCueEnter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes circularPhaseEnter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes circularTimerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(7px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes circularCueEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes circularRingAccentEnter {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .circularRingProgress,
+  .circularCenter h2,
+  .circularCenter > strong,
+  .circularCue {
+    animation: none;
+    transition-duration: 1ms;
+  }
 }
 
 .card {
