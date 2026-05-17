@@ -548,6 +548,58 @@ function stepCueText(step: WorkoutStep, locale: SiteLocale = "da"): string {
   return `Nedkøling i ${formatStepDuration(step)}`;
 }
 
+function workoutCueVariant(step: WorkoutStep, stepIndex: number, locale: SiteLocale = "da"): string {
+  const variants: Record<WorkoutStep["type"], string[]> =
+    locale === "en"
+      ? {
+          warmup: [
+            "Start easy and let the body wake up.",
+            "Walk briskly, but keep it comfortable.",
+            "Find a calm rhythm before the running starts.",
+          ],
+          run: [
+            "Run calmly and controlled.",
+            "Hold back. This should feel easy.",
+            "You are building stability now.",
+          ],
+          walk: [
+            "Keep this very easy from start to finish.",
+            "Walk calmly and let your heart rate settle.",
+            "Use the break to find your rhythm again.",
+          ],
+          cooldown: [
+            "Let the effort come down gently.",
+            "Keep moving and let the breathing settle.",
+            "Finish calmly. The work is done.",
+          ],
+        }
+      : {
+          warmup: [
+            "Start roligt og lad kroppen vågne.",
+            "Gå raskt, men hold det behageligt.",
+            "Find rytmen, før løbet begynder.",
+          ],
+          run: [
+            "Løb roligt og kontrolleret.",
+            "Hold igen. Det skal føles let.",
+            "Du bygger stabilitet nu.",
+          ],
+          walk: [
+            "Hold det meget let fra start til slut.",
+            "Gå roligt og lad pulsen falde.",
+            "Brug pausen til at finde rytmen igen.",
+          ],
+          cooldown: [
+            "Lad intensiteten falde stille og roligt.",
+            "Hold kroppen i gang og få vejrtrækningen ned.",
+            "Afslut roligt. Arbejdet er gjort.",
+          ],
+        };
+  const options = variants[step.type];
+  if (!options.length) return step.cue || stepCueText(step, locale);
+  return options[(stepIndex + step.durationSec) % options.length];
+}
+
 function shortSessionTitle(title: string): string {
   return title.replace(/^Uge \d+\s*-\s*/i, "").trim();
 }
@@ -622,8 +674,8 @@ function coachingHint(step: WorkoutStep, locale: SiteLocale = "da"): string {
   return "Lad pulsen falde roligt og hold kroppen i bevægelse.";
 }
 
-function buildCue(step: WorkoutStep, mode: AudioMode, locale: SiteLocale = "da"): string {
-  const shortCue = stepCueText(step, locale);
+function buildCue(step: WorkoutStep, mode: AudioMode, locale: SiteLocale = "da", shortCueOverride?: string): string {
+  const shortCue = shortCueOverride ?? stepCueText(step, locale);
   if (mode === "coach") {
     return `${shortCue}. ${coachingHint(step, locale)}`;
   }
@@ -1552,6 +1604,7 @@ export default function Home() {
 
   const lastSpokenStepKey = useRef<string>("");
   const thirtySecCueKey = useRef<string>("");
+  const anticipationHapticKey = useRef<string>("");
   const feedbackSuccessTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const workoutNoticeTimeout = useRef<number | null>(null);
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
@@ -2346,6 +2399,7 @@ export default function Home() {
     setWorkoutInterruptionNotice(null);
     lastSpokenStepKey.current = "";
     thirtySecCueKey.current = "";
+    anticipationHapticKey.current = "";
     lastTickAtRef.current = null;
     hiddenAtRef.current = null;
     wasRunningBeforeHideRef.current = false;
@@ -2434,7 +2488,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!activeSession || !currentStep || audioMode === "off") return;
-    const cue = buildCue(currentStep, audioMode, siteLocale);
+    const cue = buildCue(currentStep, audioMode, siteLocale, workoutCueVariant(currentStep, stepIndex, siteLocale));
     setCueFallbackText(cue);
 
     if (!isRunning) {
@@ -2461,6 +2515,17 @@ export default function Home() {
       setWorkoutInterruptionNotice(buildWorkoutInterruptionNotice({ reason: "audio_interrupted", locale: siteLocale }));
     }
   }, [activeSession, audioMode, currentStep, isRunning, siteLocale, speechEnabled, stepIndex, ttsSupported]);
+
+  useEffect(() => {
+    if (!activeSession || !currentStep || !isRunning || workoutCompleted || remainingSec !== 3) return;
+    if (stepIndex >= activeSession.steps.length - 1) return;
+
+    const key = `${activeSession.id}-${stepIndex}`;
+    if (anticipationHapticKey.current === key) return;
+
+    anticipationHapticKey.current = key;
+    triggerWorkoutHaptic(6);
+  }, [activeSession, currentStep, isRunning, remainingSec, stepIndex, workoutCompleted]);
 
   useEffect(() => {
     if (!activeSession || !currentStep || audioMode === "off" || remainingSec !== 30 || !isRunning) return;
@@ -3351,9 +3416,10 @@ export default function Home() {
     setStepIndex(safeIndex);
     setRemainingSec(activeSession.steps[safeIndex].durationSec);
     setWorkoutCompleted(false);
-    setCueFallbackText(buildCue(activeSession.steps[safeIndex], audioMode, siteLocale));
+    setCueFallbackText(buildCue(activeSession.steps[safeIndex], audioMode, siteLocale, workoutCueVariant(activeSession.steps[safeIndex], safeIndex, siteLocale)));
     lastSpokenStepKey.current = "";
     thirtySecCueKey.current = "";
+    anticipationHapticKey.current = "";
     lastTickAtRef.current = null;
   }
 
@@ -3371,9 +3437,10 @@ export default function Home() {
     setStepNotice(transitionNoticeForStep(activeSession.steps[next], siteLocale));
     setStepIndex(next);
     setRemainingSec(activeSession.steps[next].durationSec);
-    setCueFallbackText(buildCue(activeSession.steps[next], audioMode, siteLocale));
+    setCueFallbackText(buildCue(activeSession.steps[next], audioMode, siteLocale, workoutCueVariant(activeSession.steps[next], next, siteLocale)));
     lastSpokenStepKey.current = "";
     thirtySecCueKey.current = "";
+    anticipationHapticKey.current = "";
     lastTickAtRef.current = null;
     setIsRunning(wasRunning);
   }
@@ -3772,6 +3839,19 @@ export default function Home() {
     if (currentStep?.type === "warmup") return "warmup";
     return "cooldown";
   }, [currentStep?.type]);
+  const currentWorkoutCue = useMemo(
+    () => (currentStep ? workoutCueVariant(currentStep, stepIndex, siteLocale) : ""),
+    [currentStep, siteLocale, stepIndex],
+  );
+  const isPreparingIntervalTransition = Boolean(
+    activeSession &&
+      currentStep &&
+      isRunning &&
+      !workoutCompleted &&
+      remainingSec > 0 &&
+      remainingSec <= 3 &&
+      stepIndex < activeSession.steps.length - 1,
+  );
   const workoutCheckInState = useMemo(
     () => buildWorkoutCheckInState(showDetailedFeedback, siteLocale),
     [showDetailedFeedback, siteLocale],
@@ -5239,9 +5319,12 @@ export default function Home() {
                   <LiveWorkoutCard
                     state={circularWorkoutCardState}
                     transitionKey={`${activeSession.id}-${stepIndex}`}
+                    isAnticipating={isPreparingIntervalTransition}
+                    isPaused={!isRunning}
+                    pausedLabel={siteLocale === "en" ? "PAUSED" : "PAUSE"}
                     title={phaseName(currentStep, siteLocale)}
                     remainingTime={formatClockCompact(remainingSec)}
-                    cue={currentStep.cue}
+                    cue={currentWorkoutCue}
                     heartRate={currentWorkoutHeartRateDisplay?.value}
                     heartRateLabel={currentWorkoutHeartRateDisplay?.label}
                     progress={currentStepProgressPct / 100}

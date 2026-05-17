@@ -3406,7 +3406,7 @@
   display: flex;
   flex-direction: column;
   gap: clamp(0.5rem, 1.18dvh, 0.86rem);
-  animation: workoutActiveEnter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: workoutActiveEnter 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .workoutStateRun .workoutActiveLayout {
@@ -3562,6 +3562,15 @@
   border-color: transparent;
   background: transparent;
   box-shadow: none;
+}
+
+.workoutStatePaused .workoutTopProfileSegmentCurrent {
+  opacity: 0.34;
+  transform: scaleY(0.64);
+}
+
+.workoutStatePaused .workoutSessionOverview {
+  opacity: 0.62;
 }
 
 .workoutStatePaused .phaseLabel,
@@ -4226,7 +4235,7 @@
 @keyframes workoutActiveEnter {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(6px);
     filter: brightness(0.96);
   }
   to {

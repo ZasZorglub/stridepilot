@@ -13,7 +13,10 @@ type LiveWorkoutCardPreviewData = {
 
 type LiveWorkoutCardProps = LiveWorkoutCardPreviewData & {
   finalHint?: string;
+  isAnticipating?: boolean;
+  isPaused?: boolean;
   notice?: string;
+  pausedLabel?: string;
   transitionKey?: string | number;
 };
 
@@ -40,7 +43,10 @@ export function LiveWorkoutCard({
   heartRateLabel,
   progress,
   finalHint,
+  isAnticipating = false,
+  isPaused = false,
   notice,
+  pausedLabel = "PAUSED",
   transitionKey,
 }: LiveWorkoutCardProps) {
   const normalizedProgress = Math.min(Math.max(progress, 0), 1);
@@ -48,7 +54,13 @@ export function LiveWorkoutCard({
   const contentTransitionKey = transitionKey ?? `${state}-${title}`;
 
   return (
-    <section className={styles.circularCard} data-state={state} aria-label="Live workout">
+    <section
+      className={styles.circularCard}
+      data-state={state}
+      data-anticipating={isAnticipating ? "true" : undefined}
+      data-paused={isPaused ? "true" : undefined}
+      aria-label={isPaused ? "Live workout paused" : "Live workout"}
+    >
       {notice && <p className={styles.notice}>{notice}</p>}
       <div className={styles.circularRingWrap}>
         <svg className={styles.circularRing} viewBox="0 0 220 220" aria-hidden="true">
@@ -64,7 +76,7 @@ export function LiveWorkoutCard({
           />
         </svg>
         <div className={styles.circularCenter}>
-          <span className={styles.circularNow}>NU</span>
+          <span className={styles.circularNow}>{isPaused ? pausedLabel : "NU"}</span>
           <h2 key={`title-${contentTransitionKey}`}>{title}</h2>
           <strong key={`time-${contentTransitionKey}`}>{remainingTime}</strong>
           {hasHeartRate && (

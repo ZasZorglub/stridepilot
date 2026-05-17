@@ -46,11 +46,12 @@
   stroke-linecap: round;
   stroke-dasharray: var(--progress) 1;
   stroke-dashoffset: 0;
-  animation: circularRingAccentEnter 560ms ease-out both;
+  animation: circularRingAccentEnter 240ms ease-out both;
   transition:
-    stroke-dasharray 900ms linear,
-    stroke 520ms ease,
-    opacity 320ms ease;
+    stroke-dasharray 320ms linear,
+    stroke 240ms ease,
+    opacity 180ms ease,
+    filter 180ms ease;
 }
 
 .circularCard[data-state="walk"] .circularRingProgress {
@@ -62,6 +63,20 @@
 .circularCard[data-state="cooldown"] .circularRingProgress {
   stroke: rgba(198, 221, 233, 0.94);
   stroke-linecap: butt;
+}
+
+.circularCard[data-anticipating="true"] .circularRingProgress {
+  animation: circularAnticipation 480ms ease-out both;
+  filter: drop-shadow(0 0 5px rgba(218, 236, 247, 0.16));
+}
+
+.circularCard[data-paused="true"] .circularRingProgress {
+  opacity: 0.36;
+  filter: none;
+}
+
+.circularCard[data-paused="true"] .circularRingBase {
+  stroke: rgba(196, 211, 222, 0.18);
 }
 
 .circularCenter {
@@ -80,6 +95,19 @@
     0 12px 26px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.028),
     inset 0 0 0 1px rgba(164, 193, 218, 0.046);
+  transition:
+    background 220ms ease,
+    box-shadow 220ms ease,
+    opacity 180ms ease;
+}
+
+.circularCard[data-paused="true"] .circularCenter {
+  background:
+    radial-gradient(circle at 50% 20%, rgba(154, 166, 178, 0.055), transparent 46%),
+    linear-gradient(180deg, rgba(10, 17, 24, 0.7), rgba(3, 7, 12, 0.78));
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.08),
+    inset 0 0 0 1px rgba(210, 222, 232, 0.08);
 }
 
 .circularNow {
@@ -87,6 +115,11 @@
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.12em;
+  transition: color 180ms ease;
+}
+
+.circularCard[data-paused="true"] .circularNow {
+  color: rgba(246, 250, 252, 0.78);
 }
 
 .circularCenter h2 {
@@ -96,7 +129,7 @@
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
-  animation: circularPhaseEnter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: circularPhaseEnter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .circularCenter > strong {
@@ -106,7 +139,13 @@
   font-variant-numeric: tabular-nums;
   line-height: 0.9;
   letter-spacing: 0;
-  animation: circularTimerEnter 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: circularTimerEnter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.circularCard[data-paused="true"] .circularCenter h2,
+.circularCard[data-paused="true"] .circularCenter > strong,
+.circularCard[data-paused="true"] .circularHeartRate {
+  opacity: 0.62;
 }
 
 .circularHeartRate {
@@ -141,7 +180,20 @@
   font-weight: 590;
   line-height: 1.56;
   text-shadow: 0 12px 30px rgba(0, 0, 0, 0.36);
-  animation: circularCueEnter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: circularCueEnter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition:
+    color 180ms ease,
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.circularCard[data-anticipating="true"] .circularCue {
+  transform: translateY(-1px);
+}
+
+.circularCard[data-paused="true"] .circularCue {
+  opacity: 0.72;
+  color: rgba(224, 234, 241, 0.8);
 }
 
 @keyframes circularPhaseEnter {
@@ -179,10 +231,19 @@
 
 @keyframes circularRingAccentEnter {
   from {
-    opacity: 0.3;
+    opacity: 0.42;
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes circularAnticipation {
+  0%, 100% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 0.72;
   }
 }
 
