@@ -5142,16 +5142,18 @@ export default function Home() {
                 </button>
                 <div className={styles.workoutCountdownCard}>
                   <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Starting in" : "Starter om"}</p>
-                  <h2 className={styles.workoutCountdownTitle}>{sessionDisplayTitle(activeSession, goal.distance, siteLocale)}</h2>
-                  <p className={styles.subtleInline}>
+                  <div className={styles.workoutCountdownNumber}>{workoutStartCountdown}</div>
+                  <div className={styles.workoutCountdownFirstBlock}>
+                    <p className={styles.workoutCountdownActionLabel}>{siteLocale === "en" ? "Start with" : "Start med"}</p>
+                    <h2 className={styles.workoutCountdownFirst}>{workoutStepPreview(currentStep, siteLocale)}</h2>
+                  </div>
+                  <p className={styles.workoutCountdownMeta}>
+                    {sessionDisplayTitle(activeSession, goal.distance, siteLocale)} ·{" "}
                     {isGoalEventSession(activeSession)
                       ? `${goalEventDistanceLabel(goal.distance, siteLocale)} · ${siteLocale === "en" ? "race day" : "måldag"}`
                       : formatReadableDurationFromSeconds(activeSessionDuration * 60)}
                   </p>
-                  <div className={styles.workoutCountdownNumber}>{workoutStartCountdown}</div>
-                  <p className={styles.workoutCountdownFirst}>
-                    {siteLocale === "en" ? "First:" : "Først:"} {workoutStepPreview(currentStep, siteLocale)}
-                  </p>
+                  <p className={styles.workoutCountdownWeek}>{sessionWeekBadge(activeSession.week, siteLocale)}</p>
                 </div>
               </>
             )}
