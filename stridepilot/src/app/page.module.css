@@ -3573,6 +3573,20 @@
   font-variant-numeric: tabular-nums;
 }
 
+.workoutPolishQaMarker {
+  margin: 0 0 0.48rem;
+  justify-self: start;
+  border: 1px solid rgba(246, 250, 252, 0.42);
+  border-radius: 999px;
+  background: rgba(246, 250, 252, 0.12);
+  color: rgba(246, 250, 252, 0.96);
+  padding: 0.28rem 0.54rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 .nextCueCard {
   margin-top: 0.62rem;
   display: grid;

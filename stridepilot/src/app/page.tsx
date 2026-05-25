@@ -5094,6 +5094,7 @@ export default function Home() {
             )}
             {activeSession && currentStep && !workoutCompleted && workoutStartCountdown === null && (
               <>
+                <p className={styles.workoutPolishQaMarker}>QA WORKOUT POLISH V2</p>
                 <div className={styles.workoutCompactTopBar}>
                   <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label={ui.workout.closeWorkoutAria}>
                     {workoutActionState.closeLabel}
