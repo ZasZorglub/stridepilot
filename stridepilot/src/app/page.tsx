@@ -487,6 +487,64 @@ function stepCueText(step: WorkoutStep, locale: SiteLocale = "da"): string {
   return `Nedkøling i ${formatStepDuration(step)}`;
 }
 
+function workoutStepPreview(step: WorkoutStep | null, locale: SiteLocale = "da"): string {
+  if (!step) return locale === "en" ? "Ready" : "Klar";
+  return `${formatStepDuration(step)} ${phaseName(step, locale).toLowerCase()}`;
+}
+
+function workoutCueVariant(step: WorkoutStep, stepIndex: number, locale: SiteLocale = "da"): string {
+  const variants: Record<WorkoutStep["type"], string[]> =
+    locale === "en"
+      ? {
+          warmup: [
+            "Start easy and let the body wake up.",
+            "Walk briskly, but keep it comfortable.",
+            "Find a calm rhythm before the running starts.",
+          ],
+          run: [
+            "Run calmly and controlled.",
+            "Hold back. This should feel easy.",
+            "You are building stability now.",
+          ],
+          walk: [
+            "Keep this very easy from start to finish.",
+            "Walk calmly and let your heart rate settle.",
+            "Use the break to find your rhythm again.",
+          ],
+          cooldown: [
+            "Let the effort come down gently.",
+            "Keep moving and let the breathing settle.",
+            "Finish calmly. The work is done.",
+          ],
+        }
+      : {
+          warmup: [
+            "Start roligt og lad kroppen vågne.",
+            "Gå raskt, men hold det behageligt.",
+            "Find rytmen, før løbet begynder.",
+          ],
+          run: [
+            "Løb roligt og kontrolleret.",
+            "Hold igen. Det skal føles let.",
+            "Du bygger stabilitet nu.",
+          ],
+          walk: [
+            "Hold det meget let fra start til slut.",
+            "Gå roligt og lad pulsen falde.",
+            "Brug pausen til at finde rytmen igen.",
+          ],
+          cooldown: [
+            "Lad intensiteten falde stille og roligt.",
+            "Hold kroppen i gang og få vejrtrækningen ned.",
+            "Afslut roligt. Arbejdet er gjort.",
+          ],
+        };
+
+  const options = variants[step.type];
+  if (!options.length) return step.cue || stepCueText(step, locale);
+  return options[(stepIndex + step.durationSec) % options.length];
+}
+
 function shortSessionTitle(title: string): string {
   return title.replace(/^Uge \d+\s*-\s*/i, "").trim();
 }
@@ -561,8 +619,8 @@ function coachingHint(step: WorkoutStep, locale: SiteLocale = "da"): string {
   return "Lad pulsen falde roligt og hold kroppen i bevægelse.";
 }
 
-function buildCue(step: WorkoutStep, mode: AudioMode, locale: SiteLocale = "da"): string {
-  const shortCue = stepCueText(step, locale);
+function buildCue(step: WorkoutStep, mode: AudioMode, locale: SiteLocale = "da", shortCueOverride?: string): string {
+  const shortCue = shortCueOverride ?? stepCueText(step, locale);
   if (mode === "coach") {
     return `${shortCue}. ${coachingHint(step, locale)}`;
   }
@@ -571,6 +629,16 @@ function buildCue(step: WorkoutStep, mode: AudioMode, locale: SiteLocale = "da")
 
 function transitionNoticeForStep(step: WorkoutStep, locale: SiteLocale = "da"): string {
   return locale === "en" ? `Now: ${phaseName(step, locale)}` : `Nu: ${phaseName(step, locale)}`;
+}
+
+function triggerWorkoutHaptic(pattern: number | number[]): void {
+  if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
+  try {
+    // The Vibration API is best-effort and is not exposed by iOS Safari.
+    navigator.vibrate(pattern);
+  } catch {
+    // Unsupported browsers should stay quiet.
+  }
 }
 
 function introSeenKey(userId: string): string {
@@ -1485,6 +1553,7 @@ export default function Home() {
 
   const lastSpokenStepKey = useRef<string>("");
   const thirtySecCueKey = useRef<string>("");
+  const anticipationHapticKey = useRef<string>("");
   const feedbackSuccessTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const workoutNoticeTimeout = useRef<number | null>(null);
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
@@ -2276,6 +2345,7 @@ export default function Home() {
     setWorkoutInterruptionNotice(null);
     lastSpokenStepKey.current = "";
     thirtySecCueKey.current = "";
+    anticipationHapticKey.current = "";
     lastTickAtRef.current = null;
     hiddenAtRef.current = null;
     wasRunningBeforeHideRef.current = false;
@@ -2363,7 +2433,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!activeSession || !currentStep || audioMode === "off") return;
-    const cue = buildCue(currentStep, audioMode, siteLocale);
+    const cue = buildCue(currentStep, audioMode, siteLocale, workoutCueVariant(currentStep, stepIndex, siteLocale));
     setCueFallbackText(cue);
 
     if (!isRunning) {
@@ -2390,6 +2460,17 @@ export default function Home() {
       setWorkoutInterruptionNotice(buildWorkoutInterruptionNotice({ reason: "audio_interrupted", locale: siteLocale }));
     }
   }, [activeSession, audioMode, currentStep, isRunning, siteLocale, speechEnabled, stepIndex, ttsSupported]);
+
+  useEffect(() => {
+    if (!activeSession || !currentStep || !isRunning || workoutCompleted || remainingSec !== 3) return;
+    if (stepIndex >= activeSession.steps.length - 1) return;
+
+    const key = `${activeSession.id}-${stepIndex}`;
+    if (anticipationHapticKey.current === key) return;
+
+    anticipationHapticKey.current = key;
+    triggerWorkoutHaptic(6);
+  }, [activeSession, currentStep, isRunning, remainingSec, stepIndex, workoutCompleted]);
 
   useEffect(() => {
     if (!activeSession || !currentStep || audioMode === "off" || remainingSec !== 30 || !isRunning) return;
@@ -2427,6 +2508,7 @@ export default function Home() {
     setStepIndex(nextStep);
     setRemainingSec(activeSession.steps[nextStep].durationSec);
     setStepNotice(transitionNoticeForStep(activeSession.steps[nextStep], siteLocale));
+    triggerWorkoutHaptic([10, 35, 10]);
   }, [remainingSec, stepIndex, activeSession, finishWorkout, siteLocale]);
 
   useEffect(() => {
@@ -3192,6 +3274,13 @@ export default function Home() {
     setStage("profile");
   }
 
+  function continueProgramFromIntro() {
+    if (authUser?.id) {
+      window.localStorage.setItem(introSeenKey(authUser.id), "1");
+    }
+    setStage("program");
+  }
+
   function openStage(nextStage: Stage) {
     window.scrollTo({ top: 0, behavior: "smooth" });
     setStage(nextStage);
@@ -3276,9 +3365,10 @@ export default function Home() {
     setStepIndex(safeIndex);
     setRemainingSec(activeSession.steps[safeIndex].durationSec);
     setWorkoutCompleted(false);
-    setCueFallbackText(buildCue(activeSession.steps[safeIndex], audioMode, siteLocale));
+    setCueFallbackText(buildCue(activeSession.steps[safeIndex], audioMode, siteLocale, workoutCueVariant(activeSession.steps[safeIndex], safeIndex, siteLocale)));
     lastSpokenStepKey.current = "";
     thirtySecCueKey.current = "";
+    anticipationHapticKey.current = "";
     lastTickAtRef.current = null;
   }
 
@@ -3295,10 +3385,12 @@ export default function Home() {
     setStepNotice(transitionNoticeForStep(activeSession.steps[next], siteLocale));
     setStepIndex(next);
     setRemainingSec(activeSession.steps[next].durationSec);
-    setCueFallbackText(buildCue(activeSession.steps[next], audioMode, siteLocale));
+    setCueFallbackText(buildCue(activeSession.steps[next], audioMode, siteLocale, workoutCueVariant(activeSession.steps[next], next, siteLocale)));
     lastSpokenStepKey.current = "";
     thirtySecCueKey.current = "";
+    anticipationHapticKey.current = "";
     lastTickAtRef.current = null;
+    triggerWorkoutHaptic([10, 35, 10]);
     setIsRunning(wasRunning);
   }
 
@@ -3684,6 +3776,19 @@ export default function Home() {
     () => (currentWorkoutSegment ? workoutSegmentAccent(currentWorkoutSegment) : workoutSegmentAccent({ zoneKey: "z2" })),
     [currentWorkoutSegment],
   );
+  const currentWorkoutCue = useMemo(
+    () => (currentStep ? workoutCueVariant(currentStep, stepIndex, siteLocale) : ""),
+    [currentStep, siteLocale, stepIndex],
+  );
+  const isPreparingIntervalTransition = Boolean(
+    activeSession &&
+      currentStep &&
+      isRunning &&
+      !workoutCompleted &&
+      remainingSec > 0 &&
+      remainingSec <= 3 &&
+      stepIndex < activeSession.steps.length - 1,
+  );
   const workoutCheckInState = useMemo(
     () => buildWorkoutCheckInState(showDetailedFeedback, siteLocale),
     [showDetailedFeedback, siteLocale],
@@ -3988,14 +4093,26 @@ export default function Home() {
 
       {stage === "intro" && (
         <section className={`${styles.centerCard} ${styles.introCard}`}>
-          <h2>{siteCopy.introTitle}</h2>
-          <p className={styles.subtle}>{siteCopy.introBody}</p>
-          <p className={styles.subtleInline}>{siteCopy.introBullets[0]}</p>
-          <p className={styles.subtleInline}>{siteCopy.introBullets[1]}</p>
-          <div className={styles.topActions}>
+          <h2>{siteLocale === "en" ? "How do you want to start?" : "Hvordan vil du starte?"}</h2>
+          <p className={styles.subtle}>
+            {siteLocale === "en"
+              ? "Continue your current plan or design a plan from your own starting point."
+              : "Fortsæt dit aktuelle program, eller design et program ud fra dit eget udgangspunkt."}
+          </p>
+          <div className={styles.startChoiceGrid}>
+            {hasSetup && (
+              <button className={styles.primaryBtn} onClick={continueProgramFromIntro}>
+                {siteLocale === "en" ? "Continue my program" : "Fortsæt mit program"}
+              </button>
+            )}
             <button className={styles.primaryBtn} onClick={completeIntro}>
-              {siteCopy.startLabel}
+              {siteLocale === "en" ? "Design my own program" : "Design mit eget program"}
             </button>
+            <p className={styles.subtleInline}>
+              {siteLocale === "en"
+                ? "StridePilot still adapts the plan from your level and feedback."
+                : "StridePilot tilpasser stadig programmet ud fra dit niveau og din feedback."}
+            </p>
           </div>
         </section>
       )}
@@ -5053,14 +5170,18 @@ export default function Home() {
                 <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label={ui.workout.closeWorkoutAria}>
                   {workoutActionState.closeLabel}
                 </button>
-                <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Starting" : "Starter"}</p>
-                <h2 className={styles.workoutCountdownTitle}>{sessionDisplayTitle(activeSession, goal.distance, siteLocale)}</h2>
+                <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Starting in" : "Starter om"}</p>
+                <div className={styles.workoutCountdownNumber}>{workoutStartCountdown}</div>
+                <div className={styles.workoutCountdownFirstBlock}>
+                  <p className={styles.workoutCountdownActionLabel}>{siteLocale === "en" ? "First" : "Først"}</p>
+                  <h2 className={styles.workoutCountdownTitle}>{workoutStepPreview(currentStep, siteLocale)}</h2>
+                </div>
                 <p className={styles.subtleInline}>
+                  {sessionDisplayTitle(activeSession, goal.distance, siteLocale)} ·{" "}
                   {isGoalEventSession(activeSession)
                     ? `${goalEventDistanceLabel(goal.distance, siteLocale)} · ${siteLocale === "en" ? "race day" : "måldag"}`
                     : formatReadableDurationFromSeconds(activeSessionDuration * 60)}
                 </p>
-                <div className={styles.workoutCountdownNumber}>{workoutStartCountdown}</div>
               </div>
             )}
             {activeSession && currentStep && !workoutCompleted && workoutStartCountdown === null && (
@@ -5075,18 +5196,18 @@ export default function Home() {
                 <div className={styles.workoutSessionOverview}>
                   <div className={styles.workoutTopMetrics}>
                     <div className={styles.workoutMetricCard}>
-                      <span>{siteLocale === "en" ? "Segment time" : "Segment tid"}</span>
+                      <span>{siteLocale === "en" ? "Now" : "Nu"}</span>
                       <strong>{formatClock(currentStep.durationSec)}</strong>
                     </div>
                     <div className={styles.workoutMetricCard}>
-                      <span>{siteLocale === "en" ? "Total elapsed" : "Total tid"}</span>
+                      <span>{siteLocale === "en" ? "Elapsed" : "Tid gået"}</span>
                       <strong>{formatClock(totalElapsedSec)}</strong>
                     </div>
                   </div>
                   <div className={styles.workoutNextSummary}>
                     <div>
-                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Next" : "Næste"}</p>
-                      <h3>{nextWorkoutStep ? phaseName(nextWorkoutStep, siteLocale) : siteLocale === "en" ? "Finish workout" : "Afslut passet"}</h3>
+                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "After this" : "Bagefter"}</p>
+                      <h3>{nextWorkoutStep ? workoutStepPreview(nextWorkoutStep, siteLocale) : siteLocale === "en" ? "Finish workout" : "Afslut passet"}</h3>
                     </div>
                     <div className={styles.workoutNextMetaGrid}>
                       <span>
@@ -5123,7 +5244,11 @@ export default function Home() {
                     </div>
                   )}
                 </div>
-                <div className={styles.liveWorkoutCard}>
+                <div
+                  className={styles.liveWorkoutCard}
+                  data-anticipating={isPreparingIntervalTransition ? "true" : undefined}
+                  data-paused={!isRunning ? "true" : undefined}
+                >
                   {stepNotice && <p className={styles.stepNotice}>{stepNotice}</p>}
                   <div className={styles.trackTimerShell}>
                     <svg viewBox="0 0 280 220" className={styles.trackTimerSvg} aria-hidden="true">
@@ -5143,20 +5268,24 @@ export default function Home() {
                         }}
                       />
                     </svg>
-                    <div className={styles.trackTimerCenter}>
-                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Current segment" : "Aktuelt trin"}</p>
+                    <div className={styles.trackTimerCenter} key={`${activeSession.id}-${stepIndex}`}>
+                      <p className={styles.workoutMiniLabel}>{isRunning ? (siteLocale === "en" ? "Current segment" : "Aktuelt trin") : siteLocale === "en" ? "Paused" : "Pause"}</p>
                       <p className={styles.phaseLabel}>{phaseName(currentStep, siteLocale)}</p>
                       <div className={styles.timerBig}>{formatClock(remainingSec)}</div>
+                      {isPreparingIntervalTransition && (
+                        <p className={styles.trackTimerAnticipation}>{siteLocale === "en" ? `Switches in ${remainingSec}` : `Skifter om ${remainingSec}`}</p>
+                      )}
                       <p className={styles.trackTimerZone}>{currentWorkoutHeartRateState?.zoneLabel ?? (siteLocale === "en" ? "Easy effort" : "Roligt arbejde")}</p>
                       {stepSupportingLabel(currentStep, siteLocale) && <p className={styles.trackTimerType}>{stepSupportingLabel(currentStep, siteLocale)}</p>}
                     </div>
                   </div>
+                  <p className={styles.trackTimerCue}>{currentWorkoutCue || cueFallbackText}</p>
                   {isLastWorkoutStep && (
                     <p className={styles.workoutFinalHint}>{siteLocale === "en" ? "Ready to finish the workout." : "Passet er klar til at blive afsluttet."}</p>
                   )}
                 </div>
 
-                <div className={styles.workoutPrimaryAction}>
+                <div className={styles.workoutPrimaryAction} data-paused={!isRunning ? "true" : undefined}>
                   {isLastWorkoutStep ? (
                     <button className={styles.completeWorkoutBtn} onClick={nextStep} type="button">
                       {workoutActionState.finishLabel}
@@ -5172,6 +5301,7 @@ export default function Home() {
                             setWorkoutInterruptionNotice(null);
                             lastTickAtRef.current = Date.now();
                           }
+                          triggerWorkoutHaptic(next ? 12 : 8);
                           return next;
                         });
                       }}
@@ -5198,6 +5328,7 @@ export default function Home() {
                                   setWorkoutInterruptionNotice(null);
                                   lastTickAtRef.current = Date.now();
                                 }
+                                triggerWorkoutHaptic(next ? 12 : 8);
                                 return next;
                               });
                             }}

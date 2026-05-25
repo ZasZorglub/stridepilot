@@ -986,6 +986,49 @@
   }
 }
 
+@keyframes workoutPhaseBeat {
+  from {
+    opacity: 0.62;
+    transform: translateY(5px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes workoutAnticipationArc {
+  0%,
+  100% {
+    opacity: 1;
+    stroke-width: 16;
+  }
+  45% {
+    opacity: 0.68;
+    stroke-width: 18;
+  }
+}
+
+@keyframes workoutAnticipationCopy {
+  0%,
+  100% {
+    opacity: 0.74;
+  }
+  45% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trackTimerCenter,
+  .trackTimerProgress,
+  .trackTimerAnticipation,
+  .stepNotice {
+    animation: none;
+    transition-duration: 1ms;
+  }
+}
+
 .valueGrid {
   display: grid;
   gap: 0.65rem;
@@ -2078,11 +2121,32 @@
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.28);
 }
 
+.startChoiceGrid {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.62rem;
+}
+
+.startChoiceGrid .primaryBtn,
+.startChoiceGrid .secondaryBtn {
+  width: 100%;
+  min-height: 3.2rem;
+}
+
 .workoutPrimaryAction {
   margin-top: 0.68rem;
   margin-bottom: 0.42rem;
   display: grid;
   gap: 0.14rem;
+}
+
+.workoutPrimaryAction[data-paused="true"] .primaryBtn {
+  border-color: rgba(169, 218, 241, 0.22);
+  background: linear-gradient(180deg, rgba(85, 178, 224, 0.92), rgba(48, 137, 179, 0.95));
+  color: rgba(251, 253, 255, 0.98);
+  box-shadow:
+    0 8px 18px rgba(12, 48, 72, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .workoutTopBar {
@@ -3194,8 +3258,9 @@
 
 .workoutSessionOverview {
   display: grid;
-  gap: 0.62rem;
-  margin-bottom: 0.72rem;
+  gap: 0.48rem;
+  margin-bottom: 0.52rem;
+  opacity: 0.9;
 }
 
 .workoutTopMetrics {
@@ -3205,16 +3270,16 @@
 }
 
 .workoutMetricCard {
-  border: 1px solid rgba(52, 165, 218, 0.14);
-  border-radius: 12px;
-  background: rgba(18, 23, 29, 0.38);
-  padding: 0.6rem 0.68rem;
+  border: 1px solid rgba(193, 220, 234, 0.1);
+  border-radius: 10px;
+  background: rgba(18, 23, 29, 0.22);
+  padding: 0.48rem 0.58rem;
   display: grid;
   gap: 0.14rem;
 }
 
 .workoutMetricCard span {
-  color: rgba(156, 207, 230, 0.76);
+  color: rgba(205, 225, 235, 0.62);
   font-size: 0.66rem;
   font-weight: 650;
   letter-spacing: 0.05em;
@@ -3222,25 +3287,25 @@
 }
 
 .workoutMetricCard strong {
-  color: #f2f5f7;
-  font-size: 1.02rem;
+  color: rgba(242, 245, 247, 0.9);
+  font-size: 0.98rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .workoutNextSummary {
-  border: 1px solid rgba(52, 165, 218, 0.16);
-  border-radius: 14px;
-  background: rgba(18, 23, 29, 0.46);
-  padding: 0.74rem 0.8rem;
+  border: 1px solid rgba(193, 220, 234, 0.11);
+  border-radius: 12px;
+  background: rgba(18, 23, 29, 0.26);
+  padding: 0.58rem 0.66rem;
   display: grid;
-  gap: 0.46rem;
+  gap: 0.34rem;
 }
 
 .workoutNextSummary h3 {
-  margin: 0.08rem 0 0;
-  color: #f2f5f7;
-  font-size: 1rem;
+  margin: 0.05rem 0 0;
+  color: rgba(242, 245, 247, 0.92);
+  font-size: 0.98rem;
 }
 
 .workoutNextMetaGrid {
@@ -3255,7 +3320,7 @@
 }
 
 .workoutNextMetaGrid small {
-  color: rgba(156, 207, 230, 0.74);
+  color: rgba(205, 225, 235, 0.56);
   font-size: 0.62rem;
   font-weight: 650;
   letter-spacing: 0.05em;
@@ -3263,8 +3328,8 @@
 }
 
 .workoutNextMetaGrid strong {
-  color: #dce6ed;
-  font-size: 0.8rem;
+  color: rgba(220, 230, 237, 0.76);
+  font-size: 0.78rem;
   line-height: 1.25;
 }
 
@@ -3276,14 +3341,20 @@
 
 .workoutTopProfileSegment {
   min-width: 5px;
-  height: 12px;
+  height: 8px;
   border-radius: 999px;
-  opacity: 0.82;
+  opacity: 0.54;
+  transition:
+    height 220ms ease,
+    opacity 220ms ease,
+    transform 220ms ease,
+    filter 220ms ease;
 }
 
 .workoutTopProfileSegmentCurrent {
-  height: 18px;
+  height: 15px;
   opacity: 1;
+  filter: saturate(1.08);
 }
 
 .liveWorkoutCard,
@@ -3299,9 +3370,14 @@
 .liveWorkoutCard {
   display: grid;
   gap: 0.56rem;
-  box-shadow: 0 14px 30px rgba(6, 16, 24, 0.2);
+  box-shadow: 0 14px 30px rgba(6, 16, 24, 0.14);
   padding: 1.05rem 0.95rem;
   justify-items: center;
+  transition:
+    background 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    opacity 220ms ease;
 }
 
 .workoutTimerMeta {
@@ -3313,7 +3389,7 @@
 
 .workoutCountdownCard {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.5rem;
   text-align: center;
   border: 1px solid rgba(52, 165, 218, 0.18);
   border-radius: 18px;
@@ -3328,17 +3404,31 @@
 .workoutCountdownTitle {
   margin: 0;
   color: #f2f5f7;
-  font-size: 1.15rem;
+  font-size: 1.3rem;
   line-height: 1.2;
 }
 
 .workoutCountdownNumber {
-  margin-top: 0.2rem;
+  margin-top: 0.1rem;
   color: #f2f5f7;
   font-size: clamp(4rem, 24vw, 6rem);
   line-height: 1;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.workoutCountdownFirstBlock {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.workoutCountdownActionLabel {
+  margin: 0;
+  color: rgba(156, 207, 230, 0.74);
+  font-size: 0.72rem;
+  font-weight: 720;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
 .workoutCompactTopBar {
@@ -3390,7 +3480,11 @@
 }
 
 .trackTimerProgress {
-  transition: stroke-dasharray 800ms linear, stroke 220ms ease;
+  transition:
+    stroke-dasharray 340ms linear,
+    stroke 220ms ease,
+    filter 180ms ease,
+    opacity 180ms ease;
 }
 
 .trackTimerCenter {
@@ -3401,6 +3495,7 @@
   justify-items: center;
   text-align: center;
   padding: 2.3rem 2.2rem;
+  animation: workoutPhaseBeat 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .trackTimerZone {
@@ -3410,11 +3505,88 @@
   font-weight: 650;
 }
 
+.trackTimerAnticipation {
+  margin: 0.2rem 0 0;
+  color: rgba(246, 250, 252, 0.9);
+  font-size: 0.68rem;
+  font-weight: 760;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+  animation: workoutAnticipationCopy 760ms ease-in-out infinite;
+}
+
 .trackTimerType {
   margin: 0.04rem 0 0;
   color: #dce6ed;
   font-size: 0.84rem;
   line-height: 1.3;
+}
+
+.trackTimerCue {
+  max-width: 24rem;
+  margin: 0.1rem auto 0;
+  color: rgba(246, 250, 252, 0.9);
+  font-size: 0.95rem;
+  font-weight: 570;
+  line-height: 1.45;
+  text-align: center;
+  text-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+  transition:
+    color 180ms ease,
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.liveWorkoutCard[data-anticipating="true"] {
+  border-color: rgba(205, 225, 235, 0.22);
+  background: rgba(52, 165, 218, 0.1);
+}
+
+.liveWorkoutCard[data-anticipating="true"] .trackTimerProgress {
+  animation: workoutAnticipationArc 760ms ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 5px rgba(223, 240, 250, 0.28))
+    drop-shadow(0 0 12px rgba(52, 165, 218, 0.16));
+}
+
+.liveWorkoutCard[data-anticipating="true"] .trackTimerCue {
+  color: #ffffff;
+  transform: translateY(-3px);
+}
+
+.liveWorkoutCard[data-paused="true"] {
+  border-color: rgba(193, 220, 234, 0.12);
+  background: rgba(18, 23, 29, 0.32);
+  box-shadow: 0 8px 18px rgba(6, 16, 24, 0.12);
+}
+
+.liveWorkoutCard[data-paused="true"] .trackTimerProgress {
+  opacity: 0.24;
+  filter: none;
+}
+
+.liveWorkoutCard[data-paused="true"] .trackTimerBase {
+  opacity: 0.62;
+}
+
+.liveWorkoutCard[data-paused="true"] .phaseLabel,
+.liveWorkoutCard[data-paused="true"] .timerBig,
+.liveWorkoutCard[data-paused="true"] .trackTimerZone,
+.liveWorkoutCard[data-paused="true"] .trackTimerType {
+  opacity: 0.58;
+}
+
+.liveWorkoutCard[data-paused="true"] .workoutMiniLabel {
+  border: 1px solid rgba(226, 236, 244, 0.22);
+  border-radius: 999px;
+  background: rgba(226, 236, 244, 0.08);
+  color: rgba(246, 250, 252, 0.94);
+  padding: 0.24rem 0.52rem;
+}
+
+.liveWorkoutCard[data-paused="true"] .trackTimerCue {
+  opacity: 0.62;
 }
 
 .workoutSequenceBar {
@@ -3622,12 +3794,17 @@
 }
 
 .stepNotice {
-  margin: 0 0 0.08rem;
-  color: rgba(156, 207, 230, 0.88);
+  margin: 0 0 0.1rem;
+  border: 1px solid rgba(205, 225, 235, 0.16);
+  border-radius: 999px;
+  background: rgba(205, 225, 235, 0.07);
+  color: rgba(246, 250, 252, 0.92);
+  padding: 0.32rem 0.62rem;
   font-size: 0.78rem;
-  font-weight: 650;
-  letter-spacing: 0.03em;
+  font-weight: 720;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  animation: workoutPhaseBeat 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .feedbackFlow {
