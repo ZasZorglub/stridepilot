@@ -505,6 +505,7 @@ function workoutStepPreview(step: WorkoutStep | null, locale: SiteLocale = "da")
 function triggerWorkoutHaptic(pattern: number | number[]): void {
   if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
   try {
+    // The Vibration API is best-effort and is not exposed by iOS Safari.
     navigator.vibrate(pattern);
   } catch {
     // Haptics are best-effort only; unsupported browsers should stay quiet.
@@ -2722,7 +2723,7 @@ export default function Home() {
       window.localStorage.removeItem(setupKey(data.user.id));
       window.localStorage.removeItem(profileKey(data.user.id));
     }
-    setStage(hasProfile ? (hasPlan ? "program" : "profile") : window.localStorage.getItem(introSeenKey(data.user.id)) === "1" ? "profile" : "intro");
+    setStage(hasProfile ? (hasPlan ? "program" : "profile") : "intro");
   }
 
   async function logout() {
@@ -2757,7 +2758,7 @@ export default function Home() {
     setStage(window.localStorage.getItem(introSeenKey("demo-user")) === "1" ? "profile" : "intro");
   }
 
-  async function requestPlanRecommendation(options?: { skipLowFrequencyGuardrail?: boolean }) {
+  async function requestPlanRecommendation(options?: { skipLowFrequencyGuardrail?: boolean; ambitionOverride?: PlanAmbition }) {
     setError(null);
     setFeedbackConfirmation(null);
     setPlanTradeoff(null);
@@ -2810,7 +2811,7 @@ export default function Home() {
           goal: effectiveGoal,
           selectedStartDate,
           locale: siteLocale,
-          ambition: planAmbition,
+          ambition: options?.ambitionOverride ?? planAmbition,
         }),
       });
 
@@ -3322,11 +3323,26 @@ export default function Home() {
   const canOpenProgram = Boolean(authUser && hasSetup);
   const canOpenWorkout = Boolean(plan);
 
-  function completeIntro() {
+  function markIntroSeen() {
     if (authUser?.id) {
       window.localStorage.setItem(introSeenKey(authUser.id), "1");
     }
+  }
+
+  function completeIntro() {
+    markIntroSeen();
     setStage("profile");
+  }
+
+  function continueProgramFromIntro() {
+    markIntroSeen();
+    setStage("program");
+  }
+
+  async function startStandardProgramFromIntro() {
+    markIntroSeen();
+    setPlanAmbition("standard");
+    await requestPlanRecommendation({ ambitionOverride: "standard" });
   }
 
   function openStage(nextStage: Stage) {
@@ -4158,14 +4174,29 @@ export default function Home() {
 
       {stage === "intro" && (
         <section className={`${styles.centerCard} ${styles.introCard}`}>
-          <h2>{siteCopy.introTitle}</h2>
-          <p className={styles.subtle}>{siteCopy.introBody}</p>
-          <p className={styles.subtleInline}>{siteCopy.introBullets[0]}</p>
-          <p className={styles.subtleInline}>{siteCopy.introBullets[1]}</p>
-          <div className={styles.topActions}>
+          <h2>{siteLocale === "en" ? "How do you want to start?" : "Hvordan vil du starte?"}</h2>
+          <p className={styles.subtle}>
+            {siteLocale === "en"
+              ? "Choose whether you want to continue, design the plan yourself, or let StridePilot create a simple adaptive standard plan."
+              : "Vælg om du vil fortsætte, designe programmet selv eller lade StridePilot lave et enkelt adaptivt standardprogram."}
+          </p>
+          <div className={styles.startChoiceGrid}>
+            {hasSetup && (
+              <button className={styles.primaryBtn} onClick={continueProgramFromIntro}>
+                {siteLocale === "en" ? "Continue my program" : "Fortsæt mit program"}
+              </button>
+            )}
             <button className={styles.primaryBtn} onClick={completeIntro}>
-              {siteCopy.startLabel}
+              {siteLocale === "en" ? "Design my own program" : "Design mit eget program"}
             </button>
+            <button className={styles.secondaryBtn} onClick={() => void startStandardProgramFromIntro()} disabled={isLoading}>
+              {isLoading ? (siteLocale === "en" ? "Preparing..." : "Forbereder...") : siteLocale === "en" ? "Give me a standard program" : "Giv mig et standardprogram"}
+            </button>
+            <p className={styles.subtleInline}>
+              {siteLocale === "en"
+                ? "The standard program is adaptive, simple, and automatically adjusted to your level and feedback."
+                : "Standardprogrammet er adaptivt, enkelt og tilpasser sig automatisk til dit niveau og din feedback."}
+            </p>
           </div>
         </section>
       )}
@@ -5251,7 +5282,7 @@ export default function Home() {
                   <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Starting in" : "Starter om"}</p>
                   <div className={styles.workoutCountdownNumber}>{workoutStartCountdown}</div>
                   <div className={styles.workoutCountdownFirstBlock}>
-                    <p className={styles.workoutCountdownActionLabel}>{siteLocale === "en" ? "Start with" : "Start med"}</p>
+                    <p className={styles.workoutCountdownActionLabel}>{siteLocale === "en" ? "First" : "Først"}</p>
                     <h2 className={styles.workoutCountdownFirst}>{workoutStepPreview(currentStep, siteLocale)}</h2>
                   </div>
                   <p className={styles.workoutCountdownMeta}>
@@ -5279,7 +5310,7 @@ export default function Home() {
                 <div className={styles.workoutSessionOverview}>
                   <div className={styles.workoutProgressHeader}>
                     <div>
-                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Workout progress" : "Fremdrift"}</p>
+                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Now" : "Nu"}</p>
                       <h3 className={styles.workoutProgressCount}>{stepIndex + 1} / {activeSession.steps.length}</h3>
                     </div>
                     <p className={styles.workoutElapsedTime}>{formatClockCompact(totalElapsedSec)}</p>
@@ -5309,7 +5340,7 @@ export default function Home() {
                   )}
                   <div className={styles.workoutNextSummary}>
                     <div>
-                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Next" : "Næste"}</p>
+                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "After this" : "Bagefter"}</p>
                       <h3>{workoutStepPreview(nextWorkoutStep, siteLocale)}</h3>
                     </div>
                     {nextWorkoutStep && <p className={styles.workoutNextCue}>{nextWorkoutStep.cue}</p>}
@@ -5321,6 +5352,7 @@ export default function Home() {
                     transitionKey={`${activeSession.id}-${stepIndex}`}
                     isAnticipating={isPreparingIntervalTransition}
                     isPaused={!isRunning}
+                    anticipationLabel={siteLocale === "en" ? `Switches in ${remainingSec}` : `Skifter om ${remainingSec}`}
                     pausedLabel={siteLocale === "en" ? "PAUSED" : "PAUSE"}
                     title={phaseName(currentStep, siteLocale)}
                     remainingTime={formatClockCompact(remainingSec)}

@@ -12,6 +12,7 @@ type LiveWorkoutCardPreviewData = {
 };
 
 type LiveWorkoutCardProps = LiveWorkoutCardPreviewData & {
+  anticipationLabel?: string;
   finalHint?: string;
   isAnticipating?: boolean;
   isPaused?: boolean;
@@ -42,6 +43,7 @@ export function LiveWorkoutCard({
   heartRate,
   heartRateLabel,
   progress,
+  anticipationLabel,
   finalHint,
   isAnticipating = false,
   isPaused = false,
@@ -79,7 +81,12 @@ export function LiveWorkoutCard({
           <span className={styles.circularNow}>{isPaused ? pausedLabel : "NU"}</span>
           <h2 key={`title-${contentTransitionKey}`}>{title}</h2>
           <strong key={`time-${contentTransitionKey}`}>{remainingTime}</strong>
-          {hasHeartRate && (
+          {isAnticipating && !isPaused && anticipationLabel && (
+            <span className={styles.circularAnticipationLabel} aria-live="polite">
+              {anticipationLabel}
+            </span>
+          )}
+          {hasHeartRate && !isAnticipating && (
             <span className={styles.circularHeartRate}>
               <HeartIcon />
               <span>{heartRate}</span>

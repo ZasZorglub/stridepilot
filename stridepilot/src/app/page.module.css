@@ -612,6 +612,18 @@
   margin-top: -0.4rem;
 }
 
+.startChoiceGrid {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.62rem;
+}
+
+.startChoiceGrid .primaryBtn,
+.startChoiceGrid .secondaryBtn {
+  width: 100%;
+  min-height: 3.25rem;
+}
+
 .pageIntroStage {
   padding-top: calc(2.9rem + env(safe-area-inset-top));
 }
@@ -3587,10 +3599,12 @@
 }
 
 .workoutStatePaused .workoutPrimaryAction .primaryBtn {
-  background: linear-gradient(180deg, rgba(72, 158, 201, 0.74), rgba(43, 124, 164, 0.78));
+  border-color: rgba(169, 218, 241, 0.2);
+  background: linear-gradient(180deg, rgba(85, 178, 224, 0.94), rgba(48, 137, 179, 0.96));
+  color: rgba(251, 253, 255, 0.98);
   box-shadow:
-    0 4px 10px rgba(4, 11, 17, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    0 8px 18px rgba(12, 48, 72, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.11);
 }
 
 .workoutActiveCard .workoutHeaderCenter {

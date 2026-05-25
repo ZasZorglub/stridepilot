@@ -21,9 +21,22 @@
   place-items: center;
 }
 
+.circularRingWrap::after {
+  content: "";
+  position: absolute;
+  inset: 9%;
+  z-index: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(79, 190, 248, 0.075), transparent 64%);
+  opacity: 0.5;
+  animation: circularAmbientBreath 4.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
 .circularRing {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
   transform: rotate(-90deg);
@@ -66,22 +79,32 @@
 }
 
 .circularCard[data-anticipating="true"] .circularRingProgress {
-  animation: circularAnticipation 480ms ease-out both;
-  filter: drop-shadow(0 0 5px rgba(218, 236, 247, 0.16));
+  animation: circularAnticipation 720ms ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 6px rgba(223, 240, 250, 0.3))
+    drop-shadow(0 0 14px rgba(79, 190, 248, 0.2));
+  opacity: 1;
+  stroke-width: 10.4;
 }
 
 .circularCard[data-paused="true"] .circularRingProgress {
-  opacity: 0.36;
+  opacity: 0.2;
   filter: none;
+  stroke-width: 7.8;
 }
 
 .circularCard[data-paused="true"] .circularRingBase {
-  stroke: rgba(196, 211, 222, 0.18);
+  stroke: rgba(196, 211, 222, 0.14);
+}
+
+.circularCard[data-paused="true"] .circularRingWrap::after {
+  opacity: 0.16;
+  animation: none;
 }
 
 .circularCenter {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: 72%;
   aspect-ratio: 1;
   display: grid;
@@ -103,11 +126,11 @@
 
 .circularCard[data-paused="true"] .circularCenter {
   background:
-    radial-gradient(circle at 50% 20%, rgba(154, 166, 178, 0.055), transparent 46%),
-    linear-gradient(180deg, rgba(10, 17, 24, 0.7), rgba(3, 7, 12, 0.78));
+    radial-gradient(circle at 50% 20%, rgba(154, 166, 178, 0.075), transparent 46%),
+    linear-gradient(180deg, rgba(10, 17, 24, 0.82), rgba(3, 7, 12, 0.9));
   box-shadow:
     0 10px 22px rgba(0, 0, 0, 0.08),
-    inset 0 0 0 1px rgba(210, 222, 232, 0.08);
+    inset 0 0 0 1px rgba(210, 222, 232, 0.14);
 }
 
 .circularNow {
@@ -119,7 +142,11 @@
 }
 
 .circularCard[data-paused="true"] .circularNow {
-  color: rgba(246, 250, 252, 0.78);
+  border: 1px solid rgba(226, 236, 244, 0.24);
+  border-radius: 999px;
+  background: rgba(226, 236, 244, 0.08);
+  color: rgba(246, 250, 252, 0.94);
+  padding: 0.24rem 0.5rem;
 }
 
 .circularCenter h2 {
@@ -145,7 +172,18 @@
 .circularCard[data-paused="true"] .circularCenter h2,
 .circularCard[data-paused="true"] .circularCenter > strong,
 .circularCard[data-paused="true"] .circularHeartRate {
-  opacity: 0.62;
+  opacity: 0.48;
+}
+
+.circularAnticipationLabel {
+  margin-top: 0.64rem;
+  color: rgba(246, 250, 252, 0.86);
+  font-size: 0.64rem;
+  font-weight: 760;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+  animation: circularAnticipationCopy 720ms ease-in-out infinite;
 }
 
 .circularHeartRate {
@@ -188,12 +226,16 @@
 }
 
 .circularCard[data-anticipating="true"] .circularCue {
-  transform: translateY(-1px);
+  color: rgba(255, 255, 255, 1);
+  text-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.45),
+    0 0 16px rgba(223, 240, 250, 0.16);
+  transform: translateY(-5px);
 }
 
 .circularCard[data-paused="true"] .circularCue {
-  opacity: 0.72;
-  color: rgba(224, 234, 241, 0.8);
+  opacity: 0.58;
+  color: rgba(224, 234, 241, 0.72);
 }
 
 @keyframes circularPhaseEnter {
@@ -239,11 +281,36 @@
 }
 
 @keyframes circularAnticipation {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
+    stroke-width: 10.2;
   }
   45% {
+    opacity: 0.66;
+    stroke-width: 11.4;
+  }
+}
+
+@keyframes circularAnticipationCopy {
+  0%,
+  100% {
     opacity: 0.72;
+  }
+  45% {
+    opacity: 1;
+  }
+}
+
+@keyframes circularAmbientBreath {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: scale(0.99);
+  }
+  50% {
+    opacity: 0.58;
+    transform: scale(1.015);
   }
 }
 
@@ -251,7 +318,9 @@
   .circularRingProgress,
   .circularCenter h2,
   .circularCenter > strong,
-  .circularCue {
+  .circularCue,
+  .circularAnticipationLabel,
+  .circularRingWrap::after {
     animation: none;
     transition-duration: 1ms;
   }
