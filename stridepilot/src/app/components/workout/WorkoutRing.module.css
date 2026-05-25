@@ -1,0 +1,74 @@
+.beatWrap {
+  position: relative;
+  display: inline-block;
+  transform-origin: 50% 50%;
+}
+
+.beatActive {
+  animation: spRingBeat var(--sp-d-beat, 700ms)
+    var(--sp-curve-soft, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+  transition: filter 240ms ease;
+}
+
+.ring.glow {
+  filter: drop-shadow(
+    0 0 22px var(--sp-accent-current-dim, rgba(79, 190, 248, 0.22))
+  );
+}
+
+.ring.breathing {
+  animation: spBreath var(--sp-breath-current, 4600ms) ease-in-out infinite;
+}
+
+.progress {
+  transition:
+    stroke-dashoffset 800ms linear,
+    stroke var(--sp-d-ring-color, 720ms)
+      var(--sp-curve-soft, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+
+@keyframes spBreath {
+  0%,
+  100% {
+    opacity: 1;
+    transform: rotate(-90deg) scale(1);
+  }
+
+  45%,
+  55% {
+    opacity: 0.92;
+    transform: rotate(-90deg) scale(1.014);
+  }
+}
+
+@keyframes spRingBeat {
+  0% {
+    filter: brightness(1);
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  28% {
+    filter: brightness(1.14);
+    opacity: 0.82;
+    transform: scale(1.042);
+  }
+
+  62% {
+    filter: brightness(1.02);
+    opacity: 0.96;
+    transform: scale(0.998);
+  }
+
+  100% {
+    filter: brightness(1);
+    opacity: 1;
+    transform: scale(1);
+  }
+}
