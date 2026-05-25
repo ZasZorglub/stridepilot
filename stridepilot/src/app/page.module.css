@@ -951,6 +951,38 @@
   background: rgba(11, 15, 20, 0.85);
 }
 
+.workoutHero:has(.activeWorkoutArticle) {
+  max-width: none;
+  min-height: calc(100dvh - 5.5rem);
+  border-radius: 0;
+}
+
+.workoutOverlay:has(.activeWorkoutArticle) {
+  padding: 0;
+  background:
+    radial-gradient(80% 58% at 50% 18%, rgba(24, 40, 58, 0.58), transparent 64%),
+    linear-gradient(180deg, rgba(6, 9, 14, 0.34), rgba(6, 9, 14, 0.74));
+}
+
+.workoutOverlay:has(.activeWorkoutArticle) .grid {
+  width: 100%;
+  max-width: none;
+  min-height: inherit;
+  margin: 0;
+  gap: 0;
+}
+
+.activeWorkoutArticle {
+  width: 100%;
+  max-width: none;
+  min-height: inherit;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
 .loadingOverlay {
   display: grid;
   place-content: center;
@@ -3304,6 +3336,209 @@
   justify-items: center;
 }
 
+.claudeWorkoutView {
+  position: relative;
+  min-height: calc(100dvh - 5.5rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  isolation: isolate;
+  padding:
+    calc(0.9rem + env(safe-area-inset-top))
+    clamp(1rem, 4vw, 1.8rem)
+    calc(1rem + env(safe-area-inset-bottom));
+  color: var(--sp-text);
+}
+
+.claudeWorkoutView::after {
+  content: "";
+  position: absolute;
+  inset: auto -10% 0;
+  z-index: 0;
+  height: 42%;
+  pointer-events: none;
+  background: radial-gradient(60% 80% at 50% 100%, rgba(0, 0, 0, 0.48), transparent 70%);
+  mix-blend-mode: multiply;
+}
+
+.claudeWorkoutView > * {
+  position: relative;
+  z-index: 1;
+}
+
+.claudeWorkoutTopBar {
+  min-height: 2.9rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.claudeWorkoutBackBtn {
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+  border: 1px solid rgba(164, 193, 218, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(190, 205, 219, 0.6);
+  padding: 0 0.78rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 200ms ease,
+    color 200ms ease,
+    border-color 200ms ease;
+}
+
+.claudeWorkoutBackBtn:hover {
+  border-color: rgba(164, 193, 218, 0.2);
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(245, 250, 253, 0.86);
+}
+
+.claudeWorkoutStepCount {
+  min-width: 0;
+  color: rgba(143, 161, 179, 0.52);
+  font-size: 0.66rem;
+  font-weight: 760;
+  letter-spacing: 0.2em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.claudeWorkoutElapsed {
+  min-width: 3.4rem;
+  color: rgba(190, 205, 219, 0.62);
+  font-size: 0.78rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.claudeWorkoutMain {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0.3rem, 2.2vh, 1.3rem) 0 clamp(0.2rem, 1.6vh, 0.9rem);
+}
+
+.claudeWorkoutMain .stepNotice {
+  margin-bottom: 0.5rem;
+}
+
+.claudeWorkoutBottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.9rem, 2.4vh, 1.5rem);
+  padding: 0 clamp(0.2rem, 3vw, 1.2rem);
+}
+
+.claudeNowNextPanel {
+  width: min(100%, 31rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+  gap: clamp(1rem, 5vw, 2.4rem);
+  align-items: start;
+}
+
+.claudeNowSummary,
+.claudeNextSummary {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.claudeNowSummary {
+  text-align: left;
+}
+
+.claudeNextSummary {
+  text-align: right;
+  opacity: 0.7;
+}
+
+.claudeNowSummary strong,
+.claudeNextSummary strong {
+  color: rgba(245, 250, 253, 0.92);
+  font-size: 0.95rem;
+  font-weight: 660;
+  line-height: 1.16;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.claudeNowSummary span,
+.claudeNextSummary span {
+  color: rgba(190, 205, 219, 0.62);
+  font-size: 0.75rem;
+  font-weight: 560;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.claudeWorkoutPhaseStrip {
+  width: min(100%, 19rem);
+}
+
+.activeWorkoutArticle .workoutPrimaryAction {
+  width: min(100%, 20rem);
+  margin: 0;
+  gap: 0.45rem;
+}
+
+.activeWorkoutArticle .workoutPrimaryAction .primaryBtn,
+.activeWorkoutArticle .completeWorkoutBtn {
+  width: 100%;
+  min-height: 3.85rem;
+  border: 1px solid rgba(164, 193, 218, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(245, 250, 253, 0.94);
+  box-shadow:
+    0 14px 42px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.claudeWorkoutView[data-paused] .workoutPrimaryAction .primaryBtn {
+  border-color: rgba(79, 190, 248, 0.34);
+  background: linear-gradient(180deg, rgba(79, 190, 248, 0.17), rgba(79, 190, 248, 0.045));
+  box-shadow:
+    0 18px 54px rgba(79, 190, 248, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.activeWorkoutArticle .workoutManualControls {
+  margin-top: 0;
+}
+
+.activeWorkoutArticle .workoutSecondaryControls {
+  gap: 0.5rem;
+}
+
+.activeWorkoutArticle .workoutSecondaryAction {
+  min-height: 2.5rem;
+  border: 1px solid rgba(164, 193, 218, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(190, 205, 219, 0.58);
+  padding: 0.35rem 0.7rem;
+}
+
+.activeWorkoutArticle .workoutFinalHint {
+  margin-top: -0.3rem;
+  color: rgba(190, 205, 219, 0.62);
+}
+
 .activeWorkoutPanel {
   display: grid;
   gap: 0.74rem;
@@ -3571,20 +3806,6 @@
   font-size: 0.88rem;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
-}
-
-.workoutPolishQaMarker {
-  margin: 0 0 0.48rem;
-  justify-self: start;
-  border: 1px solid rgba(246, 250, 252, 0.42);
-  border-radius: 999px;
-  background: rgba(246, 250, 252, 0.12);
-  color: rgba(246, 250, 252, 0.96);
-  padding: 0.28rem 0.54rem;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
 .nextCueCard {
