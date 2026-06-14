@@ -27,7 +27,7 @@ import {
   WorkoutSession,
   WorkoutStep,
 } from "@/lib/types";
-import { APP_NAME, APP_VERSION } from "@/lib/app-config";
+import { APP_NAME, APP_VERSION, buildLabel } from "@/lib/app-config";
 import { formatReadableDurationFromSeconds } from "@/lib/duration";
 import { buildFeedbackMailto } from "@/lib/feedback-mail";
 import { getSiteCopy } from "@/lib/site-copy";
@@ -2901,7 +2901,9 @@ export default function Home() {
       if (storageUserId) {
         window.localStorage.setItem(setupKey(storageUserId), "1");
       }
-      setStage("program");
+      // After plan creation, land on Home R1 — the plan exists but isn't started
+      // yet, so this is state B with "Start min træningsplan" as the primary path.
+      setStage("home");
       setShowProgramIntro(true);
       setIsProgramTransitioning(false);
       captureAppEvent(
@@ -3224,28 +3226,26 @@ export default function Home() {
     setMenuOpen(false);
   }
 
-  // Home R1 "Vælg et standardprogram" → existing intro/profile plan-creation flow.
-  function openStandardProgramFlow() {
-    const userKey = authUser?.id ?? (isDemoMode ? "demo-user" : "");
-    const introSeen = userKey
-      ? window.localStorage.getItem(introSeenKey(userKey)) === "1"
-      : false;
-    openStage(introSeen ? "profile" : "intro");
-  }
-
-  // Standard program selector → remember the pick (UI-safe context) and continue
-  // into the existing plan-creation flow. Does not change coach/engine logic.
+  // Standard program selector → remember the pick (UI-safe context) and go
+  // straight to the existing profile / plan-setup flow. The user has already made
+  // a deliberate choice, so the generic "Før vi starter" intro is skipped here.
+  // Does not change coach/engine logic.
   function selectStandardProgram(programId: StandardProgramId) {
     setSelectedStandardProgram(programId);
     const userKey = authUser?.id ?? (isDemoMode ? "demo-user" : "");
     if (userKey) {
       try {
         window.localStorage.setItem(standardProgramKey(userKey), programId);
+        // Mark the generic intro as seen for THIS user only — a deliberate
+        // standard-program choice replaces the "Før vi starter" welcome. Users who
+        // never open the selector keep their normal first-run onboarding.
+        window.localStorage.setItem(introSeenKey(userKey), "1");
       } catch {
         // localStorage may be unavailable (private mode) — selection stays in memory.
       }
     }
-    openStandardProgramFlow();
+    // Existing plan-setup / profile / goal flow — intro is intentionally bypassed.
+    openStage("profile");
   }
 
   function openWorkoutSession(sessionId: string) {
@@ -3996,7 +3996,7 @@ export default function Home() {
               </button>
               <p className={styles.subtleInline}>{siteCopy.betaTesterInstructions}</p>
               <p className={styles.authVersionLabel}>
-                {APP_NAME} {APP_VERSION} · build b00d5be
+                {APP_NAME} {APP_VERSION} · {buildLabel()}
               </p>
             </div>
           </div>
@@ -4060,7 +4060,7 @@ export default function Home() {
               )}
 
               <p className={styles.authVersionLabel}>
-                {APP_NAME} {APP_VERSION} · build b00d5be
+                {APP_NAME} {APP_VERSION} · {buildLabel()}
               </p>
             </section>
           </div>
