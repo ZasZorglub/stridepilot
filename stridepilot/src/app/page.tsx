@@ -1,6 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LiveWorkoutCard } from "./components/workout/LiveWorkoutCard";
+import { PhaseStrip } from "./components/workout/PhaseStrip";
+import type { PhaseEntry, WorkoutPhaseKind } from "./components/workout/types";
+import workoutTokens from "./components/workout/workoutTokens.module.css";
 import styles from "./page.module.css";
 import {
   FeedbackInsights,
@@ -92,7 +96,6 @@ import {
   buildWorkoutCheckInState,
   buildWorkoutInterruptionNotice,
   getNextWorkoutStep,
-  buildWorkoutStepHeartRateState,
   hasRequiredWorkoutFeedback,
   shouldSpeakWorkoutCue,
 } from "@/lib/workout-screen";
@@ -538,6 +541,10 @@ function phaseName(step: WorkoutStep, locale: SiteLocale = "da"): string {
   if (step.type === "walk") return "Gang";
   if (step.type === "warmup") return "Rask gang";
   return "Nedkøling";
+}
+
+function workoutPhaseKind(step: WorkoutStep): WorkoutPhaseKind {
+  return step.type;
 }
 
 function stepSupportingLabel(step: WorkoutStep, locale: SiteLocale = "da"): string | null {
@@ -3585,10 +3592,6 @@ export default function Home() {
     () => deriveWorkoutCardRepresentation(todaySession, { locale: siteLocale, goalDistance: goal.distance }),
     [goal.distance, siteLocale, todaySession],
   );
-  const activeWorkoutCard = useMemo(
-    () => deriveWorkoutCardRepresentation(activeSession, { locale: siteLocale, goalDistance: goal.distance }),
-    [activeSession, goal.distance, siteLocale],
-  );
   const focusedProgramSession = useMemo(
     () => (focusedProgramDayIso && plan ? plan.sessions.find((session) => session.id === selectedSessionId) ?? null : null),
     [focusedProgramDayIso, plan, selectedSessionId],
@@ -3653,37 +3656,42 @@ export default function Home() {
     const elapsedSec = Math.max(0, currentStep.durationSec - remainingSec);
     return Math.max(0, Math.min(100, (elapsedSec / currentStep.durationSec) * 100));
   }, [currentStep, remainingSec]);
+  const currentStepProgressRatio = currentStepProgressPct / 100;
   const totalElapsedSec = useMemo(() => {
     if (!activeSession || !currentStep) return 0;
     const completedBeforeCurrent = activeSession.steps.slice(0, stepIndex).reduce((sum, step) => sum + step.durationSec, 0);
     const currentCompleted = Math.max(0, currentStep.durationSec - remainingSec);
     return completedBeforeCurrent + currentCompleted;
   }, [activeSession, currentStep, remainingSec, stepIndex]);
-  const currentWorkoutHeartRateState = useMemo(
+  const workoutPhaseEntries = useMemo<PhaseEntry[]>(
     () =>
-      buildWorkoutStepHeartRateState({
-        step: currentStep,
-        pulseGuidanceEnabled: Boolean(runnerProfile.pulseGuidanceEnabled),
-        maxHeartRate: runnerProfile.maxHeartRate ?? null,
-        locale: siteLocale,
-      }),
-    [currentStep, runnerProfile.maxHeartRate, runnerProfile.pulseGuidanceEnabled, siteLocale],
+      activeSession?.steps.map((step) => ({
+        kind: workoutPhaseKind(step),
+        weight: Math.max(1, step.durationSec),
+        label: `${phaseName(step, siteLocale)} · ${formatStepDuration(step)}`,
+      })) ?? [],
+    [activeSession, siteLocale],
   );
-  const nextWorkoutHeartRateState = useMemo(
-    () =>
-      buildWorkoutStepHeartRateState({
-        step: nextWorkoutStep,
-        pulseGuidanceEnabled: Boolean(runnerProfile.pulseGuidanceEnabled),
-        maxHeartRate: runnerProfile.maxHeartRate ?? null,
-        locale: siteLocale,
-      }),
-    [nextWorkoutStep, runnerProfile.maxHeartRate, runnerProfile.pulseGuidanceEnabled, siteLocale],
+  const currentWorkoutPhaseKind = currentStep ? workoutPhaseKind(currentStep) : "run";
+  const nextWorkoutPhaseKind = nextWorkoutStep ? workoutPhaseKind(nextWorkoutStep) : null;
+  const isPreparingWorkoutTransition = Boolean(
+    isRunning &&
+      activeSession &&
+      nextWorkoutStep &&
+      !isLastWorkoutStep &&
+      remainingSec > 0 &&
+      remainingSec <= 3 &&
+      workoutStartCountdown === null,
   );
-  const currentWorkoutSegment = activeWorkoutCard?.visualProfile?.[stepIndex] ?? null;
-  const currentWorkoutAccent = useMemo(
-    () => (currentWorkoutSegment ? workoutSegmentAccent(currentWorkoutSegment) : workoutSegmentAccent({ zoneKey: "z2" })),
-    [currentWorkoutSegment],
+  const workoutAnticipationCount =
+    isPreparingWorkoutTransition && (remainingSec === 1 || remainingSec === 2 || remainingSec === 3)
+      ? remainingSec
+      : null;
+  const currentWorkoutCue = useMemo(
+    () => (currentStep ? cueFallbackText || buildCue(currentStep, audioMode, siteLocale) : ""),
+    [audioMode, cueFallbackText, currentStep, siteLocale],
   );
+  const activeWorkoutRenderPath = Boolean(activeSession && currentStep && !workoutCompleted && workoutStartCountdown === null);
   const workoutCheckInState = useMemo(
     () => buildWorkoutCheckInState(showDetailedFeedback, siteLocale),
     [showDetailedFeedback, siteLocale],
@@ -5046,7 +5054,7 @@ export default function Home() {
         <section className={styles.workoutHero}>
           <div className={styles.workoutOverlay}>
         <section className={styles.grid}>
-          <article className={styles.card}>
+          <article className={`${styles.card} ${activeWorkoutRenderPath ? styles.activeWorkoutArticle : ""}`}>
             {!activeSession && <p>{ui.workout.chooseWorkout}</p>}
             {activeSession && currentStep && !workoutCompleted && workoutStartCountdown !== null && (
               <div className={styles.workoutCountdownCard}>
@@ -5064,157 +5072,115 @@ export default function Home() {
               </div>
             )}
             {activeSession && currentStep && !workoutCompleted && workoutStartCountdown === null && (
-              <>
-                <div className={styles.workoutCompactTopBar}>
-                  <button type="button" className={styles.workoutBackBtn} onClick={closeWorkoutSession} aria-label={ui.workout.closeWorkoutAria}>
+              <div
+                className={`${workoutTokens.workoutScope} ${styles.claudeWorkoutView}`}
+                data-phase={currentWorkoutPhaseKind}
+                data-paused={!isRunning || undefined}
+                data-anticipating={isPreparingWorkoutTransition || undefined}
+              >
+                <header className={styles.claudeWorkoutTopBar}>
+                  <button
+                    type="button"
+                    className={styles.claudeWorkoutBackBtn}
+                    onClick={closeWorkoutSession}
+                    aria-label={ui.workout.closeWorkoutAria}
+                  >
                     {workoutActionState.closeLabel}
                   </button>
-                  <span className={styles.workoutCompactProgress}>{stepIndex + 1} / {activeSession.steps.length}</span>
-                </div>
-                {workoutInterruptionNotice && <p className={styles.workoutStatusNotice}>{workoutInterruptionNotice}</p>}
-                <div className={styles.workoutSessionOverview}>
-                  <div className={styles.workoutTopMetrics}>
-                    <div className={styles.workoutMetricCard}>
-                      <span>{siteLocale === "en" ? "Segment time" : "Segment tid"}</span>
-                      <strong>{formatClock(currentStep.durationSec)}</strong>
-                    </div>
-                    <div className={styles.workoutMetricCard}>
-                      <span>{siteLocale === "en" ? "Total elapsed" : "Total tid"}</span>
-                      <strong>{formatClock(totalElapsedSec)}</strong>
-                    </div>
-                  </div>
-                  <div className={styles.workoutNextSummary}>
-                    <div>
-                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Next" : "Næste"}</p>
-                      <h3>{nextWorkoutStep ? phaseName(nextWorkoutStep, siteLocale) : siteLocale === "en" ? "Finish workout" : "Afslut passet"}</h3>
-                    </div>
-                    <div className={styles.workoutNextMetaGrid}>
-                      <span>
-                        <small>{siteLocale === "en" ? "Time" : "Tid"}</small>
-                        <strong>{nextWorkoutStep ? formatStepDuration(nextWorkoutStep) : "—"}</strong>
-                      </span>
-                      <span>
-                        <small>{siteLocale === "en" ? "Target" : "Målzone"}</small>
-                        <strong>{nextWorkoutHeartRateState?.zoneLabel ?? (siteLocale === "en" ? "Easy" : "Roligt")}</strong>
-                      </span>
-                      <span>
-                        <small>{siteLocale === "en" ? "Type" : "Type"}</small>
-                        <strong>{nextWorkoutStep ? (stepSupportingLabel(nextWorkoutStep, siteLocale) ?? phaseName(nextWorkoutStep, siteLocale)) : siteLocale === "en" ? "Complete" : "Afslut"}</strong>
-                      </span>
-                    </div>
-                  </div>
-                  {activeWorkoutCard?.visualProfile && (
-                    <div className={styles.workoutTopProfile}>
-                      {activeWorkoutCard.visualProfile.map((segment, index) => {
-                        const tone = workoutSegmentAccent(segment);
-                        const isCurrentSegment = index === stepIndex;
-                        return (
-                          <span
-                            key={`${activeSession.id}-top-profile-${index}`}
-                            className={`${styles.workoutTopProfileSegment} ${isCurrentSegment ? styles.workoutTopProfileSegmentCurrent : ""}`}
-                            style={{
-                              flexGrow: Math.max(1, segment.durationSec),
-                              background: tone.color,
-                              boxShadow: isCurrentSegment ? `0 0 0 2px ${tone.muted}` : "none",
-                            }}
-                          />
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-                <div className={styles.liveWorkoutCard}>
-                  {stepNotice && <p className={styles.stepNotice}>{stepNotice}</p>}
-                  <div className={styles.trackTimerShell}>
-                    <svg viewBox="0 0 280 220" className={styles.trackTimerSvg} aria-hidden="true">
-                      <path
-                        d="M84 34 H196 A56 56 0 0 1 196 186 H84 A56 56 0 0 1 84 34 Z"
-                        pathLength={100}
-                        className={styles.trackTimerBase}
-                        style={{ stroke: currentWorkoutAccent.muted }}
-                      />
-                      <path
-                        d="M84 34 H196 A56 56 0 0 1 196 186 H84 A56 56 0 0 1 84 34 Z"
-                        pathLength={100}
-                        className={styles.trackTimerProgress}
-                        style={{
-                          stroke: currentWorkoutAccent.color,
-                          strokeDasharray: `${currentStepProgressPct} 100`,
-                        }}
-                      />
-                    </svg>
-                    <div className={styles.trackTimerCenter}>
-                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Current segment" : "Aktuelt trin"}</p>
-                      <p className={styles.phaseLabel}>{phaseName(currentStep, siteLocale)}</p>
-                      <div className={styles.timerBig}>{formatClock(remainingSec)}</div>
-                      <p className={styles.trackTimerZone}>{currentWorkoutHeartRateState?.zoneLabel ?? (siteLocale === "en" ? "Easy effort" : "Roligt arbejde")}</p>
-                      {stepSupportingLabel(currentStep, siteLocale) && <p className={styles.trackTimerType}>{stepSupportingLabel(currentStep, siteLocale)}</p>}
-                    </div>
-                  </div>
-                  {isLastWorkoutStep && (
-                    <p className={styles.workoutFinalHint}>{siteLocale === "en" ? "Ready to finish the workout." : "Passet er klar til at blive afsluttet."}</p>
-                  )}
-                </div>
+                  <span className={styles.claudeWorkoutStepCount}>
+                    {siteLocale === "en" ? "Interval" : "Interval"} {stepIndex + 1} / {activeSession.steps.length}
+                  </span>
+                  <span className={styles.claudeWorkoutElapsed}>{formatClock(totalElapsedSec)}</span>
+                </header>
 
-                <div className={styles.workoutPrimaryAction}>
-                  {isLastWorkoutStep ? (
-                    <button className={styles.completeWorkoutBtn} onClick={nextStep} type="button">
-                      {workoutActionState.finishLabel}
-                    </button>
-                  ) : (
-                    <button
-                      className={styles.primaryBtn}
-                      onClick={() => {
-                        setIsRunning((v) => {
-                          const next = !v;
-                          if (!next) cancelCue();
-                          if (next) {
-                            setWorkoutInterruptionNotice(null);
-                            lastTickAtRef.current = Date.now();
-                          }
-                          return next;
-                        });
-                      }}
-                    >
-                      {workoutActionState.primaryLabel}
-                    </button>
-                  )}
-                  {(!isRunning || isLastWorkoutStep) && (
-                    <div className={styles.workoutManualControls}>
-                      <div className={`${styles.workoutSecondaryControls} ${stepIndex === 0 ? styles.workoutSecondaryControlsSingle : ""}`}>
-                        {stepIndex > 0 && (
-                          <button className={styles.workoutSecondaryAction} onClick={previousStep} type="button">
-                            {workoutActionState.previousLabel}
-                          </button>
-                        )}
-                        {isLastWorkoutStep ? (
-                          <button
-                            className={styles.workoutSecondaryAction}
-                            onClick={() => {
-                              setIsRunning((v) => {
-                                const next = !v;
-                                if (!next) cancelCue();
-                                if (next) {
-                                  setWorkoutInterruptionNotice(null);
-                                  lastTickAtRef.current = Date.now();
-                                }
-                                return next;
-                              });
-                            }}
-                            type="button"
-                          >
-                            {workoutActionState.primaryLabel}
-                          </button>
-                        ) : (
-                          <button className={styles.workoutSecondaryAction} onClick={nextStep} type="button">
-                            {workoutActionState.advanceLabel}
-                          </button>
-                        )}
+                {workoutInterruptionNotice && <p className={styles.workoutStatusNotice}>{workoutInterruptionNotice}</p>}
+
+                <main className={styles.claudeWorkoutMain}>
+                  {stepNotice && <p className={styles.stepNotice}>{stepNotice}</p>}
+                  <LiveWorkoutCard
+                    phase={currentWorkoutPhaseKind}
+                    phaseLabel={phaseName(currentStep, siteLocale)}
+                    remainingTime={formatClock(remainingSec)}
+                    progress={currentStepProgressRatio}
+                    cue={currentWorkoutCue}
+                    paused={!isRunning}
+                    anticipating={isPreparingWorkoutTransition}
+                    anticipationNum={workoutAnticipationCount}
+                    transitionKey={`${activeSession.id}-${stepIndex}`}
+                    nextPhaseKind={nextWorkoutPhaseKind}
+                  />
+                </main>
+
+                <footer className={styles.claudeWorkoutBottom}>
+                  <PhaseStrip
+                    phases={workoutPhaseEntries}
+                    currentIdx={stepIndex}
+                    positionInPhase={currentStepProgressRatio}
+                    paused={!isRunning}
+                    dim={workoutCompleted}
+                    className={styles.claudeWorkoutPhaseStrip}
+                  />
+
+                  <div className={styles.workoutPrimaryAction}>
+                    {isLastWorkoutStep ? (
+                      <button className={styles.completeWorkoutBtn} onClick={nextStep} type="button">
+                        {workoutActionState.finishLabel}
+                      </button>
+                    ) : (
+                      <button
+                        className={styles.primaryBtn}
+                        onClick={() => {
+                          setIsRunning((v) => {
+                            const next = !v;
+                            if (!next) cancelCue();
+                            if (next) {
+                              setWorkoutInterruptionNotice(null);
+                              lastTickAtRef.current = Date.now();
+                            }
+                            return next;
+                          });
+                        }}
+                      >
+                        {workoutActionState.primaryLabel}
+                      </button>
+                    )}
+                    {(!isRunning || isLastWorkoutStep) && (
+                      <div className={styles.workoutManualControls}>
+                        <div className={`${styles.workoutSecondaryControls} ${stepIndex === 0 ? styles.workoutSecondaryControlsSingle : ""}`}>
+                          {stepIndex > 0 && (
+                            <button className={styles.workoutSecondaryAction} onClick={previousStep} type="button">
+                              {workoutActionState.previousLabel}
+                            </button>
+                          )}
+                          {isLastWorkoutStep ? (
+                            <button
+                              className={styles.workoutSecondaryAction}
+                              onClick={() => {
+                                setIsRunning((v) => {
+                                  const next = !v;
+                                  if (!next) cancelCue();
+                                  if (next) {
+                                    setWorkoutInterruptionNotice(null);
+                                    lastTickAtRef.current = Date.now();
+                                  }
+                                  return next;
+                                });
+                              }}
+                              type="button"
+                            >
+                              {workoutActionState.primaryLabel}
+                            </button>
+                          ) : (
+                            <button className={styles.workoutSecondaryAction} onClick={nextStep} type="button">
+                              {workoutActionState.advanceLabel}
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </>
+                    )}
+                  </div>
+                </footer>
+              </div>
             )}
             {activeSession && workoutCompleted && (
               <div className={styles.completedWorkoutCard}>

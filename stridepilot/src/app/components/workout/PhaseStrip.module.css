@@ -1,0 +1,67 @@
+.strip {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  height: 14px;
+  opacity: 1;
+  transition: opacity 420ms
+    var(--sp-curve-soft, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+
+.strip[data-paused] {
+  opacity: 0.55;
+}
+
+.strip[data-dim] {
+  opacity: 0.35;
+}
+
+.cells {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.cell {
+  height: 3px;
+  background: rgba(var(--cell-rgb, 244, 249, 253), 0.12);
+  border-radius: 99px;
+  box-shadow: none;
+  transition:
+    height var(--sp-d-ring-color, 720ms)
+      var(--sp-curve-soft, cubic-bezier(0.22, 0.61, 0.36, 1)),
+    background var(--sp-d-ring-color, 720ms)
+      var(--sp-curve-soft, cubic-bezier(0.22, 0.61, 0.36, 1)),
+    box-shadow var(--sp-d-ring-color, 720ms)
+      var(--sp-curve-soft, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+
+.cell[data-state="done"] {
+  background: rgba(var(--cell-rgb, 244, 249, 253), 0.3);
+}
+
+.cell[data-state="current"] {
+  height: 8px;
+  background: rgba(var(--cell-rgb, 244, 249, 253), 0.95);
+  box-shadow: 0 0 14px rgba(var(--cell-rgb, 244, 249, 253), 0.55);
+}
+
+.marker {
+  position: absolute;
+  top: 50%;
+  width: 1.5px;
+  height: 14px;
+  background: var(--sp-text);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+  transform: translate(-50%, -50%);
+  transition:
+    left 800ms linear,
+    opacity 420ms ease;
+}
+
+.strip[data-paused] .marker {
+  opacity: 0.5;
+}

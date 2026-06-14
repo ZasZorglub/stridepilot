@@ -1,0 +1,89 @@
+.workoutScope {
+  --sp-bg: #0b0f14;
+  --sp-bg-grad: radial-gradient(
+    140% 80% at 50% 12%,
+    #18283a 0%,
+    #0c1622 36%,
+    #06090e 78%
+  );
+  --sp-bg-grad-warm: radial-gradient(
+    140% 80% at 50% 12%,
+    #2a2520 0%,
+    #14110d 40%,
+    #07060a 80%
+  );
+
+  --sp-text: rgba(245, 250, 253, 0.98);
+  --sp-text-secondary: rgba(190, 205, 219, 0.72);
+  --sp-text-tertiary: rgba(143, 161, 179, 0.48);
+  --sp-text-tertiary-soft: rgba(143, 161, 179, 0.32);
+
+  --sp-border: rgba(164, 193, 218, 0.14);
+  --sp-border-soft: rgba(164, 193, 218, 0.07);
+
+  --sp-accent-run: rgba(79, 190, 248, 0.98);
+  --sp-accent-run-dim: rgba(79, 190, 248, 0.22);
+  --sp-accent-run-soft: rgba(79, 190, 248, 0.08);
+  --sp-accent-walk: rgba(246, 250, 252, 0.95);
+  --sp-accent-walk-dim: rgba(246, 250, 252, 0.16);
+  --sp-accent-warmup: rgba(198, 221, 233, 0.86);
+  --sp-accent-cooldown: rgba(198, 221, 233, 0.68);
+
+  --sp-heart: #f35c7b;
+  --sp-ring-base: rgba(196, 211, 222, 0.1);
+
+  --sp-curve: cubic-bezier(0.2, 0.9, 0.2, 1);
+  --sp-d-phase-swap: 460ms;
+  --sp-d-timer-swap: 520ms;
+  --sp-d-cue-swap: 520ms;
+  --sp-d-pause-dim: 720ms;
+  --sp-d-color: 600ms;
+
+  --sp-curve-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --sp-d-ring-color: 720ms;
+  --sp-d-beat: 700ms;
+  --sp-d-bg-wash: 1200ms;
+  --sp-d-digit-tick: 220ms;
+
+  --sp-breath-walk: 5400ms;
+  --sp-breath-run: 3800ms;
+  --sp-breath-warmup: 6200ms;
+  --sp-breath-cooldown: 6600ms;
+
+  --sp-font: "Raleway", -apple-system, "Segoe UI", sans-serif;
+
+  color: var(--sp-text);
+  font-family: var(--sp-font);
+}
+
+.workoutScope[data-phase="run"] {
+  --sp-accent-current: var(--sp-accent-run);
+  --sp-accent-current-dim: var(--sp-accent-run-dim);
+  --sp-breath-current: var(--sp-breath-run);
+}
+
+.workoutScope[data-phase="walk"] {
+  --sp-accent-current: var(--sp-accent-walk);
+  --sp-accent-current-dim: var(--sp-accent-walk-dim);
+  --sp-breath-current: var(--sp-breath-walk);
+}
+
+.workoutScope[data-phase="warmup"] {
+  --sp-accent-current: var(--sp-accent-warmup);
+  --sp-accent-current-dim: var(--sp-accent-run-dim);
+  --sp-breath-current: var(--sp-breath-warmup);
+}
+
+.workoutScope[data-phase="cooldown"] {
+  --sp-accent-current: var(--sp-accent-cooldown);
+  --sp-accent-current-dim: var(--sp-accent-run-dim);
+  --sp-breath-current: var(--sp-breath-cooldown);
+}
+
+.workoutScope[data-reduced-motion="true"] *,
+.workoutScope[data-reduced-motion="true"] *::before,
+.workoutScope[data-reduced-motion="true"] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+}

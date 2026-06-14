@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StridePilot · UX redesign</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      background: #07090d;
+      color: #f5fafd;
+      font-family: "Raleway", -apple-system, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    * { box-sizing: border-box; }
+    button { font-family: inherit; }
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(60% 50% at 50% 0%, rgba(79,190,248,0.06), transparent 70%),
+        radial-gradient(circle at 20% 100%, rgba(255,197,137,0.04), transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    #root { position: relative; z-index: 1; }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="screens/shared.jsx"></script>
+  <script type="text/babel" src="screens/countdown.jsx"></script>
+  <script type="text/babel" src="screens/live.jsx"></script>
+  <script type="text/babel" src="screens/overview.jsx"></script>
+  <script type="text/babel" src="screens/home.jsx"></script>
+  <script type="text/babel" src="screens/refined.jsx"></script>
+  <script type="text/babel" src="screens/polish.jsx"></script>
+  <script type="text/babel" src="screens/polish2.jsx"></script>
+
+  <script type="text/babel">
+    function App() {
+      return (
+        <DesignCanvas>
+
+          <DCSection
+            id="polish2-states"
+            title="Polish R2 · production refinement (efter rigtig iPhone-test)"
+            subtitle="Round 2: perceptibility uden aggression + clarity + organic life. Hvert fase-skift kicker en 700ms BEAT (ring scaler 1.045, opacity dipper 0.82, stroke tykner, baggrund får en kort radial wash i næste-fasens farve). Breath-tempo følger fasen (walk 5.4s, run 3.8s, warmup 6.2s, cooldown 6.6s). Timer-cifret lander med mikro-inerti hvert sekund. Countdown-copy er ryddet op: “du starter med [pasnavn]” → “OM LIDT · Gå roligt”. Bottom-strippen har dominans-hierarki: current 8px+glow, done 3px@30%, future 3px@12% — perifært syn ser én ting. Åbn fullscreen for at mærke beatet."
+          >
+            <DCArtboard id="p2-baseline" label="Baseline · organisk breath (tryk pause for count-back)" width={420} height={890}>
+              <LiveBaseline2 />
+            </DCArtboard>
+            <DCArtboard id="p2-transition" label="Fase-skift · nu MED BEAT (auto-loop)" width={420} height={890}>
+              <PhaseTransition2 />
+            </DCArtboard>
+            <DCArtboard id="p2-anticipate" label="Anticipation · halo + 3·2·1" width={420} height={890}>
+              <Anticipation2 />
+            </DCArtboard>
+            <DCArtboard id="p2-paused" label="Pause + resume count-back (tryk play)" width={420} height={890}>
+              <Paused2 />
+            </DCArtboard>
+            <DCArtboard id="p2-countdown" label="Countdown · ryddet copy (OM LIDT · handling)" width={420} height={890}>
+              <CountdownPolished2 />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="polish2-notes"
+            title="R2-noter · hvad fra rigtig device-brug satte retningen"
+            subtitle="Hver tuning er motiveret af en konkret observation fra fysisk iPhone under bevægelse. Alt drop-in på eksisterende komponenter — ingen layoutflytning."
+          >
+            <DCArtboard id="p2-diff" label="R2-diff · obs → fix" width={520} height={890}>
+              <Polish2NotesCard />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="polish-states"
+            title="Polish R1 · motion-tuned (reference)"
+            subtitle="Round 1 — stagger over sync, halo-foresmag, frozen-breath, ring→check morph. Beholdt til A/B mod R2 ovenfor."
+          >
+            <DCArtboard id="polish-baseline" label="Baseline · løb i gang (tryk pause for count-back)" width={420} height={890}>
+              <LiveRefinedPolished />
+            </DCArtboard>
+            <DCArtboard id="polish-transition" label="Fase-skift · løb ↔ gang (auto-loop)" width={420} height={890}>
+              <LivePhaseTransitionPolishedDemo />
+            </DCArtboard>
+            <DCArtboard id="polish-anticipate" label="Anticipation · sidste 3 sek (halo-foresmag)" width={420} height={890}>
+              <LiveAnticipationPolishedDemo />
+            </DCArtboard>
+            <DCArtboard id="polish-paused" label="Pause + resume count-back (tryk play)" width={420} height={890}>
+              <LivePausedPolishedDemo />
+            </DCArtboard>
+            <DCArtboard id="polish-complete" label="Completion · ring → check morph (loop)" width={420} height={890}>
+              <WorkoutCompletePolished />
+            </DCArtboard>
+            <DCArtboard id="polish-countdown" label="Countdown 1C · samme retning, blødere ease" width={420} height={890}>
+              <CountdownPolished />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="polish-notes"
+            title="R1-noter · hvad blev tunet og hvorfor"
+            subtitle="Bevaret som reference. R2-noter er den aktuelle."
+          >
+            <DCArtboard id="polish-diff" label="Tuning-diff · motion + bottom strip" width={520} height={890}>
+              <PolishNotesCard />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="locked"
+            title="Før polish · låst retning (reference)"
+            subtitle="Den oprindelige låste retning fra sidste runde, beholdt for sammenligning."
+          >
+            <DCArtboard id="cd-locked" label="1C · Countdown (pre-polish)" width={420} height={890}>
+              <CountdownRefined />
+            </DCArtboard>
+            <DCArtboard id="live-locked" label="2A · Live workout (pre-polish)" width={420} height={890}>
+              <LiveRefined />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="states"
+            title="Før polish · live states (reference)"
+            subtitle="Forrige rundes state-demos — beholdt for sammenligning."
+          >
+            <DCArtboard id="state-transition" label="Fase-skift (pre-polish)" width={420} height={890}>
+              <LivePhaseTransitionDemo />
+            </DCArtboard>
+            <DCArtboard id="state-paused" label="Pause (pre-polish)" width={420} height={890}>
+              <LivePausedDemo />
+            </DCArtboard>
+            <DCArtboard id="state-anticipate" label="Anticipation (pre-polish)" width={420} height={890}>
+              <LiveAnticipationDemo />
+            </DCArtboard>
+            <DCArtboard id="state-complete" label="Completion (pre-polish)" width={420} height={890}>
+              <WorkoutCompleteScreen />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="notes"
+            title="Implementerings-noter"
+            subtitle="Klar til drop-in i src/app/. Komplet pakke ligger i handoff/ — se README for prop-mapping."
+          >
+            <DCArtboard id="notes-card" label="Handoff-pakke (production)" width={520} height={890}>
+              <NotesCard />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="overview"
+            title="Workout-oversigt + Hjem (skitse)"
+            subtitle="Lange step-lister scroller, men 'Start tur' og 'Tilbage' er altid inden for tommelfingerens rækkevidde. Hjem er stadig en skitse."
+          >
+            <DCArtboard id="ov-v1" label="Workout-oversigt · sticky actions" width={420} height={890}>
+              <Overview1 />
+            </DCArtboard>
+            <DCArtboard id="home-v1" label="Hjem · Fortsæt dit program" width={420} height={890}>
+              <Home1 />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="alts"
+            title="Andre udforskninger (arkiveret)"
+            subtitle="De andre countdown- og live-varianter fra første runde — beholdt som reference."
+          >
+            <DCArtboard id="cd-v1" label="Countdown A · Verb-first" width={420} height={890}>
+              <CountdownV1 />
+            </DCArtboard>
+            <DCArtboard id="cd-v2" label="Countdown B · Ring around action" width={420} height={890}>
+              <CountdownV2 />
+            </DCArtboard>
+            <DCArtboard id="live-v2" label="Live B · Companion (next ghost)" width={420} height={890}>
+              <LiveV2 />
+            </DCArtboard>
+            <DCArtboard id="live-v3" label="Live C · Breathing minimal" width={420} height={890}>
+              <LiveV3 />
+            </DCArtboard>
+          </DCSection>
+
+        </DesignCanvas>
+      );
+    }
+
+    function Polish2NotesCard() {
+      const section = (title, items) => (
+        <div style={{ display: 'grid', gap: 6 }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.18em',
+            textTransform: 'uppercase', color: 'rgba(79,190,248,0.8)',
+          }}>{title}</div>
+          {items.map((it, i) => (
+            <div key={i} style={{
+              display: 'grid', gridTemplateColumns: '14px 1fr', gap: 10,
+              color: 'rgba(244,249,253,0.86)', fontSize: 13.5, fontWeight: 500,
+              lineHeight: 1.5,
+            }}>
+              <span style={{ color: 'rgba(143,161,179,0.55)' }}>·</span>
+              <span>{it}</span>
+            </div>
+          ))}
+        </div>
+      );
+
+      const obsFix = (obs, fix) => (
+        <div style={{
+          display: 'grid', gap: 5, padding: '11px 12px',
+          background: 'rgba(255,255,255,0.025)',
+          border: '1px solid rgba(164,193,218,0.06)',
+          borderRadius: 12,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '0.2em',
+              color: 'rgba(255,168,120,0.85)', textTransform: 'uppercase',
+              flexShrink: 0,
+            }}>OBS</span>
+            <span style={{ color: 'rgba(244,249,253,0.78)', fontSize: 13, fontWeight: 500, lineHeight: 1.5 }}>{obs}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '0.2em',
+              color: 'rgba(140,220,170,0.95)', textTransform: 'uppercase',
+              flexShrink: 0,
+            }}>FIX</span>
+            <span style={{ color: 'rgba(244,249,253,0.92)', fontSize: 13.5, fontWeight: 600, lineHeight: 1.5 }}>{fix}</span>
+          </div>
+        </div>
+      );
+
+      return (
+        <div style={{
+          width: '100%', height: '100%',
+          background: 'radial-gradient(120% 80% at 50% 0%, #15212e 0%, #0a121c 50%, #06090d 100%)',
+          color: '#f5fafd', fontFamily: '"Raleway", sans-serif',
+          padding: '52px 32px 36px',
+          display: 'flex', flexDirection: 'column', gap: 22,
+          borderRadius: 28, border: '1px solid rgba(164,193,218,0.08)',
+          overflow: 'auto',
+        }}>
+          <div>
+            <div style={{
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.24em',
+              color: 'rgba(79,190,248,0.78)', textTransform: 'uppercase',
+            }}>R2 · production refinement</div>
+            <h1 style={{ margin: '10px 0 0', fontSize: 22, fontWeight: 600, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
+              Hvad vi lærte på rigtig iPhone — og fixede
+            </h1>
+            <p style={{ margin: '8px 0 0', color: 'rgba(190,205,219,0.7)', fontSize: 13, fontWeight: 500, lineHeight: 1.5 }}>
+              Round 1 var smooth, men for usynlig under lav opmærksomhed. R2 indfører <code style={codeChip}>BEAT</code> som perceptibility-primitiv: korte, undeniable hændelser man fanger perifert, uden at det føles flashy.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gap: 10 }}>
+            {obsFix(
+              'Phase-skift mærkes næsten ikke under løb — subtile opacity-fades drukner i perifert syn.',
+              '700ms BEAT: ring scaler 1.045, opacity dipper 0.82, stroke tykner 6→8, baggrund får en radial wash i næste-fasens farve. Tre hooks, mindst én fanges.'
+            )}
+            {obsFix(
+              'Countdown "Du starter med Roligt løb" læses som imperativ — pasnavnet drukner i konteksten.',
+              'Caps "OM LIDT" + handlings-navnet "Gå roligt" stort + "6 minutter" tyndt. Pasnavnet hører hjemme i overview, ikke her.'
+            )}
+            {obsFix(
+              'Bottom-strippen kræver stadig læsning — alle blokke ligner hinanden.',
+              'Dominans-hierarki: current 8px + glow, done 3px @30%, future 3px @12%. Perifert syn ser én ting.'
+            )}
+            {obsFix(
+              'Ringen føles ens uanset om du går eller løber — bare en måler.',
+              'Breath-tempo per fase: walk 5.4s, run 3.8s, warmup 6.2s, cooldown 6.6s. Ringen embodier aktiviteten.'
+            )}
+            {obsFix(
+              'Timer-cifrene skifter mekanisk — ingen temporal flow.',
+              'Mikro-inerti per sekund: ones-cifret lander med translateY −2px → 0 over 220ms.'
+            )}
+          </div>
+
+          {section('Motion-token diff (R1 → R2)', [
+            <><code style={codeChip}>--sp-ring-color-ms</code> 1100 → 720ms (R1 var for slow under load)</>,
+            <><code style={codeChip}>--sp-beat-ms</code> NY: 700ms (phase-change choreography)</>,
+            <><code style={codeChip}>--sp-bg-wash-ms</code> NY: 1200ms (radial bloom)</>,
+            <><code style={codeChip}>--sp-breath-walk</code>/run/warmup/cooldown NY (variable tempo)</>,
+            <><code style={codeChip}>--sp-digit-tick-ms</code> NY: 220ms</>,
+          ])}
+
+          {section('Production-noter (TS/CSS)', [
+            <><code style={codeChip}>WorkoutRing</code> får ny prop <code style={codeChip}>breathingMs</code> (number) — map via <code style={codeChip}>BREATH_MS[phase]</code></>,
+            <>Wrap ring i en div med <code style={codeChip}>key={"{transitionKey}"}</code> og animation <code style={codeChip}>spRingBeat 700ms</code> — én linje CSS, beat fires automatisk på phase-key skift.</>,
+            <>Tilføj <code style={codeChip}>BgWash</code> som søsterelement bag content; samme key-strategi.</>,
+            <>Erstat <code style={codeChip}>PhaseTimeline</code> med <code style={codeChip}>PhaseStrip</code> (h12 container, current h8 + glow, others h3 @{'{}'}alpha).</>,
+            <>Timer: split mmss og kun apply <code style={codeChip}>spDigitTick</code> på ones-cifret per tick.</>,
+            'Reduced-motion: token-CSS kollapser BEAT + bg-wash til 1ms !important. Crossfades survives som rene farveskift.',
+          ])}
+
+          {section('Hvad vi IKKE rørte (med vilje)', [
+            'Layout · top/ring/center/bunden uændret',
+            'Informationshierarki · samme felter, samme placering',
+            'Farvepalette · ingen nye farver',
+            'Tone of voice · same shape, kun countdown-copy præciseret',
+            'Pause/resume flow · same 3-2-1 count-back fra R1',
+          ])}
+
+          {section('Tjek på fysisk iPhone', [
+            'Beatet skal være perceptibelt med perifert syn (kig på timeren, ikke ringen). Hvis ikke: bump scale til 1.05, opacity dip til 0.75.',
+            'Breath-tempo skal "matche" aktiviteten — løb skal føles mere tempo-fyldt end gang. Hvis ringen føles dovne under løb: træk run-breath til 3.4s.',
+            'Bg-wash må ikke distrahere. Hvis den ses for tydeligt: træk peak opacity til 0.22.',
+            'Digit-tick må ikke "hoppe". Hvis det føles for meget: cut translateY til −1px.',
+          ])}
+        </div>
+      );
+    }
+
+    function PolishNotesCard() {
+      const section = (title, items) => (
+        <div style={{ display: 'grid', gap: 6 }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.18em',
+            textTransform: 'uppercase', color: 'rgba(79,190,248,0.8)',
+          }}>{title}</div>
+          {items.map((it, i) => (
+            <div key={i} style={{
+              display: 'grid', gridTemplateColumns: '14px 1fr', gap: 10,
+              color: 'rgba(244,249,253,0.86)', fontSize: 13.5, fontWeight: 500,
+              lineHeight: 1.5,
+            }}>
+              <span style={{ color: 'rgba(143,161,179,0.55)' }}>·</span>
+              <span>{it}</span>
+            </div>
+          ))}
+        </div>
+      );
+
+      const diff = (was, now) => (
+        <div style={{ display: 'grid', gap: 3 }}>
+          <div style={{
+            color: 'rgba(244,108,108,0.75)', fontSize: 12.5, fontWeight: 500,
+            textDecoration: 'line-through', textDecorationColor: 'rgba(244,108,108,0.4)',
+          }}>{was}</div>
+          <div style={{ color: 'rgba(140,220,170,0.95)', fontSize: 13.5, fontWeight: 600 }}>
+            → {now}
+          </div>
+        </div>
+      );
+
+      return (
+        <div style={{
+          width: '100%', height: '100%',
+          background: 'radial-gradient(120% 80% at 50% 0%, #15212e 0%, #0a121c 50%, #06090d 100%)',
+          color: '#f5fafd', fontFamily: '"Raleway", sans-serif',
+          padding: '52px 32px 36px',
+          display: 'flex', flexDirection: 'column', gap: 22,
+          borderRadius: 28, border: '1px solid rgba(164,193,218,0.08)',
+          overflow: 'auto',
+        }}>
+          <div>
+            <div style={{
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.24em',
+              color: 'rgba(79,190,248,0.78)', textTransform: 'uppercase',
+            }}>Polish pass · motion + bunden</div>
+            <h1 style={{ margin: '10px 0 0', fontSize: 22, fontWeight: 600, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
+              Hvad er tunet, og hvorfor
+            </h1>
+            <p style={{ margin: '8px 0 0', color: 'rgba(190,205,219,0.7)', fontSize: 13, fontWeight: 500, lineHeight: 1.5 }}>
+              Alt herinde er drop-in på den eksisterende <code style={codeChip}>LiveWorkoutCard</code>. Ingen nye komponenter, kun motion-tokens og et timeline-element der erstatter den nuværende segmenterede progress.
+            </p>
+          </div>
+
+          {section('Motion · stagger over sync', [
+            diff('Ring + label + timer + cue swapper i 460–520ms samtidig',
+                 'Ring-farve 1100ms, label +140ms, timer +240ms, cue +360ms'),
+            diff('cubic-bezier(.2,.9,.2,1) — let "snappy"',
+                 'cubic-bezier(.22,.61,.36,1) — blød ease-out, mere ambient'),
+            diff('Anticipation = pulserende aura-ring',
+                 'Halo tinter mod næste-fasens farve over de sidste 3s · du føler skiftet før det sker'),
+          ])}
+
+          {section('Pause · tid stoppet, ikke dæmpet', [
+            diff('Pulse på resume-knappen lige fra start',
+                 'Frozen-breath 8s · ringen står helt stille før du tapper'),
+            diff('Cue: "Når du er klar. Tag den tid du har brug for."',
+                 '"Træk vejret. Når du er klar." — kortere, kropsligere'),
+            diff('Resume = øjeblikkelig fortsættelse',
+                 '3·2·1 count-back inde i ringen før timer går videre · production-realistic'),
+          ])}
+
+          {section('Bunden · én glanceable tidslinje', [
+            diff('"Bagefter [næste fase]" prosa + segmenterede prikker',
+                 'Én kontinuert PhaseTimeline · farvede blokke per fase, hairline-markør viser position'),
+            'Du kan se: hvor er jeg, hvad er gjort, hvad kommer — uden at læse',
+            'Walk = ghost-hvid, run = blå, warmup/cooldown = dim cool · matcher ringen',
+            'Done-faser dæmpes, current glow\'er blødt, future er næsten usynlige',
+          ])}
+
+          {section('Completion · arrival, ikke event', [
+            diff('Check + tekst + buttons popper ind samtidig',
+                 'Ring fylder først, ringen kontraherer fra 180→132, check tegner sig 900ms, tekst staggered 300/480/680ms'),
+            'Ingen confetti. Ingen stats. Bare "Du gjorde det" og en check-in i tre ord.',
+            'Detalje-knappen er sekundær (ghost) — feeling kommer først, tal kommer hvis du vil have dem.',
+          ])}
+
+          {section('CSS-tokens du tuner på iPhone', [
+            <><code style={codeChip}>--sp-ring-color-ms</code> 1100ms — den slowest thing på skærmen</>,
+            <><code style={codeChip}>--sp-label-stagger</code> 140ms efter ring-color start</>,
+            <><code style={codeChip}>--sp-timer-stagger</code> 240ms</>,
+            <><code style={codeChip}>--sp-cue-stagger</code> 360ms</>,
+            <><code style={codeChip}>--sp-pause-dim-ms</code> 720ms (var 480ms)</>,
+            'Hvis det føles for langsomt på rigtigt device: træk ring-color ned til 900ms, behold staggers.',
+          ])}
+
+          {section('Production-noter (TS/CSS)', [
+            <>Tilføj <code style={codeChip}>PhaseTimeline.tsx</code> som ny komponent — phases array + currentIdx + positionInPhase. Erstatter den nuværende segmenterede progress fuldstændigt.</>,
+            <>Bump <code style={codeChip}>workoutTokens.module.css</code> med de nye motion-vars ovenfor.</>,
+            <>Tilføj <code style={codeChip}>resumeN</code> prop til <code style={codeChip}>LiveWorkoutCard</code> · 0..3 · UI fader cue/timeline/pause-knap og viser stort tal.</>,
+            <>Tilføj <code style={codeChip}>nextPhaseKind</code> + <code style={codeChip}>previewIntensity</code> props til <code style={codeChip}>WorkoutRing</code> for halo-foresmag.</>,
+            'Ingen ændring i prop-kontrakter udover ovenstående — kald-sites i page.tsx behøver ikke at flytte sig.',
+          ])}
+
+          {section('Hvad vi IKKE rørte (med vilje)', [
+            'Layout: top, ring-størrelse, center-stack, pause-knappens placering · alt sammen uændret',
+            'Tone of voice · cue-tekster er samme niveau af korthed/varme',
+            'Farvepalette · ingen nye farver',
+            'Komponentgrænser · stadig samme LiveWorkoutCard som hub',
+          ])}
+        </div>
+      );
+    }
+
+    function NotesCard() {
+      const section = (title, items) => (
+        <div style={{ display: 'grid', gap: 6 }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.18em',
+            textTransform: 'uppercase', color: 'rgba(79,190,248,0.8)',
+          }}>{title}</div>
+          {items.map((it, i) => (
+            <div key={i} style={{
+              display: 'grid', gridTemplateColumns: '14px 1fr', gap: 10,
+              color: 'rgba(244,249,253,0.86)', fontSize: 13.5, fontWeight: 500,
+              lineHeight: 1.5,
+            }}>
+              <span style={{ color: 'rgba(143,161,179,0.55)' }}>·</span>
+              <span>{it}</span>
+            </div>
+          ))}
+        </div>
+      );
+
+      return (
+        <div style={{
+          width: '100%', height: '100%',
+          background: 'radial-gradient(120% 80% at 50% 0%, #15212e 0%, #0a121c 50%, #06090d 100%)',
+          color: '#f5fafd',
+          fontFamily: '"Raleway", sans-serif',
+          padding: '52px 32px 36px',
+          display: 'flex', flexDirection: 'column', gap: 22,
+          borderRadius: 28,
+          border: '1px solid rgba(164,193,218,0.08)',
+          overflow: 'auto',
+        }}>
+          <div>
+            <div style={{
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.24em',
+              color: 'rgba(79,190,248,0.78)', textTransform: 'uppercase',
+            }}>Handoff · production-ready</div>
+            <h1 style={{ margin: '10px 0 0', fontSize: 22, fontWeight: 600, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
+              Komponenter klar til drop-in i src/app/
+            </h1>
+            <p style={{ margin: '8px 0 0', color: 'rgba(190,205,219,0.7)', fontSize: 13, fontWeight: 500, lineHeight: 1.5 }}>
+              Ligger i mappen <code style={codeChip}>handoff/</code> i projektet. TypeScript + CSS Modules, ingen dependencies, reduced-motion-bevidst.
+            </p>
+          </div>
+
+          {section('Filer', [
+            <><code style={codeChip}>types.ts</code> — prop-kontrakter (LiveWorkoutCardProps m.fl.)</>,
+            <><code style={codeChip}>workoutTokens.module.css</code> — alle farver + motion-tider som CSS-variable</>,
+            <><code style={codeChip}>WorkoutRing.tsx</code> — SVG-ring primitive</>,
+            <><code style={codeChip}>LiveWorkoutCard.tsx</code> — central card-flade (alle states som props)</>,
+            <><code style={codeChip}>LiveWorkoutView.tsx</code> — fuld skærm-orkestrering</>,
+            <><code style={codeChip}>WorkoutCountdown.tsx</code> — 1C "Fade to action"</>,
+            <><code style={codeChip}>WorkoutCompleted.tsx</code> — auto-finish check-in</>,
+            <><code style={codeChip}>usePrefersReducedMotion.ts</code> — SSR-safe hook</>,
+            <><code style={codeChip}>example-page-integration.tsx</code> — konkret wiring til din page.tsx</>,
+            <><code style={codeChip}>README.md</code> — prop-mapping + tjekliste</>,
+          ])}
+
+          {section('Motion states', [
+            'Alle states (running, transition, paused, anticipation) er prop-kombinationer på SAMME LiveWorkoutCard — så crossfade-animationen virker.',
+            <>Bump <code style={codeChip}>transitionKey</code> ved fase-skift → NU/timer/cue swap’er i synk.</>,
+            <>Paused: <code style={codeChip}>paused={"{true}"}</code> → ring dæmpes til 0.34, timer skifter til weight 300, cue bliver kursiv.</>,
+            <>Anticipation: <code style={codeChip}>anticipating={"{true}"}</code> + <code style={codeChip}>anticipationNum</code> → aura-ring, "Skifter om 3".</>,
+          ])}
+
+          {section('Reduced motion', [
+            'Top-level wrappers skriver data-reduced-motion="true" når OS spørger om mindre motion.',
+            'Token CSS kollapser ALLE animationer + transitions til 1ms !important. Ingen JS-arbejde nødvendigt i page.tsx.',
+          ])}
+
+          {section('Hvad du sletter i page.tsx', [
+            'workoutCountdownCard JSX-blok',
+            'workoutSessionOverview + workoutTopProfile* + workoutNextSummary',
+            'completeWorkoutBtn + workoutManualControls (auto-finish)',
+            'finalHint copy',
+            'Tilhørende styles i page.module.css',
+          ])}
+
+          {section('Tune på fysisk iPhone', [
+            <>De fire vigtigste timings: <code style={codeChip}>--sp-d-phase-swap</code> 460ms, <code style={codeChip}>--sp-d-timer-swap</code> 520ms, <code style={codeChip}>--sp-d-cue-swap</code> 520ms, <code style={codeChip}>--sp-d-pause-dim</code> 480ms.</>,
+            <>Curve overalt: <code style={codeChip}>cubic-bezier(.2,.9,.2,1)</code>.</>,
+            'A/B på rigtigt device — det er her premium-følelsen står og falder.',
+          ])}
+        </div>
+      );
+    }
+
+    const codeChip = {
+      background: 'rgba(255,255,255,0.05)',
+      border: '1px solid rgba(164,193,218,0.1)',
+      borderRadius: 4,
+      padding: '1px 5px',
+      fontFamily: '"Menlo", monospace',
+      fontSize: 11.5,
+      color: 'rgba(190,205,219,0.9)',
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
