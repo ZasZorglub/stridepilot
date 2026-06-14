@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LiveWorkoutCard } from "./components/workout/LiveWorkoutCard";
 import { PhaseStrip } from "./components/workout/PhaseStrip";
 import { HomeEntry, type HomePlanState } from "./components/home/HomeEntry";
+import { StandardPrograms, type StandardProgramId } from "./components/home/StandardPrograms";
 import type { PhaseEntry, WorkoutPhaseKind } from "./components/workout/types";
 import workoutTokens from "./components/workout/workoutTokens.module.css";
 import styles from "./page.module.css";
@@ -128,7 +129,7 @@ import { WorkoutFeedback as CoachWorkoutFeedback } from "@/lib/coach/capability"
 import { buildFeedbackResponseCopy } from "@/lib/coach/explanations";
 import { recommendTrainingDays } from "@/lib/profile-interpretation";
 
-type Stage = "welcome" | "auth" | "intro" | "profile" | "intermezzo" | "home" | "program" | "workout";
+type Stage = "welcome" | "auth" | "intro" | "profile" | "intermezzo" | "home" | "programSelect" | "program" | "workout";
 type AuthMode = "signup" | "login";
 type AudioMode = "off" | "short" | "coach";
 type ThemePref = "dark";
@@ -603,6 +604,10 @@ function profileKey(userId: string): string {
 
 function pulseSettingsKey(userId: string): string {
   return `stridepilotPulseSettings:${userId}`;
+}
+
+function standardProgramKey(userId: string): string {
+  return `stridepilotStandardProgram:${userId}`;
 }
 
 function sessionFeedbackStorageKey(currentProfileId: string): string {
@@ -1411,6 +1416,8 @@ export default function Home() {
   const pulseSettingsHydratedUserRef = useRef<string | null>(null);
   const [planAmbition, setPlanAmbition] = useState<PlanAmbition>("standard");
   const [planRecommendation, setPlanRecommendation] = useState<PlanRecommendation | null>(null);
+  // Home R1 → standard program selector. UI-safe context only; does not drive engine.
+  const [selectedStandardProgram, setSelectedStandardProgram] = useState<StandardProgramId | null>(null);
 
   const [profileDraft, setProfileDraft] = useState({
     heightCm: "175",
@@ -3226,6 +3233,21 @@ export default function Home() {
     openStage(introSeen ? "profile" : "intro");
   }
 
+  // Standard program selector → remember the pick (UI-safe context) and continue
+  // into the existing plan-creation flow. Does not change coach/engine logic.
+  function selectStandardProgram(programId: StandardProgramId) {
+    setSelectedStandardProgram(programId);
+    const userKey = authUser?.id ?? (isDemoMode ? "demo-user" : "");
+    if (userKey) {
+      try {
+        window.localStorage.setItem(standardProgramKey(userKey), programId);
+      } catch {
+        // localStorage may be unavailable (private mode) — selection stays in memory.
+      }
+    }
+    openStandardProgramFlow();
+  }
+
   function openWorkoutSession(sessionId: string) {
     window.scrollTo({ top: 0, behavior: "smooth" });
     setSelectedSessionId(sessionId);
@@ -3742,6 +3764,7 @@ export default function Home() {
         stage === "intro" ? styles.pageIntroStage : "",
         stage === "intermezzo" ? styles.pageIntermezzoStage : "",
         stage === "home" ? styles.pageHomeStage : "",
+        stage === "programSelect" ? styles.pageHomeStage : "",
         stage === "program" ? styles.pageProgramStage : "",
       ].join(" ")}
     >
@@ -3925,7 +3948,7 @@ export default function Home() {
         )}
       </section>
 
-      {stage !== "welcome" && stage !== "auth" && stage !== "intro" && stage !== "workout" && stage !== "program" && stage !== "home" && (
+      {stage !== "welcome" && stage !== "auth" && stage !== "intro" && stage !== "workout" && stage !== "program" && stage !== "home" && stage !== "programSelect" && (
         <section className={styles.hero}>
           <h1>{contextualHeader.title}</h1>
           <p className={styles.heroSub}>{contextualHeader.subtitle}</p>
@@ -3941,7 +3964,16 @@ export default function Home() {
           continueHint={homeContinueHint}
           onContinue={() => openStage("program")}
           onStart={() => openStage("program")}
-          onChooseStandard={openStandardProgramFlow}
+          onChooseStandard={() => openStage("programSelect")}
+        />
+      )}
+
+      {stage === "programSelect" && (
+        <StandardPrograms
+          locale={siteLocale}
+          selectedId={selectedStandardProgram}
+          onSelect={selectStandardProgram}
+          onBack={() => openStage("home")}
         />
       )}
 

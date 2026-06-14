@@ -1,0 +1,201 @@
+.screen {
+  --sp-bg: #0b0f14;
+  --sp-bg-grad: radial-gradient(
+    140% 80% at 50% 12%,
+    #18283a 0%,
+    #0c1622 36%,
+    #06090e 78%
+  );
+  --sp-text: rgba(245, 250, 253, 0.98);
+  --sp-text-secondary: rgba(190, 205, 219, 0.72);
+  --sp-text-tertiary: rgba(143, 161, 179, 0.5);
+  --sp-border: rgba(164, 193, 218, 0.12);
+  --sp-accent: rgba(79, 190, 248, 0.95);
+
+  position: relative;
+  min-height: calc(100dvh - 5.5rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  isolation: isolate;
+  padding:
+    calc(2rem + env(safe-area-inset-top))
+    clamp(1.1rem, 5vw, 1.8rem)
+    calc(1.6rem + env(safe-area-inset-bottom));
+  background-color: var(--sp-bg);
+  background-image: var(--sp-bg-grad);
+  color: var(--sp-text);
+  font-family: "Raleway", -apple-system, "Segoe UI", sans-serif;
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 27rem);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.6rem, 5vh, 2.6rem);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  text-align: left;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  margin-bottom: 0.6rem;
+  padding: 0.45rem 0.85rem 0.45rem 0.65rem;
+  border: 1px solid var(--sp-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--sp-text-secondary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color 200ms ease,
+    background 200ms ease,
+    color 200ms ease;
+}
+
+.backBtn:hover {
+  border-color: rgba(164, 193, 218, 0.22);
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--sp-text);
+}
+
+.backArrow {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--sp-text-tertiary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  color: var(--sp-text);
+  font-size: clamp(1.6rem, 6.5vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+}
+
+.lead {
+  margin: 0;
+  color: var(--sp-text-secondary);
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  margin: 0;
+  padding: clamp(1.1rem, 4vw, 1.35rem) clamp(1.1rem, 4vw, 1.35rem);
+  border: 1px solid var(--sp-border);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.022);
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    border-color 220ms ease,
+    background 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(79, 190, 248, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.card:active {
+  transform: translateY(0);
+}
+
+.card[data-selected] {
+  border-color: rgba(79, 190, 248, 0.4);
+  background: linear-gradient(
+    180deg,
+    rgba(79, 190, 248, 0.1),
+    rgba(79, 190, 248, 0.025)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cardText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.cardTitle {
+  color: var(--sp-text);
+  font-size: 1.06rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.25;
+}
+
+.cardBody {
+  color: var(--sp-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--sp-text-tertiary);
+  transition: color 200ms ease, transform 200ms ease;
+}
+
+.card:hover .chevron {
+  color: var(--sp-accent);
+  transform: translateX(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .chevron,
+  .backBtn {
+    transition: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
+}
