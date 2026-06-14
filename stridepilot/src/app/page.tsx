@@ -1943,13 +1943,13 @@ export default function Home() {
           setProfileId(meData.profileId);
           window.localStorage.setItem(profileKey(meData.user.id), meData.profileId);
           window.localStorage.setItem(setupKey(meData.user.id), "1");
-          const hasPlan = await hydrateProgramState(meData.profileId);
-          setStage(hasPlan ? "home" : "profile");
+          await hydrateProgramState(meData.profileId);
         } else {
           window.localStorage.removeItem(setupKey(meData.user.id));
           window.localStorage.removeItem(profileKey(meData.user.id));
-          setStage(window.localStorage.getItem(introSeenKey(meData.user.id)) === "1" ? "profile" : "intro");
         }
+        // Home R1 is the post-login entry — even without a plan (state A).
+        setStage("home");
       }
     }
 
@@ -1967,7 +1967,8 @@ export default function Home() {
       if (savedName) {
         setRunnerProfile((current) => ({ ...current, firstName: savedName }));
       }
-      setStage(demoSetupDone ? "home" : window.localStorage.getItem(introSeenKey("demo-user")) === "1" ? "profile" : "intro");
+      // Home R1 is the post-demo entry — even without a plan (state A).
+      setStage("home");
     }
   }, [hydrateProgramState]);
 
@@ -2544,7 +2545,8 @@ export default function Home() {
     window.localStorage.removeItem("stridepilotDemoMode");
     window.localStorage.removeItem(setupKey(data.user.id));
     window.localStorage.removeItem(profileKey(data.user.id));
-    setStage(window.localStorage.getItem(introSeenKey(data.user.id)) === "1" ? "profile" : "intro");
+    // Home R1 is the post-signup entry — state A (no plan yet).
+    setStage("home");
   }
 
   async function login() {
@@ -2575,7 +2577,6 @@ export default function Home() {
     }
 
     let hasProfile = false;
-    let hasPlan = false;
     const meRes = await fetch("/api/auth/me");
     if (meRes.ok) {
       const meData = (await meRes.json()) as { profileId?: string | null };
@@ -2584,7 +2585,7 @@ export default function Home() {
         setProfileId(meData.profileId);
         window.localStorage.setItem(profileKey(data.user.id), meData.profileId);
         window.localStorage.setItem(setupKey(data.user.id), "1");
-        hasPlan = await hydrateProgramState(meData.profileId);
+        await hydrateProgramState(meData.profileId);
       }
     }
 
@@ -2593,7 +2594,8 @@ export default function Home() {
       window.localStorage.removeItem(setupKey(data.user.id));
       window.localStorage.removeItem(profileKey(data.user.id));
     }
-    setStage(hasProfile ? (hasPlan ? "home" : "profile") : window.localStorage.getItem(introSeenKey(data.user.id)) === "1" ? "profile" : "intro");
+    // Home R1 is the post-login entry — even without a plan (state A).
+    setStage("home");
   }
 
   async function logout() {
@@ -2625,7 +2627,8 @@ export default function Home() {
     window.localStorage.setItem("stridepilotDemoMode", "1");
     window.localStorage.removeItem(setupKey("demo-user"));
     window.localStorage.setItem(profileKey("demo-user"), "demo-profile");
-    setStage(window.localStorage.getItem(introSeenKey("demo-user")) === "1" ? "profile" : "intro");
+    // Home R1 is the post-demo entry — state A (no plan yet).
+    setStage("home");
   }
 
   async function requestPlanRecommendation(options?: { skipLowFrequencyGuardrail?: boolean }) {
@@ -3212,6 +3215,15 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
     setStage(nextStage);
     setMenuOpen(false);
+  }
+
+  // Home R1 "Vælg et standardprogram" → existing intro/profile plan-creation flow.
+  function openStandardProgramFlow() {
+    const userKey = authUser?.id ?? (isDemoMode ? "demo-user" : "");
+    const introSeen = userKey
+      ? window.localStorage.getItem(introSeenKey(userKey)) === "1"
+      : false;
+    openStage(introSeen ? "profile" : "intro");
   }
 
   function openWorkoutSession(sessionId: string) {
@@ -3929,7 +3941,7 @@ export default function Home() {
           continueHint={homeContinueHint}
           onContinue={() => openStage("program")}
           onStart={() => openStage("program")}
-          onChooseStandard={() => openStage("profile")}
+          onChooseStandard={openStandardProgramFlow}
         />
       )}
 
