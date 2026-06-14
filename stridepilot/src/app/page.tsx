@@ -96,7 +96,6 @@ import {
   buildWorkoutCheckInState,
   buildWorkoutInterruptionNotice,
   getNextWorkoutStep,
-  buildWorkoutStepHeartRateState,
   hasRequiredWorkoutFeedback,
   shouldSpeakWorkoutCue,
 } from "@/lib/workout-screen";
@@ -3664,26 +3663,6 @@ export default function Home() {
     const currentCompleted = Math.max(0, currentStep.durationSec - remainingSec);
     return completedBeforeCurrent + currentCompleted;
   }, [activeSession, currentStep, remainingSec, stepIndex]);
-  const currentWorkoutHeartRateState = useMemo(
-    () =>
-      buildWorkoutStepHeartRateState({
-        step: currentStep,
-        pulseGuidanceEnabled: Boolean(runnerProfile.pulseGuidanceEnabled),
-        maxHeartRate: runnerProfile.maxHeartRate ?? null,
-        locale: siteLocale,
-      }),
-    [currentStep, runnerProfile.maxHeartRate, runnerProfile.pulseGuidanceEnabled, siteLocale],
-  );
-  const nextWorkoutHeartRateState = useMemo(
-    () =>
-      buildWorkoutStepHeartRateState({
-        step: nextWorkoutStep,
-        pulseGuidanceEnabled: Boolean(runnerProfile.pulseGuidanceEnabled),
-        maxHeartRate: runnerProfile.maxHeartRate ?? null,
-        locale: siteLocale,
-      }),
-    [nextWorkoutStep, runnerProfile.maxHeartRate, runnerProfile.pulseGuidanceEnabled, siteLocale],
-  );
   const workoutPhaseEntries = useMemo<PhaseEntry[]>(
     () =>
       activeSession?.steps.map((step) => ({
@@ -5130,25 +5109,9 @@ export default function Home() {
                     transitionKey={`${activeSession.id}-${stepIndex}`}
                     nextPhaseKind={nextWorkoutPhaseKind}
                   />
-                  {isLastWorkoutStep && (
-                    <p className={styles.workoutFinalHint}>{siteLocale === "en" ? "Ready to finish the workout." : "Passet er klar til at blive afsluttet."}</p>
-                  )}
                 </main>
 
                 <footer className={styles.claudeWorkoutBottom}>
-                  <div className={styles.claudeNowNextPanel}>
-                    <div className={styles.claudeNowSummary}>
-                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Now" : "Nu"}</p>
-                      <strong>{phaseName(currentStep, siteLocale)}</strong>
-                      <span>{formatStepDuration(currentStep)} · {currentWorkoutHeartRateState?.zoneLabel ?? (siteLocale === "en" ? "Easy effort" : "Roligt arbejde")}</span>
-                    </div>
-                    <div className={styles.claudeNextSummary}>
-                      <p className={styles.workoutMiniLabel}>{siteLocale === "en" ? "Next" : "Næste"}</p>
-                      <strong>{nextWorkoutStep ? `${formatStepDuration(nextWorkoutStep)} ${phaseName(nextWorkoutStep, siteLocale).toLowerCase()}` : siteLocale === "en" ? "Finish workout" : "Afslut passet"}</strong>
-                      <span>{nextWorkoutStep ? nextWorkoutHeartRateState?.zoneLabel ?? (siteLocale === "en" ? "Easy" : "Roligt") : siteLocale === "en" ? "Ready to complete" : "Klar til at afslutte"}</span>
-                    </div>
-                  </div>
-
                   <PhaseStrip
                     phases={workoutPhaseEntries}
                     currentIdx={stepIndex}
