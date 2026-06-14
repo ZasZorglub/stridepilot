@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LiveWorkoutCard } from "./components/workout/LiveWorkoutCard";
 import { PhaseStrip } from "./components/workout/PhaseStrip";
+import { HomeEntry, type HomePlanState } from "./components/home/HomeEntry";
+import { StandardPrograms, type StandardProgramId } from "./components/home/StandardPrograms";
 import type { PhaseEntry, WorkoutPhaseKind } from "./components/workout/types";
 import workoutTokens from "./components/workout/workoutTokens.module.css";
 import styles from "./page.module.css";
@@ -25,7 +27,7 @@ import {
   WorkoutSession,
   WorkoutStep,
 } from "@/lib/types";
-import { APP_NAME, APP_VERSION } from "@/lib/app-config";
+import { APP_NAME, APP_VERSION, buildLabel } from "@/lib/app-config";
 import { formatReadableDurationFromSeconds } from "@/lib/duration";
 import { buildFeedbackMailto } from "@/lib/feedback-mail";
 import { getSiteCopy } from "@/lib/site-copy";
@@ -127,7 +129,7 @@ import { WorkoutFeedback as CoachWorkoutFeedback } from "@/lib/coach/capability"
 import { buildFeedbackResponseCopy } from "@/lib/coach/explanations";
 import { recommendTrainingDays } from "@/lib/profile-interpretation";
 
-type Stage = "welcome" | "auth" | "intro" | "profile" | "intermezzo" | "program" | "workout";
+type Stage = "welcome" | "auth" | "intro" | "profile" | "intermezzo" | "home" | "programSelect" | "program" | "workout";
 type AuthMode = "signup" | "login";
 type AudioMode = "off" | "short" | "coach";
 type ThemePref = "dark";
@@ -602,6 +604,10 @@ function profileKey(userId: string): string {
 
 function pulseSettingsKey(userId: string): string {
   return `stridepilotPulseSettings:${userId}`;
+}
+
+function standardProgramKey(userId: string): string {
+  return `stridepilotStandardProgram:${userId}`;
 }
 
 function sessionFeedbackStorageKey(currentProfileId: string): string {
@@ -1410,6 +1416,8 @@ export default function Home() {
   const pulseSettingsHydratedUserRef = useRef<string | null>(null);
   const [planAmbition, setPlanAmbition] = useState<PlanAmbition>("standard");
   const [planRecommendation, setPlanRecommendation] = useState<PlanRecommendation | null>(null);
+  // Home R1 → standard program selector. UI-safe context only; does not drive engine.
+  const [selectedStandardProgram, setSelectedStandardProgram] = useState<StandardProgramId | null>(null);
 
   const [profileDraft, setProfileDraft] = useState({
     heightCm: "175",
@@ -1942,13 +1950,13 @@ export default function Home() {
           setProfileId(meData.profileId);
           window.localStorage.setItem(profileKey(meData.user.id), meData.profileId);
           window.localStorage.setItem(setupKey(meData.user.id), "1");
-          const hasPlan = await hydrateProgramState(meData.profileId);
-          setStage(hasPlan ? "program" : "profile");
+          await hydrateProgramState(meData.profileId);
         } else {
           window.localStorage.removeItem(setupKey(meData.user.id));
           window.localStorage.removeItem(profileKey(meData.user.id));
-          setStage(window.localStorage.getItem(introSeenKey(meData.user.id)) === "1" ? "profile" : "intro");
         }
+        // Home R1 is the post-login entry — even without a plan (state A).
+        setStage("home");
       }
     }
 
@@ -1966,7 +1974,8 @@ export default function Home() {
       if (savedName) {
         setRunnerProfile((current) => ({ ...current, firstName: savedName }));
       }
-      setStage(demoSetupDone ? "program" : window.localStorage.getItem(introSeenKey("demo-user")) === "1" ? "profile" : "intro");
+      // Home R1 is the post-demo entry — even without a plan (state A).
+      setStage("home");
     }
   }, [hydrateProgramState]);
 
@@ -2543,7 +2552,8 @@ export default function Home() {
     window.localStorage.removeItem("stridepilotDemoMode");
     window.localStorage.removeItem(setupKey(data.user.id));
     window.localStorage.removeItem(profileKey(data.user.id));
-    setStage(window.localStorage.getItem(introSeenKey(data.user.id)) === "1" ? "profile" : "intro");
+    // Home R1 is the post-signup entry — state A (no plan yet).
+    setStage("home");
   }
 
   async function login() {
@@ -2574,7 +2584,6 @@ export default function Home() {
     }
 
     let hasProfile = false;
-    let hasPlan = false;
     const meRes = await fetch("/api/auth/me");
     if (meRes.ok) {
       const meData = (await meRes.json()) as { profileId?: string | null };
@@ -2583,7 +2592,7 @@ export default function Home() {
         setProfileId(meData.profileId);
         window.localStorage.setItem(profileKey(data.user.id), meData.profileId);
         window.localStorage.setItem(setupKey(data.user.id), "1");
-        hasPlan = await hydrateProgramState(meData.profileId);
+        await hydrateProgramState(meData.profileId);
       }
     }
 
@@ -2592,7 +2601,8 @@ export default function Home() {
       window.localStorage.removeItem(setupKey(data.user.id));
       window.localStorage.removeItem(profileKey(data.user.id));
     }
-    setStage(hasProfile ? (hasPlan ? "program" : "profile") : window.localStorage.getItem(introSeenKey(data.user.id)) === "1" ? "profile" : "intro");
+    // Home R1 is the post-login entry — even without a plan (state A).
+    setStage("home");
   }
 
   async function logout() {
@@ -2624,7 +2634,8 @@ export default function Home() {
     window.localStorage.setItem("stridepilotDemoMode", "1");
     window.localStorage.removeItem(setupKey("demo-user"));
     window.localStorage.setItem(profileKey("demo-user"), "demo-profile");
-    setStage(window.localStorage.getItem(introSeenKey("demo-user")) === "1" ? "profile" : "intro");
+    // Home R1 is the post-demo entry — state A (no plan yet).
+    setStage("home");
   }
 
   async function requestPlanRecommendation(options?: { skipLowFrequencyGuardrail?: boolean }) {
@@ -2890,7 +2901,9 @@ export default function Home() {
       if (storageUserId) {
         window.localStorage.setItem(setupKey(storageUserId), "1");
       }
-      setStage("program");
+      // After plan creation, land on Home R1 — the plan exists but isn't started
+      // yet, so this is state B with "Start min træningsplan" as the primary path.
+      setStage("home");
       setShowProgramIntro(true);
       setIsProgramTransitioning(false);
       captureAppEvent(
@@ -3192,6 +3205,14 @@ export default function Home() {
   const canOpenProgram = Boolean(authUser && hasSetup);
   const canOpenWorkout = Boolean(plan);
 
+  // Home R1 entry: derive the three-path state from existing app state only.
+  // "started" is a UI-safe heuristic — at least one session has logged feedback.
+  const homePlanStarted = Object.keys(sessionFeedbackMap).length > 0;
+  const homePlanState: HomePlanState = !plan ? "none" : homePlanStarted ? "active" : "ready";
+  const homeContinueHint = nextSession
+    ? `${siteLocale === "en" ? "Next" : "Næste"}: ${sessionDisplayTitle(nextSession, goal.distance, siteLocale)}`
+    : null;
+
   function completeIntro() {
     if (authUser?.id) {
       window.localStorage.setItem(introSeenKey(authUser.id), "1");
@@ -3203,6 +3224,28 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
     setStage(nextStage);
     setMenuOpen(false);
+  }
+
+  // Standard program selector → remember the pick (UI-safe context) and go
+  // straight to the existing profile / plan-setup flow. The user has already made
+  // a deliberate choice, so the generic "Før vi starter" intro is skipped here.
+  // Does not change coach/engine logic.
+  function selectStandardProgram(programId: StandardProgramId) {
+    setSelectedStandardProgram(programId);
+    const userKey = authUser?.id ?? (isDemoMode ? "demo-user" : "");
+    if (userKey) {
+      try {
+        window.localStorage.setItem(standardProgramKey(userKey), programId);
+        // Mark the generic intro as seen for THIS user only — a deliberate
+        // standard-program choice replaces the "Før vi starter" welcome. Users who
+        // never open the selector keep their normal first-run onboarding.
+        window.localStorage.setItem(introSeenKey(userKey), "1");
+      } catch {
+        // localStorage may be unavailable (private mode) — selection stays in memory.
+      }
+    }
+    // Existing plan-setup / profile / goal flow — intro is intentionally bypassed.
+    openStage("profile");
   }
 
   function openWorkoutSession(sessionId: string) {
@@ -3720,6 +3763,8 @@ export default function Home() {
         stage === "welcome" ? styles.pageWelcomeStage : "",
         stage === "intro" ? styles.pageIntroStage : "",
         stage === "intermezzo" ? styles.pageIntermezzoStage : "",
+        stage === "home" ? styles.pageHomeStage : "",
+        stage === "programSelect" ? styles.pageHomeStage : "",
         stage === "program" ? styles.pageProgramStage : "",
       ].join(" ")}
     >
@@ -3752,6 +3797,13 @@ export default function Home() {
               disabled={!canOpenAuthenticatedPages}
             >
               {siteLocale === "en" ? "Edit profile and goal" : "Rediger profil og mål"}
+            </button>
+            <button
+              className={stage === "home" ? styles.menuBtnActive : styles.menuBtn}
+              onClick={() => openStage("home")}
+              disabled={!canOpenAuthenticatedPages}
+            >
+              {siteLocale === "en" ? "Home" : "Hjem"}
             </button>
             <button
               className={stage === "program" ? styles.menuBtnActive : styles.menuBtn}
@@ -3896,12 +3948,33 @@ export default function Home() {
         )}
       </section>
 
-      {stage !== "welcome" && stage !== "auth" && stage !== "intro" && stage !== "workout" && stage !== "program" && (
+      {stage !== "welcome" && stage !== "auth" && stage !== "intro" && stage !== "workout" && stage !== "program" && stage !== "home" && stage !== "programSelect" && (
         <section className={styles.hero}>
           <h1>{contextualHeader.title}</h1>
           <p className={styles.heroSub}>{contextualHeader.subtitle}</p>
           {isDemoMode && <p className={styles.demoBadge}>{siteLocale === "en" ? "Demo mode · data is not stored permanently" : "Demo-tilstand · data gemmes ikke permanent"}</p>}
         </section>
+      )}
+
+      {stage === "home" && (
+        <HomeEntry
+          locale={siteLocale}
+          firstName={runnerProfile.firstName}
+          planState={homePlanState}
+          continueHint={homeContinueHint}
+          onContinue={() => openStage("program")}
+          onStart={() => openStage("program")}
+          onChooseStandard={() => openStage("programSelect")}
+        />
+      )}
+
+      {stage === "programSelect" && (
+        <StandardPrograms
+          locale={siteLocale}
+          selectedId={selectedStandardProgram}
+          onSelect={selectStandardProgram}
+          onBack={() => openStage("home")}
+        />
       )}
 
       {stage === "welcome" && (
@@ -3923,7 +3996,7 @@ export default function Home() {
               </button>
               <p className={styles.subtleInline}>{siteCopy.betaTesterInstructions}</p>
               <p className={styles.authVersionLabel}>
-                {APP_NAME} {APP_VERSION} · build b00d5be
+                {APP_NAME} {APP_VERSION} · {buildLabel()}
               </p>
             </div>
           </div>
@@ -3987,7 +4060,7 @@ export default function Home() {
               )}
 
               <p className={styles.authVersionLabel}>
-                {APP_NAME} {APP_VERSION} · build b00d5be
+                {APP_NAME} {APP_VERSION} · {buildLabel()}
               </p>
             </section>
           </div>

@@ -47,11 +47,31 @@
   <script type="text/babel" src="screens/refined.jsx"></script>
   <script type="text/babel" src="screens/polish.jsx"></script>
   <script type="text/babel" src="screens/polish2.jsx"></script>
+  <script type="text/babel" src="screens/home-r1.jsx"></script>
 
   <script type="text/babel">
     function App() {
       return (
         <DesignCanvas>
+
+          <DCSection
+            id="home-r1"
+            title="Home R1 · post-login entry (3 states)"
+            subtitle="Den første skærm efter login. Tre veje — Fortsæt / Start / Vælg standardprogram — altid i samme rækkefølge, så de tre states er sammenlignelige. Visuel vægt bærer hierarkiet: præcis ét prim. “Anbefalet”-kort per state, hvid pille-CTA. Deaktiveret er roligt og forklarende (hængelås + én linje), aldrig en fejl. Samme mørke, rolige system som workout-skærmen — ingen tætte tal, ingen dashboard. Åbn et kort fullscreen for at se det i fuld størrelse."
+          >
+            <DCArtboard id="home-none" label="A · Intet program endnu — Standardprogram = primær, Fortsæt/Start deaktiveret" width={420} height={890}>
+              <HomeR1NoPlan />
+            </DCArtboard>
+            <DCArtboard id="home-ready" label="B · Program oprettet, ikke startet — Start = primær" width={420} height={890}>
+              <HomeR1Ready />
+            </DCArtboard>
+            <DCArtboard id="home-active" label="C · Aktivt program — Fortsæt = primær, Start = i gang" width={420} height={890}>
+              <HomeR1Active />
+            </DCArtboard>
+            <DCArtboard id="home-notes" label="Implementerings-noter · rolle-matrix + wiring" width={520} height={890}>
+              <HomeR1NotesCard />
+            </DCArtboard>
+          </DCSection>
 
           <DCSection
             id="polish2-states"
