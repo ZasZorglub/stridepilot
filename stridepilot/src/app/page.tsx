@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LiveWorkoutCard } from "./components/workout/LiveWorkoutCard";
 import { PhaseStrip } from "./components/workout/PhaseStrip";
+import { HomeEntry, type HomePlanState } from "./components/home/HomeEntry";
 import type { PhaseEntry, WorkoutPhaseKind } from "./components/workout/types";
 import workoutTokens from "./components/workout/workoutTokens.module.css";
 import styles from "./page.module.css";
@@ -127,7 +128,7 @@ import { WorkoutFeedback as CoachWorkoutFeedback } from "@/lib/coach/capability"
 import { buildFeedbackResponseCopy } from "@/lib/coach/explanations";
 import { recommendTrainingDays } from "@/lib/profile-interpretation";
 
-type Stage = "welcome" | "auth" | "intro" | "profile" | "intermezzo" | "program" | "workout";
+type Stage = "welcome" | "auth" | "intro" | "profile" | "intermezzo" | "home" | "program" | "workout";
 type AuthMode = "signup" | "login";
 type AudioMode = "off" | "short" | "coach";
 type ThemePref = "dark";
@@ -1943,7 +1944,7 @@ export default function Home() {
           window.localStorage.setItem(profileKey(meData.user.id), meData.profileId);
           window.localStorage.setItem(setupKey(meData.user.id), "1");
           const hasPlan = await hydrateProgramState(meData.profileId);
-          setStage(hasPlan ? "program" : "profile");
+          setStage(hasPlan ? "home" : "profile");
         } else {
           window.localStorage.removeItem(setupKey(meData.user.id));
           window.localStorage.removeItem(profileKey(meData.user.id));
@@ -1966,7 +1967,7 @@ export default function Home() {
       if (savedName) {
         setRunnerProfile((current) => ({ ...current, firstName: savedName }));
       }
-      setStage(demoSetupDone ? "program" : window.localStorage.getItem(introSeenKey("demo-user")) === "1" ? "profile" : "intro");
+      setStage(demoSetupDone ? "home" : window.localStorage.getItem(introSeenKey("demo-user")) === "1" ? "profile" : "intro");
     }
   }, [hydrateProgramState]);
 
@@ -2592,7 +2593,7 @@ export default function Home() {
       window.localStorage.removeItem(setupKey(data.user.id));
       window.localStorage.removeItem(profileKey(data.user.id));
     }
-    setStage(hasProfile ? (hasPlan ? "program" : "profile") : window.localStorage.getItem(introSeenKey(data.user.id)) === "1" ? "profile" : "intro");
+    setStage(hasProfile ? (hasPlan ? "home" : "profile") : window.localStorage.getItem(introSeenKey(data.user.id)) === "1" ? "profile" : "intro");
   }
 
   async function logout() {
@@ -3192,6 +3193,14 @@ export default function Home() {
   const canOpenProgram = Boolean(authUser && hasSetup);
   const canOpenWorkout = Boolean(plan);
 
+  // Home R1 entry: derive the three-path state from existing app state only.
+  // "started" is a UI-safe heuristic — at least one session has logged feedback.
+  const homePlanStarted = Object.keys(sessionFeedbackMap).length > 0;
+  const homePlanState: HomePlanState = !plan ? "none" : homePlanStarted ? "active" : "ready";
+  const homeContinueHint = nextSession
+    ? `${siteLocale === "en" ? "Next" : "Næste"}: ${sessionDisplayTitle(nextSession, goal.distance, siteLocale)}`
+    : null;
+
   function completeIntro() {
     if (authUser?.id) {
       window.localStorage.setItem(introSeenKey(authUser.id), "1");
@@ -3720,6 +3729,7 @@ export default function Home() {
         stage === "welcome" ? styles.pageWelcomeStage : "",
         stage === "intro" ? styles.pageIntroStage : "",
         stage === "intermezzo" ? styles.pageIntermezzoStage : "",
+        stage === "home" ? styles.pageHomeStage : "",
         stage === "program" ? styles.pageProgramStage : "",
       ].join(" ")}
     >
@@ -3752,6 +3762,13 @@ export default function Home() {
               disabled={!canOpenAuthenticatedPages}
             >
               {siteLocale === "en" ? "Edit profile and goal" : "Rediger profil og mål"}
+            </button>
+            <button
+              className={stage === "home" ? styles.menuBtnActive : styles.menuBtn}
+              onClick={() => openStage("home")}
+              disabled={!canOpenAuthenticatedPages}
+            >
+              {siteLocale === "en" ? "Home" : "Hjem"}
             </button>
             <button
               className={stage === "program" ? styles.menuBtnActive : styles.menuBtn}
@@ -3896,12 +3913,24 @@ export default function Home() {
         )}
       </section>
 
-      {stage !== "welcome" && stage !== "auth" && stage !== "intro" && stage !== "workout" && stage !== "program" && (
+      {stage !== "welcome" && stage !== "auth" && stage !== "intro" && stage !== "workout" && stage !== "program" && stage !== "home" && (
         <section className={styles.hero}>
           <h1>{contextualHeader.title}</h1>
           <p className={styles.heroSub}>{contextualHeader.subtitle}</p>
           {isDemoMode && <p className={styles.demoBadge}>{siteLocale === "en" ? "Demo mode · data is not stored permanently" : "Demo-tilstand · data gemmes ikke permanent"}</p>}
         </section>
+      )}
+
+      {stage === "home" && (
+        <HomeEntry
+          locale={siteLocale}
+          firstName={runnerProfile.firstName}
+          planState={homePlanState}
+          continueHint={homeContinueHint}
+          onContinue={() => openStage("program")}
+          onStart={() => openStage("program")}
+          onChooseStandard={() => openStage("profile")}
+        />
       )}
 
       {stage === "welcome" && (
